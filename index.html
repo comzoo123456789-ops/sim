@@ -55,18 +55,18 @@
     <div class="world-status-widget">
       <div class="location-gold-capsule">
         <div class="location-indicator">
-          <span>🪐</span><span id="locationText">외계 행성 베이스캠프</span>
+          <span class="hud-pill-tag">AREA</span><span id="locationText">외계 행성 베이스캠프</span>
         </div>
         <div class="gold-counter">
-          <span>🪙</span><span id="goldText">500</span>
+          <span class="hud-pill-tag gold">GOLD</span><span id="goldText">500</span>
         </div>
       </div>
 
       <button id="btnRecallRune" class="recall-rune-btn" style="display:none;" title="마을 즉시 귀환 (T)">
-        <span>🏛️ 귀환</span><kbd>T</kbd>
+        <span>마을 귀환</span><kbd>T</kbd>
       </button>
 
-      <!-- 🍔 오른쪽 상단 햄버거 메뉴 버튼 (모바일/태블릿용) -->
+      <!-- 햄버거 메뉴 버튼 (모바일/태블릿용) -->
       <button id="btnMobileHamburger" class="mobile-hamburger-btn" title="전체 메뉴 (Menu)">
         <span class="hamburger-icon">☰</span>
         <span class="hamburger-label">메뉴</span>
@@ -85,76 +85,76 @@
     <!-- 3. 우측 사이드 플로팅 독 (모바일 슬라이드 드로어 메뉴) -->
     <div id="sideNavDock" class="side-nav-dock">
       <div class="drawer-header">
-        <span class="drawer-title">📜 모험 메뉴</span>
+        <span class="drawer-title">원정대 관리 메뉴</span>
         <button id="btnCloseMobileDrawer" class="drawer-close-btn" title="닫기">✕</button>
       </div>
 
       <div class="dock-grid-container">
         <button id="btnSideBag" class="dock-btn" title="소지품 가방 및 장비창 (I)">
-          <span class="dock-icon">🎒</span>
+          <span class="dock-badge">BAG</span>
           <span class="dock-label">가방</span>
           <span class="dock-key">I</span>
         </button>
 
         <button id="btnSideSkills" class="dock-btn" title="스킬북 & 재주 트리 (K)">
-          <span class="dock-icon">📜</span>
+          <span class="dock-badge">SKILL</span>
           <span class="dock-label">스킬</span>
           <span class="dock-key">K</span>
         </button>
 
         <button id="btnSideBlacksmith" class="dock-btn" title="대장장이 (강화 / 분해 / 제작)">
-          <span class="dock-icon">🔨</span>
+          <span class="dock-badge">FORGE</span>
           <span class="dock-label">대장간</span>
         </button>
 
         <button id="btnSideShop" class="dock-btn" title="상인 엘리아의 보급 상점">
-          <span class="dock-icon">⚖️</span>
+          <span class="dock-badge">SHOP</span>
           <span class="dock-label">상점</span>
         </button>
 
         <button id="btnSideCodex" class="dock-btn" title="도감 & 업적 / 칭호 (L)">
-          <span class="dock-icon">📖</span>
+          <span class="dock-badge">CODEX</span>
           <span class="dock-label">도감/업적</span>
           <span class="dock-key">L</span>
         </button>
 
         <button id="btnSidePet" class="dock-btn" title="동행 펫 & 자동 루팅 서포터 (P)">
-          <span class="dock-icon">🐾</span>
+          <span class="dock-badge">PET</span>
           <span class="dock-label">동행펫</span>
           <span class="dock-key">P</span>
         </button>
 
         <button id="btnSideMercenary" class="dock-btn" title="차원 용병단 고용 & 관리 (M)">
-          <span class="dock-icon">🤝</span>
+          <span class="dock-badge">MERC</span>
           <span class="dock-label">용병단</span>
           <span class="dock-key">M</span>
         </button>
 
         <button id="btnSideResearch" class="dock-btn" title="마을 기지 연구소 & 시설 건설 (R)">
-          <span class="dock-icon">🏛️</span>
+          <span class="dock-badge">BASE</span>
           <span class="dock-label">연구소</span>
           <span class="dock-key">R</span>
         </button>
 
         <button id="btnSideRelics" class="dock-btn" title="보유 중인 고대 유물 덱 (U)">
-          <span class="dock-icon">📜</span>
+          <span class="dock-badge">RELIC</span>
           <span class="dock-label">유물덱</span>
           <span class="dock-key">U</span>
         </button>
 
         <button id="btnSideAffix" class="dock-btn" title="무한 악몽 심연 101F+ 어픽스 설정 (Y)">
-          <span class="dock-icon">⚙️</span>
+          <span class="dock-badge">AFFIX</span>
           <span class="dock-label">어픽스</span>
           <span class="dock-key">Y</span>
         </button>
 
         <button id="btnSideAccount" class="dock-btn" title="계정 및 캐릭터 슬롯 관리">
-          <span class="dock-icon">👤</span>
+          <span class="dock-badge">HERO</span>
           <span class="dock-label">계정</span>
         </button>
 
         <button id="btnSideSound" class="dock-btn" title="사운드 온/오프">
-          <span id="soundIcon" class="dock-icon">🔊</span>
+          <span id="soundBadge" class="dock-badge">BGM</span>
           <span class="dock-label">소리</span>
         </button>
       </div>
@@ -165,7 +165,7 @@
     <div id="riftEventHUD" class="rift-event-banner" style="display:none;">
       <div class="rift-banner-title">
         <span class="rift-pulse-dot"></span>
-        <span>🌀 [차원 균열 봉쇄 작전] 차원의 공허 군세를 격퇴하세요!</span>
+        <span>[차원 균열 봉쇄 작전] 차원의 공허 군세를 격퇴하세요!</span>
       </div>
       <div class="rift-banner-body">
         <div class="rift-stat-item">남은 시간: <b id="riftTimerText" style="color:#ff3344;">30.0s</b></div>
@@ -179,7 +179,7 @@
       <!-- 퀵 물약 플라스크 슬롯 -->
       <div class="flask-slot-container">
         <button id="btnFlaskPotion" class="flask-rune-btn" title="생명력 & 마나 물약 마시기 (Q)">
-          <span>🧪</span>
+          <span class="flask-core-tag">POT</span>
           <span class="flask-key">Q</span>
           <span id="txtFlaskCount" class="flask-badge">5</span>
         </button>
@@ -191,7 +191,7 @@
       <!-- 2번: 특수키 패링 (Shift / F / 우클릭) 방어 코어 -->
       <div class="parry-core-container">
         <div id="btnParryCore" class="parry-core-orb" title="완벽한 패링 가드 (Shift / F / 우클릭)">
-          <span class="parry-icon">🛡️</span>
+          <span class="parry-icon">GUARD</span>
           <span class="parry-key-label">SHIFT</span>
         </div>
       </div>
@@ -199,7 +199,7 @@
       <!-- 스페이스바 긴급 회피 / 구르기 대시 코어 -->
       <div class="dash-core-container">
         <div id="btnDashCore" class="dash-core-orb" title="순간 무적 긴급 회피 (Space)">
-          <span class="dash-icon">⚡</span>
+          <span class="dash-icon">DASH</span>
           <span class="dash-key-label">SPACE</span>
         </div>
       </div>
@@ -213,10 +213,10 @@
     <!-- D: 모바일 우측 액션 클러스터 (우측 엄지 영역) -->
     <div id="mobileActionCluster" class="mobile-action-cluster">
       <button id="mBtnInteract" class="m-btn m-interact" title="상호작용 / 던전 입장" style="display:none;">입장</button>
-      <button id="mBtnAtk" class="m-btn m-atk" title="기본 공격">⚔️</button>
-      <button id="mBtnParry" class="m-btn m-parry" title="패링">🛡️</button>
-      <button id="mBtnDash" class="m-btn m-dash" title="대시">⚡</button>
-      <button id="mBtnPot" class="m-btn m-pot" title="물약">🧪</button>
+      <button id="mBtnAtk" class="m-btn m-atk" title="기본 공격">공격</button>
+      <button id="mBtnParry" class="m-btn m-parry" title="패링">방어</button>
+      <button id="mBtnDash" class="m-btn m-dash" title="대시">대시</button>
+      <button id="mBtnPot" class="m-btn m-pot" title="물약">물약</button>
     </div>
 
     <!-- 스마트 장비 비교 툴팁 컨테이너 -->
@@ -226,7 +226,7 @@
     <div id="modal_bag" class="game-modal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3>🎒 인벤토리 & 장착 장비</h3>
+          <h3>인벤토리 & 장착 장비</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body bag-layout">
@@ -248,7 +248,7 @@
           <div class="inv-panel">
             <div class="inv-section-header">
               <b>소지품 (클릭 시 착용)</b>
-              <button id="btnAutoEquip" class="game-btn gold-btn" title="현재 소지품 중 최적의 무기/방어구를 일괄 자동 장착합니다">⚡ 최적 장비 자동 장착</button>
+              <button id="btnAutoEquip" class="game-btn gold-btn" title="현재 소지품 중 최적의 무기/방어구를 일괄 자동 장착합니다">최적 장비 자동 장착</button>
             </div>
             <div id="inventorySlots" class="inv-grid"></div>
           </div>
@@ -260,14 +260,14 @@
     <div id="modal_skills" class="game-modal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3>📜 아케인 스킬 아카이브</h3>
+          <h3>아케인 스킬 아카이브</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-          <h4 style="color:#ffd700;margin-bottom:10px;font-family:var(--font-title);">⚔️ 액티브 스킬 (5, 10, 15, 20, 25 레벨 해금)</h4>
+          <h4 style="color:#ffd700;margin-bottom:10px;font-family:var(--font-title);">액티브 스킬 (5, 10, 15, 20, 25 레벨 해금)</h4>
           <div id="activeSkillsList"></div>
 
-          <h4 style="color:#00ffaa;margin-top:20px;margin-bottom:10px;font-family:var(--font-title);">✨ 상시 자동 적용 고유 패시브 (3종)</h4>
+          <h4 style="color:#00ffaa;margin-top:20px;margin-bottom:10px;font-family:var(--font-title);">상시 자동 적용 고유 패시브 (3종)</h4>
           <div id="passiveSkillsList"></div>
         </div>
       </div>
@@ -340,17 +340,34 @@
           <h4 style="color:#ffd700;margin-bottom:10px;font-family:var(--font-title);">캐릭터 슬롯 목록</h4>
           <div id="accountCharList"></div>
 
-          <div style="margin-top:18px;background:rgba(20, 10, 35, 0.9);padding:16px;border-radius:10px;border:1px dashed rgba(212, 175, 55, 0.4);">
+          <div class="new-char-creation-box" style="margin-top:18px;background:rgba(20, 10, 35, 0.9);padding:16px;border-radius:10px;border:1px dashed rgba(212, 175, 55, 0.4);">
             <h4 style="margin-bottom:10px;color:#ffd700;font-family:var(--font-title);">새 캐릭터 생성 (4대 직업 선택)</h4>
-            <div style="display:flex;gap:10px;align-items:center;">
-              <input type="text" id="newCharName" placeholder="캐릭터 닉네임" style="background:#221338;border:1px solid #5a328c;color:#fff;padding:8px 12px;border-radius:6px;flex:1;">
-              <select id="newCharJob" style="background:#221338;border:1px solid #5a328c;color:#fff;padding:8px 12px;border-radius:6px;">
-                <option value="warrior">전사 (검 전용)</option>
-                <option value="mage">마법사 (지팡이 전용)</option>
-                <option value="rogue">도적 (이도류 전용)</option>
-                <option value="fighter">격투가 (너클 전용)</option>
-              </select>
-              <button class="game-btn gold-btn" onclick="window.game.createCharacterUI()">캐릭터 생성</button>
+            <div class="job-visual-selector" id="jobVisualSelector">
+              <div class="job-card-option active" data-job="warrior" onclick="window.game.selectJobForCreation('warrior')">
+                <img src="assets/portraits/warrior.jpg" alt="전사" class="job-opt-img" />
+                <div class="job-opt-title">강철의 검사</div>
+                <div class="job-opt-badge">대검 / 슬래시</div>
+              </div>
+              <div class="job-card-option" data-job="mage" onclick="window.game.selectJobForCreation('mage')">
+                <img src="assets/portraits/mage.jpg" alt="마법사" class="job-opt-img" />
+                <div class="job-opt-title">비전 원소술사</div>
+                <div class="job-opt-badge">지팡이 / 원거리폭격</div>
+              </div>
+              <div class="job-card-option" data-job="rogue" onclick="window.game.selectJobForCreation('rogue')">
+                <img src="assets/portraits/rogue.jpg" alt="도적" class="job-opt-img" />
+                <div class="job-opt-title">그림자 암살자</div>
+                <div class="job-opt-badge">이도류 / 급소타격</div>
+              </div>
+              <div class="job-card-option" data-job="fighter" onclick="window.game.selectJobForCreation('fighter')">
+                <img src="assets/portraits/fighter.jpg" alt="격투가" class="job-opt-img" />
+                <div class="job-opt-title">차원 권사</div>
+                <div class="job-opt-badge">너클 / 광폭연타</div>
+              </div>
+            </div>
+            <input type="hidden" id="newCharJob" value="warrior" />
+            <div style="display:flex;gap:10px;align-items:center;margin-top:12px;">
+              <input type="text" id="newCharName" placeholder="새 캐릭터 닉네임 입력" style="background:#221338;border:1px solid #5a328c;color:#fff;padding:9px 12px;border-radius:6px;flex:1;font-size:14px;">
+              <button class="game-btn gold-btn" style="padding:9px 20px;font-size:14px;font-weight:700;" onclick="window.game.createCharacterUI()">캐릭터 생성</button>
             </div>
           </div>
         </div>
@@ -486,7 +503,7 @@
     <div id="modal_relic_select" class="game-modal">
       <div class="modal-dialog" style="max-width:780px;">
         <div class="modal-header">
-          <h3>📜 심연의 고대 유물 각성 (Roguelike Relic)</h3>
+          <h3>심연의 고대 유물 각성 (Roguelike Relic)</h3>
         </div>
         <div class="modal-body" style="text-align:center;">
           <p style="color:#ffd700;font-size:15px;margin-bottom:16px;">
@@ -502,7 +519,7 @@
     <div id="modal_relic_deck" class="game-modal">
       <div class="modal-dialog" style="max-width:760px;">
         <div class="modal-header">
-          <h3>📜 보유 중인 고대 유물 덱</h3>
+          <h3>보유 중인 고대 유물 덱</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">

@@ -310,7 +310,8 @@ class GameEngine {
     document.getElementById('btnSideSound').onclick = () => {
       const isMuted = !this.soundMgr.isMuted;
       this.soundMgr.setMute(isMuted);
-      document.getElementById('soundIcon').innerText = isMuted ? '🔇' : '🔊';
+      const sb = document.getElementById('soundBadge') || document.getElementById('soundIcon');
+      if (sb) sb.innerText = isMuted ? 'MUTE' : 'BGM';
     };
 
     document.getElementById('btnRecallRune').onclick = () => {
@@ -1697,6 +1698,18 @@ class GameEngine {
     }
   }
 
+  selectJobForCreation(job) {
+    const input = document.getElementById('newCharJob');
+    if (input) input.value = job;
+    document.querySelectorAll('.job-card-option').forEach(el => {
+      if (el.getAttribute('data-job') === job) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
+  }
+
   renderAccountUI() {
     const curAcct = this.accountMgr.currentAccount;
     document.getElementById('acctUsernameDisplay').innerText = curAcct.username;
@@ -1704,15 +1717,22 @@ class GameEngine {
     charListEl.innerHTML = '';
 
     curAcct.characters.forEach(c => {
+      const isCur = this.accountMgr.activeCharacter && this.accountMgr.activeCharacter.id === c.id;
       const div = document.createElement('div');
-      div.className = 'char-card' + (this.accountMgr.activeCharacter.id === c.id ? ' active' : '');
+      div.className = 'char-card' + (isCur ? ' active' : '');
       div.innerHTML = `
-        <div>
-          <b style="font-size:16px;color:#fff;">${c.name}</b> <span style="color:#ffd700;font-weight:700;">Lv.${c.level} ${CLASSES[c.job].name}</span>
-          <div style="font-size:12px;color:#a496bd;margin-top:4px;">도달 층수: ${c.currentFloor}F | 골드: ${c.gold.toLocaleString()} G</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <img src="assets/portraits/${c.job}.jpg" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid ${isCur ? '#ffd700' : 'rgba(160,110,240,0.4)'};box-shadow:0 2px 6px rgba(0,0,0,0.6);" alt="${c.name}" />
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <b style="font-size:15px;color:#fff;">${c.name}</b>
+              <span style="color:#ffd700;font-weight:700;font-size:12px;background:rgba(255,215,0,0.15);padding:1px 6px;border-radius:4px;border:1px solid rgba(255,215,0,0.3);">Lv.${c.level} ${CLASSES[c.job].name}</span>
+            </div>
+            <div style="font-size:11px;color:#a496bd;margin-top:3px;">도달 층수: <b style="color:#00ffcc;">${c.currentFloor}F</b> | 보유 골드: <b style="color:#ffd700;">${c.gold.toLocaleString()} G</b></div>
+          </div>
         </div>
-        <div>
-          <button class="game-btn select-btn" onclick="window.game.selectCharacter('${c.id}')">선택</button>
+        <div style="display:flex;gap:6px;">
+          <button class="game-btn select-btn ${isCur ? 'gold-btn' : ''}" onclick="window.game.selectCharacter('${c.id}')">${isCur ? '접속중' : '선택'}</button>
           <button class="game-btn delete-btn" onclick="window.game.deleteCharacter('${c.id}')">삭제</button>
         </div>
       `;
