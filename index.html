@@ -277,17 +277,17 @@
     <div id="modal_blacksmith" class="game-modal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3>🔨 드워프 브룩의 차원 대장간 (강화 / 분해 / 제작 / 보석세공)</h3>
+          <h3>차원 대장간 (강화 / 분해 / 제작 / 보석세공)</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <div id="blacksmithMaterials" style="color:#ffd700;margin-bottom:14px;font-weight:700;"></div>
           <div class="bs-tabs">
-            <button class="game-btn" onclick="window.game.renderBlacksmithUI('enhance')">장비 제련/강화</button>
+            <button class="game-btn" onclick="window.game.renderBlacksmithUI('enhance')">장비 제련</button>
             <button class="game-btn" onclick="window.game.renderBlacksmithUI('disassemble')">장비 분해</button>
-            <button class="game-btn gold-btn" onclick="window.game.renderBlacksmithUI('craft')">상위 장비 제작</button>
-            <button class="game-btn" onclick="window.game.renderBlacksmithUI('alchemy')">💎 보석 세공 & 합성</button>
-            <button class="game-btn" onclick="window.game.renderBlacksmithUI('runestone')">🌀 룬스톤 각인</button>
+            <button class="game-btn gold-btn" onclick="window.game.renderBlacksmithUI('craft')">장비 제작</button>
+            <button class="game-btn" onclick="window.game.renderBlacksmithUI('alchemy')">보석 세공</button>
+            <button class="game-btn" onclick="window.game.renderBlacksmithUI('runestone')">룬스톤 각인</button>
           </div>
           <div id="blacksmithContent"></div>
         </div>
@@ -298,7 +298,7 @@
     <div id="modal_shop" class="game-modal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3>⚖️ 상인 엘리아의 보급 상점</h3>
+          <h3>보급 상점</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
@@ -311,11 +311,11 @@
     <div id="modal_floorSelect" class="game-modal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3>🏰 마계의 탑 차원 회랑</h3>
+          <h3>마계의 탑 차원 회랑</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-          <p style="color:#a496bd;margin-bottom:16px;">진입할 층을 선택하세요. 매 10층마다 강력한 구역 보스가 기다리고 있으며, 100층에는 마계 군주 아자젤이 도사리고 있습니다.</p>
+          <p style="color:#a496bd;margin-bottom:16px;">진입할 층을 선택하세요. 매 10층마다 강력한 구역 보스가 기다리고 있습니다.</p>
           <div id="floorSelectList" class="floor-grid"></div>
         </div>
       </div>
@@ -325,7 +325,7 @@
     <div id="modal_account" class="game-modal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3>👤 계정 프로필 & 캐릭터 슬롯</h3>
+          <h3>계정 프로필 & 캐릭터 슬롯</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
@@ -361,13 +361,13 @@
     <div id="modal_codex" class="game-modal">
       <div class="modal-dialog" style="max-width:880px;">
         <div class="modal-header">
-          <h3>📖 마계 아카이브: 도감 & 업적 / 칭호</h3>
+          <h3>마계 아카이브: 도감 & 업적</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <div class="bs-tabs">
-            <button class="game-btn gold-btn" id="tab_btn_monsters" onclick="window.game.renderCodexUI('monsters')">👹 몬스터 도감</button>
-            <button class="game-btn" id="tab_btn_achievements" onclick="window.game.renderCodexUI('achievements')">🏆 업적 & 칭호 관리</button>
+            <button class="game-btn gold-btn" id="tab_btn_monsters" onclick="window.game.renderCodexUI('monsters')">몬스터 도감</button>
+            <button class="game-btn" id="tab_btn_achievements" onclick="window.game.renderCodexUI('achievements')">업적 & 칭호 관리</button>
           </div>
           <div id="codexContent"></div>
         </div>
@@ -378,12 +378,12 @@
     <div id="modal_pet" class="game-modal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3>🐾 동행 서포터 펫 (자동 루팅 & 지원)</h3>
+          <h3>동행 서포터 펫 (자동 루팅 & 지원)</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <p style="color:#a496bd;margin-bottom:14px;font-size:13px;">
-            동행 펫은 플레이어 곁을 비행하며 <b>바닥의 모든 전리품(골드, 장비, 물약, 재료)을 자석처럼 자동 수납</b>하고, 고유 지원 스킬을 발동합니다.
+            동행 펫은 플레이어 곁을 비행하며 <b>바닥의 모든 전리품을 자동 수납</b>하고, 고유 지원 효과를 발동합니다.
           </p>
           <div id="petSelectList" class="pet-grid"></div>
         </div>
@@ -395,9 +395,9 @@
       <div class="modal-dialog ending-dialog" style="max-width:760px;text-align:center;">
         <div class="ending-banner">
           <h2 style="font-family:var(--font-title);color:#ffd700;font-size:28px;margin-bottom:6px;text-shadow:0 0 20px rgba(255,215,0,0.8);">
-            🌟 [탑의 붕괴 & 행성의 해방] 🌟
+            [탑의 붕괴 & 행성의 해방]
           </h2>
-          <p style="color:#a496bd;font-size:14px;">100층의 마계 군주 아자젤이 쓰러지고, 차원 마탑이 굉음과 함께 무너져 내립니다!</p>
+          <p style="color:#a496bd;font-size:14px;">100층의 마계 군주 아자젤이 쓰러지고, 차원 마탑이 무너져 내립니다!</p>
         </div>
         <div class="ending-body" style="padding:16px;">
           <div id="endingCanvasContainer" style="margin:10px auto;width:100%;max-width:540px;height:240px;background:#05020a;border:2px solid #ffd700;border-radius:12px;overflow:hidden;position:relative;">
@@ -405,8 +405,8 @@
           </div>
           <div id="endingStatsSummary" style="background:rgba(20,10,35,0.9);padding:14px;border-radius:10px;margin-top:12px;border:1px solid #5a328c;text-align:left;"></div>
           <div style="margin-top:18px;display:flex;gap:12px;justify-content:center;">
-            <button class="game-btn gold-btn" onclick="window.game.finishEndingAndReturnTown()">🕊️ 평화가 찾아온 마을로 귀환</button>
-            <button class="game-btn" style="border-color:#ff3344;color:#ff9999;" onclick="window.game.enterInfiniteNightmare()">💀 무한 악몽 심연 (101F~) 도전</button>
+            <button class="game-btn gold-btn" onclick="window.game.finishEndingAndReturnTown()">마을로 귀환</button>
+            <button class="game-btn" style="border-color:#ff3344;color:#ff9999;" onclick="window.game.enterInfiniteNightmare()">무한 악몽 심연 (101F~) 도전</button>
           </div>
         </div>
       </div>
@@ -416,12 +416,12 @@
     <div id="modal_mercenary" class="game-modal">
       <div class="modal-dialog" style="max-width:820px;">
         <div class="modal-header">
-          <h3>🤝 차원 용병 길드 (동료 서포터 고용)</h3>
+          <h3>차원 용병 길드 (동료 서포터 고용)</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <p style="color:#a496bd;margin-bottom:14px;font-size:13px;">
-            골드로 든든한 차원 용병을 고용하여 함께 던전에 출진하세요! 용병은 플레이어와 함께 이동하며 <b>도발 어그로 탱킹, 즉시 힐링/버프, 원거리 관통 저격</b>을 수행합니다. (최대 1명 동행)
+            골드로 차원 용병을 고용하여 함께 던전에 출진하세요. (최대 1명 동행)
           </p>
           <div id="mercenarySelectList" class="mercenary-grid"></div>
         </div>
@@ -432,12 +432,12 @@
     <div id="modal_research" class="game-modal">
       <div class="modal-dialog" style="max-width:840px;">
         <div class="modal-header">
-          <h3>🏛️ 차원 기지 연구소 (마을 시설 건설 & 영구 강화)</h3>
+          <h3>차원 기지 연구소 (영구 강화)</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <p style="color:#a496bd;margin-bottom:14px;font-size:13px;">
-            던전에서 수집한 마계 원자재(철광석, 강화석, 차원 파편, 심연의 결정)와 골드를 투자하여 마을 연구 시설을 건설/업그레이드하세요! <b>연구 효과는 모든 전투와 능력치에 영구적으로 적용</b>됩니다.
+            자원과 골드를 투자하여 연구 시설을 증축하세요. 연구 효과는 모든 능력치에 영구 적용됩니다.
           </p>
           <div id="researchMaterialsBar" style="color:#ffd700;margin-bottom:14px;font-weight:700;"></div>
           <div id="researchFacilityList" class="research-grid"></div>
@@ -449,34 +449,34 @@
     <div id="modal_affix" class="game-modal">
       <div class="modal-dialog" style="max-width:880px;">
         <div class="modal-header">
-          <h3>🌌 무한 악몽 심연 돌연변이 어픽스 (Diablo / PoE 지도 모디파이어)</h3>
+          <h3>무한 악몽 심연: 지도 돌연변이 어픽스</h3>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <p style="color:#a496bd;margin-bottom:12px;font-size:13px;">
-            원하는 돌연변이 어픽스를 체크하여 던전을 개조하세요! 어픽스가 추가될수록 던전 환경과 몬스터가 흉포해지지만, <b>아이템 발견 확률(MF), 골드, 경험치가 기하급수적으로 폭증</b>합니다!
+            원하는 돌연변이 어픽스를 활성화하세요. 어픽스에 따라 보상 배율이 크게 증가합니다.
           </p>
 
           <!-- 어픽스 프리셋 퀵 버튼 -->
-          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-            <button class="game-btn gold-btn" onclick="window.game.setAffixPreset('all')">🔥 전체 활성화 (초극한 파밍)</button>
-            <button class="game-btn" onclick="window.game.setAffixPreset('safe')">🛡️ 추천 안전 파밍 (3종)</button>
-            <button class="game-btn" onclick="window.game.setAffixPreset('random')">🎲 무작위 5종 돌연변이</button>
-            <button class="game-btn" onclick="window.game.setAffixPreset('clear')">❌ 전체 해제</button>
+          <div class="affix-presets-bar">
+            <button class="game-btn gold-btn" onclick="window.game.setAffixPreset('all')">전체 활성화</button>
+            <button class="game-btn" onclick="window.game.setAffixPreset('safe')">추천 안전 파밍</button>
+            <button class="game-btn" onclick="window.game.setAffixPreset('random')">무작위 5종</button>
+            <button class="game-btn" onclick="window.game.setAffixPreset('clear')">전체 해제</button>
           </div>
 
           <!-- 누적 보너스 계산 바 -->
-          <div id="affixBonusSummaryBar" style="background:rgba(20,10,35,0.9);border:1px solid #7c3aed;padding:12px;border-radius:8px;margin-bottom:14px;display:flex;justify-content:space-around;font-weight:700;">
-            <span style="color:#00ffcc;">아이템 희귀도(MF): <span id="affixTotalMf">+0%</span></span>
-            <span style="color:#ffd700;">골드 획득량: <span id="affixTotalGold">+0%</span></span>
-            <span style="color:#ff77ff;">경험치 획득량: <span id="affixTotalExp">+0%</span></span>
+          <div id="affixBonusSummaryBar" class="affix-summary-bar">
+            <span style="color:#00ffcc;">아이템 희귀도(MF): <b id="affixTotalMf">+0%</b></span>
+            <span style="color:#ffd700;">골드 획득량: <b id="affixTotalGold">+0%</b></span>
+            <span style="color:#ff77ff;">경험치 획득량: <b id="affixTotalExp">+0%</b></span>
           </div>
 
-          <!-- 10개 어픽스 카드 그리드 -->
-          <div id="affixCardGrid" class="affix-grid"></div>
+          <!-- 10개 어픽스 리스트 -->
+          <div id="affixCardGrid" class="affix-list-container"></div>
 
           <div style="margin-top:16px;text-align:center;">
-            <button class="game-btn gold-btn" style="padding:10px 24px;font-size:15px;" onclick="window.game.applyAffixesAndLaunch()">💀 선택한 돌연변이로 101F+ 심연 진입</button>
+            <button class="game-btn gold-btn" style="padding:10px 24px;font-size:15px;" onclick="window.game.applyAffixesAndLaunch()">선택한 돌연변이로 101F+ 심연 진입</button>
           </div>
         </div>
       </div>

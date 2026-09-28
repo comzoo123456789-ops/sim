@@ -2197,23 +2197,56 @@ canvas#minimapView {
   }
 
   /* ⚡ 하단 스킬바 모바일 최적화 (중앙 배치, 물약/패링 중복 제거, 5개 스킬 슬롯 뚜렷하게 노출) */
+  /* ⚡ 하단 스킬바 + 물약 버튼 일체형 배치 (조이스틱 우측 밀착, 우측 액션과 완벽 분리) */
   .bottom-action-console {
     position: fixed !important;
-    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 14px), 16px) !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
+    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 12px), 14px) !important;
+    left: calc(env(safe-area-inset-left, 0px) + 88px) !important;
+    transform: none !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    gap: 0 !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
     z-index: 98 !important;
     pointer-events: auto !important;
     width: auto !important;
-    max-width: 90vw !important;
   }
 
-  /* 모바일 우측 액션에 이미 존재하는 물약, 패링, 대시 코어는 하단 바에서 숨겨 스킬 슬롯만 컴팩트하게 노출 */
-  .bottom-action-console .flask-slot-container,
+  /* 물약 버튼을 스킬바 왼쪽에 일체형으로 배치하여 가려짐 완전 방지 */
+  .bottom-action-console .flask-slot-container {
+    display: flex !important;
+    margin: 0 !important;
+  }
+
+  .flask-rune-btn {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+    border: 1.5px solid #00f0ff !important;
+    background: rgba(14, 8, 26, 0.94) !important;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.35) !important;
+    font-size: 15px !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    position: relative !important;
+  }
+
+  .flask-key {
+    display: none !important;
+  }
+
+  .flask-badge {
+    font-size: 8px !important;
+    bottom: 1px !important;
+    right: 2px !important;
+    padding: 0 3px !important;
+  }
+
+  /* 패링과 대시는 우측 액션 클러스터에 존재하므로 하단 바에서는 숨김 */
   .bottom-action-console .parry-core-container,
   .bottom-action-console .dash-core-container {
     display: none !important;
@@ -2221,21 +2254,21 @@ canvas#minimapView {
 
   .arcane-skill-deck {
     display: flex !important;
-    gap: 5px !important;
-    padding: 4px 6px !important;
+    gap: 3px !important;
+    padding: 2px 4px !important;
     background: rgba(14, 8, 26, 0.94) !important;
     border: 1.5px solid rgba(255, 215, 0, 0.5) !important;
-    border-radius: 12px !important;
+    border-radius: 10px !important;
     backdrop-filter: blur(10px) !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85), 0 0 10px rgba(180, 100, 255, 0.3) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.85) !important;
     pointer-events: auto !important;
   }
 
   .skill-rune-slot {
-    width: 38px !important;
-    height: 38px !important;
+    width: 33px !important;
+    height: 33px !important;
     border-width: 1.5px !important;
-    border-radius: 8px !important;
+    border-radius: 7px !important;
     pointer-events: auto !important;
     touch-action: manipulation !important;
     cursor: pointer !important;
@@ -2247,70 +2280,76 @@ canvas#minimapView {
   }
 
   .skill-rune-icon {
-    font-size: 19px !important;
+    font-size: 17px !important;
     pointer-events: none !important;
   }
 
   .skill-hotkey-badge {
-    font-size: 8px !important;
-    top: 2px !important;
-    left: 3px !important;
+    font-size: 7.5px !important;
+    top: 1px !important;
+    left: 2px !important;
     pointer-events: none !important;
   }
 
   .skill-lock-overlay {
-    font-size: 8px !important;
-    bottom: 2px !important;
+    font-size: 7.5px !important;
+    bottom: 1px !important;
     pointer-events: none !important;
   }
 
   .skill-element-badge {
-    font-size: 9px !important;
-    top: 2px !important;
-    right: 2px !important;
+    font-size: 8px !important;
+    top: 1px !important;
+    right: 1px !important;
     pointer-events: none !important;
   }
 
   /* 🕹️ 좌측 가상 조이스틱 */
   .vstick-base {
-    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 14px), 16px) !important;
-    left: max(calc(env(safe-area-inset-left, 0px) + 8px), 8px) !important;
-    width: 82px !important;
-    height: 82px !important;
+    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 12px), 14px) !important;
+    left: max(calc(env(safe-area-inset-left, 0px) + 6px), 6px) !important;
+    width: 76px !important;
+    height: 76px !important;
     z-index: 95 !important;
   }
 
-  /* ⚔️ 우측 액션 클러스터 (2열 아치형 컴팩트 그리드로 스킬바와 겹침 방지) */
+  /* ⚔️ 우측 액션 클러스터 (물약 중복 제거, 공격/막기/대시/입장 콤팩트 그리드로 완벽 분리) */
   .mobile-action-cluster {
-    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 14px), 16px) !important;
-    right: max(calc(env(safe-area-inset-right, 0px) + 8px), 8px) !important;
+    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 12px), 14px) !important;
+    right: max(calc(env(safe-area-inset-right, 0px) + 6px), 6px) !important;
     display: grid !important;
-    grid-template-columns: repeat(2, 42px) !important;
-    gap: 6px !important;
-    z-index: 96 !important;
+    grid-template-columns: repeat(2, 38px) !important;
+    gap: 5px !important;
+    z-index: 99 !important;
     align-items: center !important;
     justify-items: center !important;
+    width: auto !important;
+  }
+
+  /* 하단 바에 물약이 있으므로 우측 클러스터 물약 버튼은 숨김 */
+  .m-btn.m-pot {
+    display: none !important;
   }
 
   .m-btn {
-    width: 42px !important;
-    height: 42px !important;
-    font-size: 17px !important;
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 15px !important;
     border-radius: 50% !important;
   }
 
   .m-btn.m-atk {
-    width: 52px !important;
-    height: 52px !important;
-    font-size: 22px !important;
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 20px !important;
     grid-column: span 2 !important;
-    margin-top: 2px !important;
+    margin-top: 1px !important;
   }
 
   .m-btn.m-interact {
-    width: 42px !important;
-    height: 42px !important;
-    font-size: 12px !important;
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 11px !important;
     font-weight: 800 !important;
   }
 }
@@ -2319,6 +2358,220 @@ canvas#minimapView {
   .mobile-hamburger-btn {
     display: none !important;
   }
+}
+
+/* =========================================================
+   깔끔한 다크 판타지 UI 공통 스타일 (대장간, 도감, 어픽스, 연구소)
+   ========================================================= */
+.bs-mat-strip {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #ffd700;
+  padding: 6px 10px;
+  background: rgba(14, 8, 24, 0.85);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 8px;
+}
+
+.bs-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffd700;
+  margin-bottom: 8px;
+}
+
+.bs-tabs {
+  overflow-x: auto;
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.bs-tabs::-webkit-scrollbar { display: none; }
+.bs-tabs .game-btn {
+  white-space: nowrap !important;
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  flex-shrink: 0;
+}
+
+.research-mat-strip {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #ffd700;
+}
+
+.codex-badge-boss {
+  font-size: 10px;
+  color: #ff3344;
+  border: 1px solid rgba(255, 51, 68, 0.4);
+  background: rgba(255, 51, 68, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.codex-badge-mob {
+  font-size: 10px;
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  background: rgba(0, 240, 255, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.codex-badge-mimic {
+  font-size: 10px;
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  background: rgba(255, 170, 0, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.codex-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 12px 0 6px 0;
+  font-family: var(--font-title);
+}
+
+.ach-status-tag {
+  font-size: 10.5px;
+  color: #888;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.ach-status-tag.done {
+  color: #00ffaa;
+  background: rgba(0, 255, 170, 0.15);
+  border: 1px solid rgba(0, 255, 170, 0.3);
+}
+
+.pet-badge-active {
+  font-size: 10px;
+  color: #00ffaa;
+  border: 1px solid rgba(0, 255, 170, 0.4);
+  background: rgba(0, 255, 170, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.merc-role-badge {
+  font-size: 10.5px;
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  background: rgba(255, 215, 0, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* 어픽스 1줄 컴팩트 행 디자인 (PoE / Diablo 스타일) */
+.affix-presets-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+}
+.affix-presets-bar::-webkit-scrollbar { display: none; }
+.affix-presets-bar .game-btn {
+  white-space: nowrap;
+  padding: 4px 8px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.affix-summary-bar {
+  background: rgba(18, 10, 32, 0.9);
+  border: 1px solid rgba(160, 110, 240, 0.35);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-around;
+  font-size: 12px;
+}
+
+.affix-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.affix-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(20, 11, 35, 0.85);
+  border: 1px solid rgba(160, 110, 240, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  gap: 8px;
+}
+
+.affix-row:hover {
+  background: rgba(30, 16, 52, 0.95);
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+.affix-row.active {
+  background: rgba(45, 15, 30, 0.92);
+  border-color: #ff3355;
+  box-shadow: 0 0 10px rgba(255, 51, 85, 0.3);
+}
+
+.affix-row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.affix-row-name {
+  font-weight: 700;
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
+
+.affix-row-desc {
+  font-size: 11px;
+  color: #a496bd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.affix-row-right {
+  flex-shrink: 0;
+}
+
+.affix-bonus-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #00ffcc;
+  background: rgba(0, 255, 204, 0.12);
+  border: 1px solid rgba(0, 255, 204, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 

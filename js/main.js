@@ -317,10 +317,16 @@ class GameEngine {
       if (this.state === 'dungeon') this.returnToTown();
     };
 
-    document.getElementById('btnFlaskPotion').onclick = () => {
-      this.player.usePotion();
-      this.updateHUD();
-    };
+    const flaskBtn = document.getElementById('btnFlaskPotion');
+    if (flaskBtn) {
+      const triggerPotion = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        this.player.usePotion();
+        this.updateHUD();
+      };
+      flaskBtn.addEventListener('pointerdown', triggerPotion);
+      flaskBtn.addEventListener('click', triggerPotion);
+    }
 
     // 2번: 패링 코어 오브 클릭 시 패링 발동
     const btnParry = document.getElementById('btnParryCore');
@@ -883,13 +889,23 @@ class GameEngine {
   renderBlacksmithUI(tab = 'enhance') {
     const container = document.getElementById('blacksmithContent');
     const matDisplay = document.getElementById('blacksmithMaterials');
+    const stones = this.player.materials.upgrade_stone || 0;
+    const iron = this.player.materials.iron_ore || 0;
+    const shards = this.player.materials.dimension_shard || 0;
+    const gold = Number(this.player.gold) || 0;
+
     matDisplay.innerHTML = `
-      보유: 💎 강화석 ${this.player.materials.upgrade_stone || 0}개 | 🪨 철광석 ${this.player.materials.iron_ore || 0}개 | 🔮 차원파편 ${this.player.materials.dimension_shard || 0}개 | 🪙 ${this.player.gold.toLocaleString()} G
+      <div class="bs-mat-strip">
+        <span>강화석: <b>${stones}</b></span>
+        <span>철광석: <b>${iron}</b></span>
+        <span>차원 파편: <b>${shards}</b></span>
+        <span>골드: <b>${gold.toLocaleString()} G</b></span>
+      </div>
     `;
 
     if (tab === 'enhance') {
       container.innerHTML = `
-        <h4 style="color:#ffd700;margin-bottom:10px;">[장비 제련] 제련/강화할 장비를 선택하세요 (+1 ~ +15)</h4>
+        <div class="bs-section-title">장비 제련 (+1 ~ +15) - 제련할 장비를 선택하세요</div>
         <div id="enhanceItemList" class="bs-grid"></div>
         <div id="enhanceDetailBox" class="bs-action-box" style="margin-top:14px;"></div>
       `;
@@ -904,7 +920,7 @@ class GameEngine {
       });
     } else if (tab === 'disassemble') {
       container.innerHTML = `
-        <h4 style="color:#ffd700;margin-bottom:10px;">[장비 분해] 가방에서 분해할 장비를 선택하세요</h4>
+        <div class="bs-section-title">장비 분해 - 가방에서 분해할 장비를 선택하세요</div>
         <div id="disassembleItemList" class="bs-grid"></div>
       `;
       const grid = document.getElementById('disassembleItemList');
@@ -925,17 +941,17 @@ class GameEngine {
     } else if (tab === 'craft') {
       const cls = CLASSES[this.player.job];
       container.innerHTML = `
-        <h4 style="color:#ffd700;margin-bottom:10px;">[장비 제작] 마계 재료로 ${cls.name} 전용 최고급 무기를 제작합니다</h4>
+        <div class="bs-section-title">장비 제작 - ${cls.name} 전용 무기 제작</div>
         <div class="craft-list">
           <div class="craft-card">
-            <b style="color:#b55fe6;font-size:16px;">[유니크] ${cls.name} 전용 ${cls.weaponName}</b>
-            <p style="color:#c9bede;margin:6px 0;">필요 재료: 차원의 파편 5개, 철광석 20개, 3,000 Gold</p>
-            <button class="game-btn" onclick="window.game.craftItem('unique', 'weapon')">유니크 전용 무기 제작</button>
+            <b style="color:#b55fe6;font-size:15px;">[유니크] ${cls.name} 전용 ${cls.weaponName}</b>
+            <p style="color:#c9bede;margin:6px 0;font-size:12px;">필요: 차원의 파편 5, 철광석 20, 3,000 G</p>
+            <button class="game-btn" onclick="window.game.craftItem('unique', 'weapon')">유니크 무기 제작</button>
           </div>
-          <div class="craft-card" style="margin-top:12px;">
-            <b style="color:#ff9900;font-size:16px;">[에픽] ${cls.name} 전용 ${cls.weaponName}</b>
-            <p style="color:#c9bede;margin:6px 0;">필요 재료: 차원의 파편 15개, 철광석 50개, 10,000 Gold</p>
-            <button class="game-btn gold-btn" onclick="window.game.craftItem('epic', 'weapon')">에픽 전용 무기 제작</button>
+          <div class="craft-card" style="margin-top:10px;">
+            <b style="color:#ff9900;font-size:15px;">[에픽] ${cls.name} 전용 ${cls.weaponName}</b>
+            <p style="color:#c9bede;margin:6px 0;font-size:12px;">필요: 차원의 파편 15, 철광석 50, 10,000 G</p>
+            <button class="game-btn gold-btn" onclick="window.game.craftItem('epic', 'weapon')">에픽 무기 제작</button>
           </div>
         </div>
       `;
@@ -1765,15 +1781,13 @@ class GameEngine {
       for (const [floor, boss] of Object.entries(ZONE_BOSSES)) {
         bossHtml += `
           <div class="codex-boss-card">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:28px;">👹</span>
-              <div>
-                <b style="color:#ffd700;font-size:16px;">${floor}F ${boss.name}</b>
-                <div style="color:#a496bd;font-size:12px;">${boss.title} | 특수기: <span style="color:#ff5577;">${boss.special}</span></div>
-              </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <b style="color:#ffd700;font-size:15px;">${floor}F ${boss.name}</b>
+              <span class="codex-badge-boss">구역 군주</span>
             </div>
-            <div style="font-size:12px;color:#8df;margin-top:8px;">
-              체력 배율: x${boss.hpScale} | 공격력: x${boss.atkScale} | 방어력: x${boss.defScale}
+            <div style="color:#a496bd;font-size:12px;margin-top:3px;">${boss.title} | 특수기: <span style="color:#ff5577;">${boss.special}</span></div>
+            <div style="font-size:11px;color:#8df;margin-top:6px;">
+              체력 x${boss.hpScale} | 공격 x${boss.atkScale} | 방어 x${boss.defScale}
             </div>
           </div>
         `;
@@ -1783,15 +1797,12 @@ class GameEngine {
       MONSTER_PROTOTYPES.forEach(m => {
         mobHtml += `
           <div class="codex-card">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:24px;">👾</span>
-              <div>
-                <b style="color:#fff;font-size:14px;">${m.name}</b>
-                <div style="color:${m.ranged ? '#ff99aa' : '#aaffdd'};font-size:11px;">[${m.ranged ? '원거리 투사체 공격' : '근접 돌진 공격'}]</div>
-              </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <b style="color:#fff;font-size:14px;">${m.name}</b>
+              <span class="codex-badge-mob">${m.ranged ? '원거리' : '근접'}</span>
             </div>
             <div style="font-size:11px;color:#aaa;margin-top:6px;">
-              기본 체력: ${m.baseHp} | 공격력: ${m.baseAtk} | 방어력: ${m.baseDef} | 기본 EXP: ${m.exp}
+              HP: ${m.baseHp} | 공격: ${m.baseAtk} | 방어: ${m.baseDef} | EXP: ${m.exp}
             </div>
           </div>
         `;
@@ -1799,27 +1810,21 @@ class GameEngine {
 
       let mimicHtml = `
         <div class="codex-card" style="border-color:#ffaa00;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:24px;">📦</span>
-            <div>
-              <b style="color:#ffd700;font-size:14px;">${MIMIC_DATA.normal.name}</b>
-              <div style="color:#ffaa00;font-size:11px;">[보물 상자 위장 기습형]</div>
-            </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <b style="color:#ffd700;font-size:14px;">${MIMIC_DATA.normal.name}</b>
+            <span class="codex-badge-mimic">보물상자 위장</span>
           </div>
           <div style="font-size:11px;color:#ccc;margin-top:6px;">
-            일반 상자로 위장하며 접근 시 기습! 경험치 5배 & 골드 6배 대량 드랍.
+            일반 상자로 위장하며 접근 시 기습. EXP 5배 & 골드 6배 드랍.
           </div>
         </div>
         <div class="codex-card" style="border-color:#ffd700;box-shadow:0 0 10px rgba(255,215,0,0.3);">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:24px;">👑</span>
-            <div>
-              <b style="color:#ffd700;font-size:14px;">${MIMIC_DATA.golden.name}</b>
-              <div style="color:#00ffaa;font-size:11px;">[희귀 황금 상자 위장형]</div>
-            </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <b style="color:#ffd700;font-size:14px;">${MIMIC_DATA.golden.name}</b>
+            <span class="codex-badge-mimic" style="border-color:#ffd700;color:#ffd700;">황금상자 위장</span>
           </div>
           <div style="font-size:11px;color:#ccc;margin-top:6px;">
-            찬란한 황금빛 상자로 위장! 경험치 10배, 골드 15배 및 고급 보석 확정 드랍.
+            황금빛 상자로 위장. EXP 10배, 골드 15배 및 고급 보석 확정 드랍.
           </div>
         </div>
       `;
@@ -1828,11 +1833,11 @@ class GameEngine {
         <p style="color:#a496bd;margin-bottom:14px;font-size:13px;">
           마계의 탑을 침공한 마계 생명체들과 각 구역을 지배하는 10대 군주 보스 아카이브입니다.
         </p>
-        <h4 style="color:#ff3344;margin:12px 0 8px 0;font-family:var(--font-title);">👑 10대 구역 군주 보스 (10F ~ 100F)</h4>
+        <div class="codex-section-label" style="color:#ff3344;">10대 구역 군주 보스 (10F ~ 100F)</div>
         <div class="codex-grid" style="margin-bottom:20px;">${bossHtml}</div>
-        <h4 style="color:#00f0ff;margin:14px 0 8px 0;font-family:var(--font-title);">👾 일반 마계 몬스터 (10종)</h4>
+        <div class="codex-section-label" style="color:#00f0ff;">일반 마계 몬스터 (10종)</div>
         <div class="codex-grid" style="margin-bottom:20px;">${mobHtml}</div>
-        <h4 style="color:#ffd700;margin:14px 0 8px 0;font-family:var(--font-title);">📦 신비한 상자 미믹 (2종)</h4>
+        <div class="codex-section-label" style="color:#ffd700;">신비한 상자 미믹 (2종)</div>
         <div class="codex-grid">${mimicHtml}</div>
       `;
     } else {
@@ -1851,29 +1856,28 @@ class GameEngine {
         else if (ach.id === 'boss_slayer') progressStr = `${Math.min(1, this.player.stats_bossKills || 0)} / 1`;
         else if (ach.id === 'mimic_hunter') progressStr = `${Math.min(1, this.player.stats_mimicKills || 0)} / 1`;
         else if (ach.id === 'tower_savior') progressStr = this.player.isTowerDestroyed ? '1 / 1' : '0 / 1';
-        else if (isDone) progressStr = '완료!';
+        else if (isDone) progressStr = '완료';
 
         achRows += `
           <div class="achievement-row ${isDone ? 'done' : ''}">
             <div style="flex:1;">
               <div style="display:flex;align-items:center;gap:8px;">
-                <b style="font-size:15px;color:${isDone ? '#ffd700' : '#fff'};">${ach.name}</b>
-                <span style="font-size:12px;color:${isDone ? '#00ffaa' : '#888'};">[${isDone ? '달성 완료 ✅' : '진행 중 ⏳'}]</span>
+                <b style="font-size:14px;color:${isDone ? '#ffd700' : '#fff'};">${ach.name}</b>
+                <span class="ach-status-tag ${isDone ? 'done' : ''}">${isDone ? '달성 완료' : '진행 중'}</span>
               </div>
-              <div style="font-size:12px;color:#a496bd;margin-top:3px;">${ach.desc}</div>
-              <div style="font-size:12px;color:#ffd700;margin-top:4px;">
-                🎁 보상: <b>${ach.rewardGold.toLocaleString()} G</b> & 칭호 <span class="title-badge">${tDef.icon} ${tDef.name}</span>
-                <span style="color:#aaa;margin-left:8px;">(${tDef.desc})</span>
+              <div style="font-size:12px;color:#a496bd;margin-top:2px;">${ach.desc}</div>
+              <div style="font-size:11px;color:#ffd700;margin-top:3px;">
+                보상: <b>${ach.rewardGold.toLocaleString()} G</b> | 칭호 [${tDef.name}] <span style="color:#aaa;">(${tDef.desc})</span>
               </div>
             </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-              <span style="font-size:12px;color:#8df;font-family:var(--font-title);">${progressStr}</span>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
+              <span style="font-size:11px;color:#8df;">${progressStr}</span>
               ${isDone ? `
-                <button class="game-btn ${isEquipped ? '' : 'gold-btn'}" style="padding:4px 12px;font-size:12px;" onclick="window.game.equipTitle('${ach.titleId}')">
+                <button class="game-btn ${isEquipped ? '' : 'gold-btn'}" style="padding:4px 10px;font-size:11px;" onclick="window.game.equipTitle('${ach.titleId}')">
                   ${isEquipped ? '착용 중' : '칭호 장착'}
                 </button>
               ` : `
-                <button class="game-btn" style="padding:4px 12px;font-size:12px;opacity:0.5;" disabled>미달성</button>
+                <button class="game-btn" style="padding:4px 10px;font-size:11px;opacity:0.4;" disabled>미달성</button>
               `}
             </div>
           </div>
@@ -1881,17 +1885,17 @@ class GameEngine {
       });
 
       container.innerHTML = `
-        <div style="background:rgba(20, 10, 35, 0.95);border:1px solid #d4af37;padding:14px;border-radius:10px;margin-bottom:16px;">
-          <div style="font-size:12px;color:#a496bd;">현재 장착 중인 칭호</div>
-          <div style="font-size:18px;font-weight:900;color:#ffd700;margin:6px 0;">
-            <span class="title-badge" style="font-size:16px;">${curTitle.icon} ${curTitle.name}</span>
+        <div style="background:rgba(20, 10, 35, 0.95);border:1px solid #d4af37;padding:12px;border-radius:10px;margin-bottom:14px;">
+          <div style="font-size:11px;color:#a496bd;">현재 장착 중인 칭호</div>
+          <div style="font-size:17px;font-weight:900;color:#ffd700;margin:4px 0;">
+            [${curTitle.name}]
           </div>
-          <div style="color:#00ffaa;font-size:13px;">고유 스탯 보너스 효과: <b>${curTitle.desc}</b></div>
-          <div style="margin-top:10px;">
-            <button class="game-btn" style="font-size:12px;padding:4px 10px;" onclick="window.game.equipTitle('novice')">기본 칭호 [새내기 모험가]로 변경</button>
+          <div style="color:#00ffaa;font-size:12px;">효과: <b>${curTitle.desc}</b></div>
+          <div style="margin-top:8px;">
+            <button class="game-btn" style="font-size:11px;padding:3px 8px;" onclick="window.game.equipTitle('novice')">기본 칭호 [새내기 모험가]로 변경</button>
           </div>
         </div>
-        <h4 style="color:#ffd700;margin-bottom:10px;font-family:var(--font-title);">🏆 원정 업적 및 칭호 목록</h4>
+        <div class="codex-section-label" style="color:#ffd700;">원정 업적 및 칭호 목록</div>
         <div class="achievement-list">${achRows}</div>
       `;
     }
@@ -1953,23 +1957,23 @@ class GameEngine {
       const card = document.createElement('div');
       card.className = 'pet-card' + (isEquipped ? ' active' : '');
       card.innerHTML = `
-        <div class="pet-card-icon" style="text-shadow:0 0 15px ${pet.color};">${pet.icon}</div>
-        <div class="pet-card-info">
-          <div style="font-size:17px;font-weight:900;color:${pet.color};font-family:var(--font-title);">
-            ${pet.name} ${isEquipped ? '<span style="color:#00ffaa;font-size:12px;margin-left:6px;">[동행 중]</span>' : ''}
+        <div class="pet-card-info" style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:16px;font-weight:900;color:${pet.color};font-family:var(--font-title);">${pet.name}</span>
+            ${isEquipped ? '<span class="pet-badge-active">동행 중</span>' : ''}
           </div>
-          <div style="color:#ffd700;font-size:13px;font-weight:700;margin-top:2px;">
-            ⚡ ${pet.perkName} (쿨다운 ${pet.cd}s)
+          <div style="color:#ffd700;font-size:12px;font-weight:700;margin-top:2px;">
+            ${pet.perkName} (쿨다운 ${pet.cd}초)
           </div>
-          <div style="color:#ccc;font-size:12px;margin-top:4px;line-height:1.4;">
+          <div style="color:#ccc;font-size:11.5px;margin-top:3px;line-height:1.4;">
             ${pet.perkDesc}
           </div>
-          <div style="color:#8df;font-size:12px;margin-top:4px;">
-            🧲 전리품 자동 자석 흡수 반경: <b>${pet.lootRange}px</b>
+          <div style="color:#8df;font-size:11px;margin-top:3px;">
+            자동 루팅 반경: <b>${pet.lootRange}px</b>
           </div>
         </div>
-        <button class="game-btn ${isEquipped ? '' : 'gold-btn'}" onclick="window.game.selectPet('${pet.id}')">
-          ${isEquipped ? '동행 유지 중' : '🐾 동행 시작'}
+        <button class="game-btn ${isEquipped ? '' : 'gold-btn'}" style="padding:6px 12px;font-size:11.5px;flex-shrink:0;" onclick="window.game.selectPet('${pet.id}')">
+          ${isEquipped ? '선택됨' : '동행 선택'}
         </button>
       `;
       container.appendChild(card);
@@ -2111,50 +2115,49 @@ class GameEngine {
       const card = document.createElement('div');
       card.className = 'mercenary-card' + (isActive ? ' active' : '');
       card.innerHTML = `
-        <div class="merc-header" style="display:flex;align-items:center;gap:12px;">
-          <span class="merc-avatar" style="font-size:36px;text-shadow:0 0 15px ${merc.color};">${merc.icon}</span>
-          <div class="merc-info">
-            <b style="color:${merc.color};font-size:17px;font-family:var(--font-title);">${merc.name}</b>
-            <span style="color:#ffd700;font-size:12px;margin-left:6px;">[${merc.title}]</span>
-            <div style="color:#00ffaa;font-size:12px;margin-top:2px;">역할군: <b>${merc.role}</b></div>
+        <div class="merc-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <b style="color:${merc.color};font-size:16px;font-family:var(--font-title);">${merc.name}</b>
+            <span style="color:#a496bd;font-size:12px;margin-left:6px;">[${merc.title}]</span>
           </div>
+          <span class="merc-role-badge">${merc.role}</span>
         </div>
 
-        <div class="merc-body" style="margin-top:10px;font-size:12px;color:#c9bede;line-height:1.5;">
+        <div class="merc-body" style="margin-top:8px;font-size:11.5px;color:#c9bede;line-height:1.4;">
           ${merc.desc}
         </div>
 
-        <div class="merc-stats" style="margin-top:10px;background:rgba(10,5,20,0.6);padding:8px;border-radius:6px;font-size:12px;">
+        <div class="merc-stats" style="margin-top:8px;background:rgba(10,5,20,0.6);padding:8px;border-radius:6px;font-size:11.5px;">
           <div style="display:flex;justify-content:space-between;color:#ff6688;">
             <span>생명력 (HP)</span><b>${((merc.hp || merc.baseHp || 1500)).toLocaleString()}</b>
           </div>
           <div style="display:flex;justify-content:space-between;color:#ffbb00;margin-top:2px;">
-            <span>기본 공격력</span><b>${(merc.atk || merc.baseAtk || 150)}</b>
+            <span>공격력</span><b>${(merc.atk || merc.baseAtk || 150)}</b>
           </div>
           <div style="display:flex;justify-content:space-between;color:#00e5ff;margin-top:2px;">
             <span>방어력</span><b>${(merc.def || merc.baseDef || 50)}</b>
           </div>
-          <div style="color:#ffd700;margin-top:6px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
-            ⚡ <b>고유 스킬:</b> ${merc.skillName} (${merc.skillDesc})
+          <div style="color:#ffd700;margin-top:5px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
+            <b>고유 스킬:</b> ${merc.skillName} <span style="color:#bbb;font-size:11px;">(${merc.skillDesc})</span>
           </div>
         </div>
 
-        <div class="merc-footer" style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="color:#ffd700;font-weight:700;font-size:13px;">
-            ${isHired ? '✅ 계약 체결됨' : `계약금: 🪙 ${merc.cost.toLocaleString()} G`}
+        <div class="merc-footer" style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:#ffd700;font-weight:700;font-size:12.5px;">
+            ${isHired ? '고용 완료' : `계약금: ${merc.cost.toLocaleString()} G`}
           </span>
           <div>
             ${isActive ? `
-              <button class="game-btn" style="border-color:#ff4466;color:#ff99aa;" onclick="window.game.dismissMercenaryAction()">
-                🛑 동행 해제
+              <button class="game-btn" style="border-color:#ff4466;color:#ff99aa;padding:4px 10px;font-size:11.5px;" onclick="window.game.dismissMercenaryAction()">
+                동행 해제
               </button>
             ` : isHired ? `
-              <button class="game-btn gold-btn" onclick="window.game.summonMercenaryAction('${merc.id}')">
-                ⚔️ 동행 출진
+              <button class="game-btn gold-btn" style="padding:4px 10px;font-size:11.5px;" onclick="window.game.summonMercenaryAction('${merc.id}')">
+                동행 출진
               </button>
             ` : `
-              <button class="game-btn gold-btn" onclick="window.game.hireMercenaryAction('${merc.id}')">
-                🤝 용병 고용하기
+              <button class="game-btn gold-btn" style="padding:4px 10px;font-size:11.5px;" onclick="window.game.hireMercenaryAction('${merc.id}')">
+                용병 고용
               </button>
             `}
           </div>
@@ -2215,7 +2218,6 @@ class GameEngine {
     const container = document.getElementById('researchFacilityList');
     if (!matBar || !container) return;
 
-    // 만약 이전 문자열 결합 버그로 runestones가 "5050..." 문자열이 되었다면 복구
     if (typeof this.player.runestones === 'string') {
       const parsedNum = parseInt(this.player.runestones, 10);
       this.player.runestoneCurrency = Math.max(Number(this.player.runestoneCurrency) || 0, isNaN(parsedNum) ? 50 : Math.min(parsedNum, 500));
@@ -2232,14 +2234,14 @@ class GameEngine {
 
     matBar.innerHTML = `
       <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
-        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;">
-          <span>🪙 보유 골드: <b style="color:#ffd700;">${gold.toLocaleString()} G</b></span>
-          <span>🔮 고대 룬스톤: <b style="color:#00e5ff;">${runestones.toLocaleString()} 개</b></span>
-          <span>💎 강화석: <b style="color:#aaccff;">${enhanceStones} 개</b></span>
-          <span>🌌 차원의 파편: <b style="color:#e066ff;">${shards} 개</b></span>
+        <div class="research-mat-strip">
+          <span>골드: <b>${gold.toLocaleString()} G</b></span>
+          <span>고대 룬스톤: <b>${runestones.toLocaleString()}</b></span>
+          <span>강화석: <b>${enhanceStones}</b></span>
+          <span>차원 파편: <b>${shards}</b></span>
         </div>
         <button class="game-btn gold-btn" style="padding:4px 10px;font-size:11px;" onclick="window.game.grantTestResearchMaterials()">
-          🧪 연구 지원 물자 수령 (+50,000G / 룬스톤 50)
+          지원 물자 수령 (+50,000 G / 룬스톤 50)
         </button>
       </div>
     `;
@@ -2259,40 +2261,37 @@ class GameEngine {
       card.className = 'research-card';
       card.innerHTML = `
         <div class="research-header">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <span class="research-icon">${fac.icon}</span>
-            <div>
-              <div style="font-size:16px;font-weight:700;color:#fff;">${fac.name}</div>
-              <div style="font-size:12px;color:#a496bd;">${fac.sub || ''}</div>
-            </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#fff;">${fac.name}</div>
+            <div style="font-size:11.5px;color:#a496bd;">${fac.sub || ''}</div>
           </div>
           <span class="research-level-badge ${isMax ? 'max' : ''}">
-            ${isMax ? '🏆 연구 완료 (MAX)' : `Lv.${curLv} / Lv.${fac.maxLevel}`}
+            ${isMax ? '연구 완료 (MAX)' : `Lv.${curLv} / Lv.${fac.maxLevel}`}
           </span>
         </div>
 
         <div class="research-body">
-          <div style="margin-bottom:6px;">${fac.desc}</div>
-          <div style="background:rgba(20,10,35,0.7);padding:8px;border-radius:6px;border-left:3px solid #ffcc00;">
+          <div style="margin-bottom:6px;font-size:12px;color:#c9bede;">${fac.desc}</div>
+          <div style="background:rgba(20,10,35,0.7);padding:6px 8px;border-radius:6px;border-left:3px solid #ffcc00;font-size:11.5px;">
             <div style="color:#00ffaa;font-weight:600;">현재 효과: ${curLv === 0 ? '미건설 (효과 없음)' : (fac.effectDesc ? fac.effectDesc(curLv) : fac.desc)}</div>
-            ${!isMax ? `<div style="color:#ffbb33;font-size:11px;margin-top:3px;">다음 단계: ${(fac.effectDesc ? fac.effectDesc(nextLv) : fac.desc)}</div>` : ''}
+            ${!isMax ? `<div style="color:#ffbb33;font-size:11px;margin-top:2px;">다음 단계: ${(fac.effectDesc ? fac.effectDesc(nextLv) : fac.desc)}</div>` : ''}
           </div>
         </div>
 
         <div class="research-footer">
-          <div style="font-size:12px;">
+          <div style="font-size:11.5px;">
             ${isMax ? `
-              <span style="color:#00ffaa;font-weight:700;">✨ 최고 연구 등급에 도달했습니다.</span>
+              <span style="color:#00ffaa;font-weight:700;">최고 등급 도달</span>
             ` : `
-              <span style="color:#ffd700;">연구 비용: 🪙 <b>${costGold.toLocaleString()} G</b> + 🔮 <b>${costRune} 룬스톤</b></span>
+              <span style="color:#ffd700;">비용: <b>${costGold.toLocaleString()} G</b> + <b>${costRune} 룬스톤</b></span>
             `}
           </div>
           <div>
             ${isMax ? `
-              <button class="game-btn" disabled style="opacity:0.5;cursor:default;">최대 레벨</button>
+              <button class="game-btn" disabled style="opacity:0.4;padding:4px 10px;font-size:11px;">최대 레벨</button>
             ` : `
-              <button class="game-btn ${canAfford ? 'gold-btn' : ''}" style="${!canAfford ? 'opacity:0.5;' : ''}" onclick="window.game.upgradeResearchAction('${fac.id}')">
-                🔨 연구 및 증축
+              <button class="game-btn ${canAfford ? 'gold-btn' : ''}" style="${!canAfford ? 'opacity:0.4;' : ''}padding:4px 12px;font-size:11.5px;" onclick="window.game.upgradeResearchAction('${fac.id}')">
+                연구 진행
               </button>
             `}
           </div>
@@ -2601,32 +2600,42 @@ class GameEngine {
     container.innerHTML = '';
     const affixes = window.ABYSS_AFFIXES || {};
 
+    const shortSummaries = {
+      corpse_explosion: '처치 시 주변 자폭 폭발',
+      vampiric: '적 공격 시 35% 생명력 흡혈',
+      thunder_storm: '3.5초마다 플레이어 위치 벼락 투하',
+      ironclad: '적 방어력 +50%, 받는 피해 20% 감소',
+      furious_haste: '적 이동속도 +45%, 공격속도 +40%',
+      freezing_aura: '적 주변 진입 시 이속 35% 둔화',
+      magma_geysers: '던전 바닥 주기적 화염 기둥 분출',
+      toxic_contagion: '피격 시 초당 지속 맹독 피해',
+      void_gravity: '8초마다 중심부 심연 중력 홀 개방',
+      empowered_elites: '모든 정예 적 추가 스킬 2종 보유'
+    };
+
     Object.entries(affixes).forEach(([id, def]) => {
       const isActive = this.selectedAffixes.includes(id);
-      const card = document.createElement('div');
-      card.className = `affix-card ${isActive ? 'active' : ''}`;
-      card.onclick = (e) => {
+      const row = document.createElement('div');
+      row.className = `affix-row ${isActive ? 'active' : ''}`;
+      row.onclick = (e) => {
         if (e.target.tagName !== 'INPUT') {
           this.toggleAffixAction(id);
         }
       };
 
-      card.innerHTML = `
-        <div class="affix-card-header">
+      const summary = shortSummaries[id] || def.desc;
+
+      row.innerHTML = `
+        <div class="affix-row-left">
           <input type="checkbox" class="affix-check" id="chk_${id}" ${isActive ? 'checked' : ''} onchange="window.game.toggleAffixAction('${id}')">
-          <span style="font-size:22px;">${def.icon}</span>
-          <div>
-            <b style="color:${def.color};font-size:14px;font-family:var(--font-title);">${def.name}</b>
-          </div>
+          <span class="affix-row-name" style="color:${isActive ? '#ffd700' : '#fff'};">${def.name}</span>
+          <span class="affix-row-desc">${summary}</span>
         </div>
-        <div class="affix-badge-box">
-          <span class="affix-badge-mf">+${def.mfBonus}% MF</span>
-          <span class="affix-badge-gold">+${def.goldBonus}% 골드</span>
-          <span style="color:#ff77ff;background:rgba(255,119,255,0.12);padding:2px 6px;border-radius:4px;">+${def.expBonus}% EXP</span>
+        <div class="affix-row-right">
+          <span class="affix-bonus-tag">+${def.mfBonus}% MF</span>
         </div>
-        <div class="affix-desc">${def.desc}</div>
       `;
-      container.appendChild(card);
+      container.appendChild(row);
     });
 
     this.updateAffixBonusSummary();
