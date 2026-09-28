@@ -23,39 +23,16 @@ window.PLAYER_SPRITES_SD.warrior.src = 'assets/characters/warrior_sd.jpg';
 window.PLAYER_SPRITES_SD.mage.src = 'assets/characters/mage_sd.jpg';
 window.PLAYER_SPRITES_SD.rogue.src = 'assets/portraits/rogue.jpg';
 window.PLAYER_SPRITES_SD.fighter.src = 'assets/portraits/fighter.jpg';
-window.PROCESSED_SD_SPRITES = {};
 
-function getProcessedSDSprite(job) {
-  if (window.PROCESSED_SD_SPRITES[job]) return window.PROCESSED_SD_SPRITES[job];
-  const rawImg = window.PLAYER_SPRITES_SD && window.PLAYER_SPRITES_SD[job];
-  if (!rawImg || !rawImg.complete || rawImg.naturalWidth <= 0) return null;
-
-  try {
-    const c = document.createElement('canvas');
-    c.width = rawImg.naturalWidth;
-    c.height = rawImg.naturalHeight;
-    const cctx = c.getContext('2d');
-    cctx.drawImage(rawImg, 0, 0);
-    const imgData = cctx.getImageData(0, 0, c.width, c.height);
-    const d = imgData.data;
-
-    // 검은색/어두운 배경 크로마키 투명화 및 부드러운 페더링
-    for (let i = 0; i < d.length; i += 4) {
-      const r = d[i], g = d[i+1], b = d[i+2];
-      const maxVal = Math.max(r, g, b);
-      if (maxVal < 28) {
-        d[i+3] = 0;
-      } else if (maxVal < 60) {
-        d[i+3] = Math.floor(((maxVal - 28) / 32) * 255);
-      }
-    }
-    cctx.putImageData(imgData, 0, 0);
-    window.PROCESSED_SD_SPRITES[job] = c;
-    return c;
-  } catch (e) {
-    return null;
-  }
-}
+// 용병 동료 실제 캐릭터 스프라이트 등록 (궁수 카일, 성기사 롤랑, 사제 세리아)
+window.MERCENARY_SPRITES = {
+  kyle: new Image(),
+  roland: new Image(),
+  ceria: new Image()
+};
+window.MERCENARY_SPRITES.kyle.src = 'assets/portraits/kyle.jpg';
+window.MERCENARY_SPRITES.roland.src = 'assets/portraits/roland.jpg';
+window.MERCENARY_SPRITES.ceria.src = 'assets/portraits/ceria.jpg';
 
 class Player {
   constructor(charData) {
@@ -881,23 +858,47 @@ class Player {
     ctx.translate(lungeDist, bobOffset);
     ctx.rotate(tiltAngle);
 
-    // 고화질 크로마키 스프라이트 추출
-    const spr = getProcessedSDSprite(this.job);
-    if (spr) {
-      // 캐릭터 외곽 은은한 아케인 림라이트 글로우
-      const auraColors = {
-        warrior: '#ffd700',
-        mage: '#00f0ff',
-        rogue: '#00ffaa',
-        fighter: '#ff6600'
-      };
-      const aura = auraColors[this.job] || '#ffd700';
+    // 100% 완전 불투명 고화질 3등신 캐릭터 일러스트 렌더링 (투명도 실루엣 현상 완벽 해결)
+    const rawImg = window.PLAYER_SPRITES_SD && window.PLAYER_SPRITES_SD[this.job];
+    const auraColors = {
+      warrior: '#ffd700',
+      mage: '#00f0ff',
+      rogue: '#00ffaa',
+      fighter: '#ff7700'
+    };
+    const aura = auraColors[this.job] || '#ffd700';
+
+    if (rawImg && rawImg.complete && rawImg.naturalWidth > 0) {
+      const sprW = 54;
+      const sprH = 68;
+      const sprX = -sprW / 2;
+      const sprY = -sprH + 8;
 
       ctx.save();
+      // 아치형 히어로 캡슐 클리핑 & 100% 선명 렌더링
+      ctx.beginPath();
+      ctx.roundRect(sprX, sprY, sprW, sprH, [16, 16, 8, 8]);
+      ctx.clip();
+
+      ctx.drawImage(rawImg, sprX, sprY, sprW, sprH);
+
+      // 발 부분 부드러운 다크 그라운드 그라디언트 블렌딩
+      const bGrad = ctx.createLinearGradient(0, sprY + sprH * 0.75, 0, sprY + sprH);
+      bGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      bGrad.addColorStop(1, 'rgba(10,5,20,0.65)');
+      ctx.fillStyle = bGrad;
+      ctx.fillRect(sprX, sprY, sprW, sprH);
+      ctx.restore();
+
+      // 영웅 테두리 골드/직업 오라 림라이트
+      ctx.save();
+      ctx.strokeStyle = aura;
+      ctx.lineWidth = 2.2;
       ctx.shadowColor = aura;
-      ctx.shadowBlur = 12;
-      // 3등신 고화질 일러스트 스프라이트 (가로 56px, 세로 70px 대형 렌더링)
-      ctx.drawImage(spr, -28, -54, 56, 70);
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.roundRect(sprX, sprY, sprW, sprH, [16, 16, 8, 8]);
+      ctx.stroke();
       ctx.restore();
 
       // 공격 액션 시 번쩍이는 전방 궤적 이펙트
@@ -913,8 +914,7 @@ class Player {
         ctx.restore();
       }
     } else {
-      // 이미지 로드 전 0.1초 동안 실루엣
-      ctx.fillStyle = '#6366f1';
+      ctx.fillStyle = aura;
       ctx.beginPath();
       ctx.arc(0, -20, 16, 0, Math.PI * 2);
       ctx.fill();
@@ -1101,48 +1101,78 @@ class Mercenary {
     const sy = this.y - camera.y;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    // 1. 발 아래 부드러운 그림자 타원
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.beginPath();
-    ctx.ellipse(sx, sy + this.radius * 0.7, this.radius * 0.8, this.radius * 0.35, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy + 6, 18, 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 10;
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(sx, sy, this.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // 2. 용병 동료 실제 캐릭터 일러스트 스프라이트 렌더링
+    const mImg = window.MERCENARY_SPRITES && window.MERCENARY_SPRITES[this.id];
+    const mColor = this.color || '#ffd700';
 
-    ctx.font = '18px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(this.icon, sx, sy);
+    if (mImg && mImg.complete && mImg.naturalWidth > 0) {
+      const mW = 46;
+      const mH = 58;
+      const mX = sx - mW / 2;
+      const mY = sy - mH + 6;
 
-    const mName = `${this.name} (${this.role})`;
+      ctx.save();
+      // 아치형 클리핑 & 100% 선명 렌더링
+      ctx.beginPath();
+      ctx.roundRect(mX, mY, mW, mH, [12, 12, 6, 6]);
+      ctx.clip();
+      ctx.drawImage(mImg, mX, mY, mW, mH);
+
+      // 발밑 블렌딩
+      const bg = ctx.createLinearGradient(0, mY + mH * 0.7, 0, mY + mH);
+      bg.addColorStop(0, 'rgba(0,0,0,0)');
+      bg.addColorStop(1, 'rgba(10,5,20,0.65)');
+      ctx.fillStyle = bg;
+      ctx.fillRect(mX, mY, mW, mH);
+      ctx.restore();
+
+      // 동료 테두리 오라
+      ctx.save();
+      ctx.strokeStyle = mColor;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = mColor;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.roundRect(mX, mY, mW, mH, [12, 12, 6, 6]);
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.fillStyle = mColor;
+      ctx.beginPath();
+      ctx.arc(sx, sy - 14, 16, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. 동료 이름 & 역할 태그 (상단 배치)
+    const mName = `[동료] ${this.name} (${this.role})`;
     ctx.font = 'bold 11px "Rajdhani", sans-serif';
-    const mW = ctx.measureText(mName).width;
-    ctx.fillStyle = 'rgba(10, 5, 20, 0.85)';
-    ctx.strokeStyle = this.color;
+    const tagW = ctx.measureText(mName).width;
+    ctx.fillStyle = 'rgba(10, 5, 20, 0.88)';
+    ctx.strokeStyle = mColor;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(sx - mW/2 - 5, sy - this.radius - 23, mW + 10, 15, 3);
+    ctx.roundRect(sx - tagW / 2 - 5, sy - 66, tagW + 10, 15, 3);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(mName, sx, sy - this.radius - 15);
+    ctx.fillText(mName, sx, sy - 58);
 
-    const barW = 36;
+    // 4. 동료 생명력 게이지 바
+    const barW = 38;
     const barH = 4;
     ctx.fillStyle = '#110a18';
-    ctx.fillRect(sx - barW / 2, sy - this.radius - 6, barW, barH);
+    ctx.fillRect(sx - barW / 2, sy - 48, barW, barH);
     ctx.fillStyle = '#00ffaa';
-    ctx.fillRect(sx - barW / 2, sy - this.radius - 6, barW * Math.max(0, this.hp / this.maxHp), barH);
+    ctx.fillRect(sx - barW / 2, sy - 48, barW * Math.max(0, this.hp / this.maxHp), barH);
 
     ctx.restore();
   }

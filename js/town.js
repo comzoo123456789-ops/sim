@@ -1,5 +1,17 @@
 // Town Hub: Tower Background, Blacksmith, Shop, Dummy, and Dungeon Portal
 
+// 마을 NPC 실제 캐릭터 일러스트 스프라이트 등록
+window.NPC_SPRITES = {
+  blacksmith: new Image(),
+  shop: new Image(),
+  research: new Image(),
+  mercenary: new Image()
+};
+window.NPC_SPRITES.blacksmith.src = 'assets/portraits/npc_blacksmith.jpg';
+window.NPC_SPRITES.shop.src = 'assets/portraits/npc_shop.jpg';
+window.NPC_SPRITES.research.src = 'assets/portraits/npc_research.jpg';
+window.NPC_SPRITES.mercenary.src = 'assets/portraits/npc_mercenary.jpg';
+
 class TownManager {
   constructor() {
     this.npcs = [
@@ -246,32 +258,45 @@ class TownManager {
         ctx.arc(0, 0, npc.radius + Math.sin(time * 3) * 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
-      } else if (npc.id === 'blacksmith') {
-        // 대장장이 모루와 붉은 불꽃
-        ctx.fillStyle = '#2d2218';
-        ctx.beginPath();
-        ctx.roundRect(sx - 16, sy - 10, 32, 22, 4);
-        ctx.fill();
-        ctx.strokeStyle = '#e67300';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.font = '16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🔨', sx, sy);
-      } else if (npc.id === 'shop') {
-        // 상인 진열대
-        ctx.fillStyle = '#162b1e';
-        ctx.beginPath();
-        ctx.roundRect(sx - 16, sy - 10, 32, 22, 4);
-        ctx.fill();
-        ctx.strokeStyle = '#2eb85c';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.font = '16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('⚖️', sx, sy);
+      } else if (npc.id === 'blacksmith' || npc.id === 'shop' || npc.id === 'research' || npc.id === 'mercenary') {
+        const npcImg = window.NPC_SPRITES && window.NPC_SPRITES[npc.id];
+        if (npcImg && npcImg.complete && npcImg.naturalWidth > 0) {
+          const nW = 46;
+          const nH = 58;
+          const nX = sx - nW / 2;
+          const nY = sy - nH + 12;
+
+          ctx.save();
+          // 아치형 클리핑 & 100% 선명 렌더링
+          ctx.beginPath();
+          ctx.roundRect(nX, nY, nW, nH, [12, 12, 6, 6]);
+          ctx.clip();
+          ctx.drawImage(npcImg, nX, nY, nW, nH);
+
+          // 발밑 블렌딩
+          const nGrad = ctx.createLinearGradient(0, nY + nH * 0.7, 0, nY + nH);
+          nGrad.addColorStop(0, 'rgba(0,0,0,0)');
+          nGrad.addColorStop(1, 'rgba(10,5,20,0.65)');
+          ctx.fillStyle = nGrad;
+          ctx.fillRect(nX, nY, nW, nH);
+          ctx.restore();
+
+          // NPC 고유 림라이트 오라 테두리
+          ctx.save();
+          ctx.strokeStyle = ringColor;
+          ctx.lineWidth = isNearby ? 2.5 : 1.5;
+          ctx.shadowColor = ringColor;
+          ctx.shadowBlur = isNearby ? 14 : 6;
+          ctx.beginPath();
+          ctx.roundRect(nX, nY, nW, nH, [12, 12, 6, 6]);
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          ctx.fillStyle = npc.color || '#e67300';
+          ctx.beginPath();
+          ctx.arc(sx, sy - 12, 16, 0, Math.PI * 2);
+          ctx.fill();
+        }
       } else if (npc.id === 'dummy') {
         // 훈련용 허수아비
         ctx.fillStyle = '#5c3a21';
@@ -283,40 +308,10 @@ class TownManager {
         ctx.strokeStyle = '#ffd700';
         ctx.lineWidth = 1.5;
         ctx.stroke();
-        ctx.font = '14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🎯', sx, sy - 6);
-      } else if (npc.id === 'mercenary') {
-        // 용병 길드
-        ctx.fillStyle = '#2e2511';
-        ctx.beginPath();
-        ctx.roundRect(sx - 16, sy - 10, 32, 22, 4);
-        ctx.fill();
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.font = '16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🤝', sx, sy);
-      } else if (npc.id === 'research') {
-        // 연구소
-        ctx.fillStyle = '#0f2733';
-        ctx.beginPath();
-        ctx.roundRect(sx - 16, sy - 10, 32, 22, 4);
-        ctx.fill();
-        ctx.strokeStyle = '#00f0ff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.font = '16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🏛️', sx, sy);
       }
 
-      // 3. 네임태그: 깔끔하고 세련된 다크 판타지 배지 (화면 겹침 완전 해결!)
-      const badgeY = sy - npc.radius - 12;
+      // 3. 네임태그: 깔끔하고 세련된 다크 판타지 배지 (NPC 머리 위 배치)
+      const badgeY = npc.id === 'portal' ? sy - npc.radius - 12 : sy - 52;
       ctx.font = 'bold 12px "Cinzel", "Rajdhani", sans-serif';
       const nameW = ctx.measureText(npc.name).width;
 

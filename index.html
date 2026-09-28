@@ -283,11 +283,11 @@
         <div class="modal-body">
           <div id="blacksmithMaterials" style="color:#ffd700;margin-bottom:14px;font-weight:700;"></div>
           <div class="bs-tabs">
-            <button class="game-btn" onclick="window.game.renderBlacksmithUI('enhance')">장비 제련</button>
-            <button class="game-btn" onclick="window.game.renderBlacksmithUI('disassemble')">장비 분해</button>
-            <button class="game-btn gold-btn" onclick="window.game.renderBlacksmithUI('craft')">장비 제작</button>
-            <button class="game-btn" onclick="window.game.renderBlacksmithUI('alchemy')">보석 세공</button>
-            <button class="game-btn" onclick="window.game.renderBlacksmithUI('runestone')">룬스톤 각인</button>
+            <button id="bs_tab_enhance" class="game-btn gold-btn" onclick="window.game.renderBlacksmithUI('enhance')">장비 제련</button>
+            <button id="bs_tab_disassemble" class="game-btn" onclick="window.game.renderBlacksmithUI('disassemble')">장비 분해</button>
+            <button id="bs_tab_craft" class="game-btn" onclick="window.game.renderBlacksmithUI('craft')">장비 제작</button>
+            <button id="bs_tab_alchemy" class="game-btn" onclick="window.game.renderBlacksmithUI('alchemy')">보석 세공</button>
+            <button id="bs_tab_runestone" class="game-btn" onclick="window.game.renderBlacksmithUI('runestone')">룬스톤 각인</button>
           </div>
           <div id="blacksmithContent"></div>
         </div>

@@ -895,64 +895,137 @@ class GameEngine {
     const shards = this.player.materials.dimension_shard || 0;
     const gold = Number(this.player.gold) || 0;
 
+    // 탭 버튼 활성화 상태 갱신
+    ['enhance', 'disassemble', 'craft', 'alchemy', 'runestone'].forEach(t => {
+      const btn = document.getElementById(`bs_tab_${t}`);
+      if (btn) {
+        if (t === tab) btn.classList.add('gold-btn');
+        else btn.classList.remove('gold-btn');
+      }
+    });
+
     matDisplay.innerHTML = `
       <div class="bs-mat-strip">
-        <span>강화석: <b>${stones}</b></span>
-        <span>철광석: <b>${iron}</b></span>
-        <span>차원 파편: <b>${shards}</b></span>
-        <span>골드: <b>${gold.toLocaleString()} G</b></span>
+        <span>강화석: <b>${stones}</b>개</span>
+        <span>철광석: <b>${iron}</b>개</span>
+        <span>차원 파편: <b>${shards}</b>개</span>
+        <span>보유 골드: <b>${gold.toLocaleString()} G</b></span>
       </div>
     `;
 
     if (tab === 'enhance') {
+      const allItems = [
+        ...Object.entries(this.player.equip).filter(([k, it]) => Boolean(it)).map(([k, it]) => ({ item: it, isEquipped: true })),
+        ...this.player.inventory.filter(it => it && (it.type === 'weapon' || it.type === 'armor' || it.type === 'accessory' || it.type === 'shield')).map(it => ({ item: it, isEquipped: false }))
+      ];
+
       container.innerHTML = `
-        <div class="bs-section-title">장비 제련 (+1 ~ +15) - 제련할 장비를 선택하세요</div>
-        <div id="enhanceItemList" class="bs-grid"></div>
-        <div id="enhanceDetailBox" class="bs-action-box" style="margin-top:14px;"></div>
+        <div class="forge-container">
+          <div class="forge-item-picker">
+            <div class="forge-sub-title">제련 대상 장비 선택 (착용 장비 & 가방)</div>
+            <div id="enhanceItemList" class="forge-gear-grid"></div>
+          </div>
+          <div class="forge-chamber" id="enhanceDetailBox">
+            <div class="forge-empty-prompt">
+              목록에서 제련할 장비를 선택하세요.<br>
+              <span style="font-size:11px;color:#c4b5fd;margin-top:6px;display:inline-block;">+15단계까지 제련 가능하며 단계마다 능력치가 +12%씩 대폭 증가합니다.</span>
+            </div>
+          </div>
+        </div>
       `;
+
       const grid = document.getElementById('enhanceItemList');
-      const allItems = [...Object.values(this.player.equip).filter(Boolean), ...this.player.inventory];
-      allItems.forEach(item => {
-        const box = document.createElement('div');
-        box.className = `item-box rarity-${item.rarity}`;
-        box.innerHTML = `<span>${item.icon}</span><small>+${item.enhance} ${item.name}</small>`;
-        box.onclick = () => this.selectEnhanceItem(item);
-        grid.appendChild(box);
-      });
+      if (allItems.length === 0) {
+        grid.innerHTML = '<div style="color:#a496bd;font-size:12px;padding:20px;grid-column:span 4;text-align:center;">제련 가능한 장비가 없습니다.</div>';
+      } else {
+        allItems.forEach(({ item, isEquipped }, idx) => {
+          const card = document.createElement('div');
+          card.className = `forge-gear-card rarity-${item.rarity}`;
+          card.id = `forge_card_${item.id || idx}`;
+          card.innerHTML = `
+            <span class="forge-enhance-badge">+${item.enhance}</span>
+            ${isEquipped ? '<span class="forge-equip-tag">착용</span>' : ''}
+            <div class="forge-gear-icon">${item.icon || '⚔️'}</div>
+            <div class="forge-gear-name" title="${item.name}">${item.name}</div>
+          `;
+          card.onclick = () => this.selectEnhanceItem(item, card.id);
+          grid.appendChild(card);
+        });
+
+        // 첫 번째 아이템 자동 선택
+        if (allItems.length > 0) {
+          const first = allItems[0];
+          this.selectEnhanceItem(first.item, `forge_card_${first.item.id || 0}`);
+        }
+      }
     } else if (tab === 'disassemble') {
+      const dismantleable = this.player.inventory.filter(it => it && (it.type === 'weapon' || it.type === 'armor' || it.type === 'accessory' || it.type === 'shield'));
       container.innerHTML = `
-        <div class="bs-section-title">장비 분해 - 가방에서 분해할 장비를 선택하세요</div>
-        <div id="disassembleItemList" class="bs-grid"></div>
+        <div style="background:rgba(14,8,24,0.9);border:1px solid rgba(160,110,240,0.25);border-radius:8px;padding:12px;margin-top:10px;">
+          <div class="forge-sub-title">장비 분해 (철광석 및 강화석 환원)</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <button class="game-btn" onclick="window.game.disassembleBulk('normal')">일반 등급 일괄 분해</button>
+            <button class="game-btn" onclick="window.game.disassembleBulk('magic')">매직 이하 일괄 분해</button>
+            <button class="game-btn" onclick="window.game.disassembleBulk('rare')">레어 이하 일괄 분해</button>
+          </div>
+          <div id="disassembleItemList" class="forge-gear-grid" style="max-height:300px;"></div>
+        </div>
       `;
       const grid = document.getElementById('disassembleItemList');
-      this.player.inventory.forEach((item, idx) => {
-        const box = document.createElement('div');
-        box.className = `item-box rarity-${item.rarity}`;
-        box.innerHTML = `<span>${item.icon}</span><small>${item.name}</small>`;
-        box.onclick = () => {
-          if (confirm(`[${item.name}]을(를) 분해하시겠습니까?`)) {
-            const res = EquipmentManager.disassembleItem(this.player, idx);
-            alert(res.msg);
-            this.renderBlacksmithUI('disassemble');
-            this.updateHUD();
-          }
-        };
-        grid.appendChild(box);
-      });
+      if (dismantleable.length === 0) {
+        grid.innerHTML = '<div style="color:#a496bd;font-size:12px;padding:24px;text-align:center;grid-column:span 4;">가방에 분해할 장비가 없습니다.</div>';
+      } else {
+        dismantleable.forEach((item, idx) => {
+          const invIdx = this.player.inventory.indexOf(item);
+          const card = document.createElement('div');
+          card.className = `forge-gear-card rarity-${item.rarity}`;
+          card.innerHTML = `
+            <span class="forge-enhance-badge">+${item.enhance}</span>
+            <div class="forge-gear-icon">${item.icon || '⚔️'}</div>
+            <div class="forge-gear-name" title="${item.name}">${item.name}</div>
+          `;
+          card.onclick = () => {
+            if (confirm(`[${item.name}]을(를) 분해하여 철광석과 강화석을 추출하시겠습니까?`)) {
+              const res = EquipmentManager.disassembleItem(this.player, invIdx);
+              alert(res.msg);
+              this.renderBlacksmithUI('disassemble');
+              this.updateHUD();
+            }
+          };
+          grid.appendChild(card);
+        });
+      }
     } else if (tab === 'craft') {
       const cls = CLASSES[this.player.job];
+      const shardOwn = this.player.materials.dimension_shard || 0;
+      const ironOwn = this.player.materials.iron_ore || 0;
+      const goldOwn = Number(this.player.gold) || 0;
+
+      const canUnique = shardOwn >= 5 && ironOwn >= 20 && goldOwn >= 3000;
+      const canEpic = shardOwn >= 15 && ironOwn >= 50 && goldOwn >= 10000;
+
       container.innerHTML = `
-        <div class="bs-section-title">장비 제작 - ${cls.name} 전용 무기 제작</div>
-        <div class="craft-list">
-          <div class="craft-card">
-            <b style="color:#b55fe6;font-size:15px;">[유니크] ${cls.name} 전용 ${cls.weaponName}</b>
-            <p style="color:#c9bede;margin:6px 0;font-size:12px;">필요: 차원의 파편 5, 철광석 20, 3,000 G</p>
-            <button class="game-btn" onclick="window.game.craftItem('unique', 'weapon')">유니크 무기 제작</button>
-          </div>
-          <div class="craft-card" style="margin-top:10px;">
-            <b style="color:#ff9900;font-size:15px;">[에픽] ${cls.name} 전용 ${cls.weaponName}</b>
-            <p style="color:#c9bede;margin:6px 0;font-size:12px;">필요: 차원의 파편 15, 철광석 50, 10,000 G</p>
-            <button class="game-btn gold-btn" onclick="window.game.craftItem('epic', 'weapon')">에픽 무기 제작</button>
+        <div style="background:rgba(14,8,24,0.9);border:1px solid rgba(160,110,240,0.25);border-radius:8px;padding:12px;margin-top:10px;">
+          <div class="forge-sub-title">장비 제작 - ${cls.name} 전용 전설 무기 주조</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:12px;margin-top:10px;">
+            <div class="craft-card" style="background:rgba(25,12,40,0.85);border:1.5px solid #b55fe6;border-radius:8px;padding:14px;">
+              <b style="color:#b55fe6;font-size:15px;display:block;margin-bottom:6px;">[유니크] ${cls.name} 전용 ${cls.weaponName}</b>
+              <div style="font-size:12px;color:#c9bede;margin-bottom:10px;">
+                차원의 파편: <b style="color:${shardOwn >= 5 ? '#00ffaa' : '#ff5566'};">${shardOwn}/5</b> |
+                철광석: <b style="color:${ironOwn >= 20 ? '#00ffaa' : '#ff5566'};">${ironOwn}/20</b> |
+                비용: <b style="color:${goldOwn >= 3000 ? '#ffd700' : '#ff5566'};">3,000 G</b>
+              </div>
+              <button class="game-btn ${canUnique ? 'gold-btn' : ''}" style="width:100%;${canUnique ? '' : 'opacity:0.5;cursor:not-allowed;'}" onclick="window.game.craftItem('unique', 'weapon')">유니크 무기 주조</button>
+            </div>
+            <div class="craft-card" style="background:rgba(35,16,10,0.85);border:1.5px solid #ff9900;border-radius:8px;padding:14px;">
+              <b style="color:#ff9900;font-size:15px;display:block;margin-bottom:6px;">[에픽] ${cls.name} 전용 ${cls.weaponName}</b>
+              <div style="font-size:12px;color:#c9bede;margin-bottom:10px;">
+                차원의 파편: <b style="color:${shardOwn >= 15 ? '#00ffaa' : '#ff5566'};">${shardOwn}/15</b> |
+                철광석: <b style="color:${ironOwn >= 50 ? '#00ffaa' : '#ff5566'};">${ironOwn}/50</b> |
+                비용: <b style="color:${goldOwn >= 10000 ? '#ffd700' : '#ff5566'};">10,000 G</b>
+              </div>
+              <button class="game-btn ${canEpic ? 'gold-btn' : ''}" style="width:100%;${canEpic ? '' : 'opacity:0.5;cursor:not-allowed;'}" onclick="window.game.craftItem('epic', 'weapon')">에픽 무기 주조</button>
+            </div>
           </div>
         </div>
       `;
@@ -963,25 +1036,124 @@ class GameEngine {
     }
   }
 
-  selectEnhanceItem(item) {
+  selectEnhanceItem(item, cardId) {
+    if (cardId) {
+      document.querySelectorAll('.forge-gear-card').forEach(c => c.classList.remove('selected'));
+      const activeCard = document.getElementById(cardId);
+      if (activeCard) activeCard.classList.add('selected');
+    }
+
     const box = document.getElementById('enhanceDetailBox');
+    if (!box) return;
+
     const costGold = Math.floor((item.enhance + 1) * 200 * (1 + item.level / 10));
     const costStones = Math.floor((item.enhance + 1) * 1.5);
+    const successRates = [1.0, 0.95, 0.90, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.25, 0.20, 0.15, 0.10, 0.07, 0.05];
+    const rate = successRates[Math.min(successRates.length - 1, item.enhance)] || 0.05;
+    const ratePct = Math.round(rate * 100);
+
+    const curAtk = item.baseStat.atk || 0;
+    const nextAtk = curAtk ? Math.floor(curAtk * 1.12) : null;
+    const curDef = item.baseStat.def || 0;
+    const nextDef = curDef ? Math.floor(curDef * 1.12) : null;
+
+    const hasGold = this.player.gold >= costGold;
+    const hasStones = (this.player.materials.upgrade_stone || 0) >= costStones;
+    const isMax = item.enhance >= 15;
+    const canEnhance = hasGold && hasStones && !isMax;
 
     box.innerHTML = `
-      <div style="color:${item.color};font-size:16px;"><b>[+${item.enhance} -> +${item.enhance + 1}] ${item.name}</b></div>
-      <p style="margin:8px 0;color:#c9bede;">소모 비용: 🪙 ${costGold.toLocaleString()} G | 💎 강화석 ${costStones}개</p>
-      <button class="game-btn gold-btn" id="btnDoEnhance">제련/강화 시도!</button>
+      <div class="forge-item-header">
+        <div class="forge-item-icon-box" style="border-color:${item.color};">${item.icon || '⚔️'}</div>
+        <div>
+          <div style="font-family:var(--font-title);font-size:15px;color:${item.color};font-weight:800;">
+            ${item.name} <span style="color:#ffd700;margin-left:4px;">[+${item.enhance}]</span>
+          </div>
+          <div style="font-size:11px;color:#c4b5fd;margin-top:2px;">
+            ${item.rarityName} ${item.type === 'weapon' ? '무기' : '방어구'} (장비 레벨 Lv.${item.level})
+          </div>
+        </div>
+      </div>
+
+      <div class="forge-stat-compare-grid">
+        ${curAtk ? `<div>공격력: <b style="color:#fff;">${curAtk}</b> ➔ <b style="color:#00ffcc;">${nextAtk}</b> (+12%)</div>` : ''}
+        ${curDef ? `<div>방어력: <b style="color:#fff;">${curDef}</b> ➔ <b style="color:#00ffcc;">${nextDef}</b> (+12%)</div>` : ''}
+        <div>최대 제련 한계: <b style="color:#ffd700;">+15</b></div>
+        <div>현재 단계: <b style="color:#ffcc00;">+${item.enhance}</b></div>
+      </div>
+
+      <div class="forge-rate-bar">
+        <span>제련 성공 확률:</span>
+        <b style="color:${ratePct >= 80 ? '#00ffaa' : ratePct >= 50 ? '#ffd700' : '#ff3344'};font-size:14px;font-family:var(--font-title);">
+          ${ratePct}% ${ratePct === 100 ? '(안전 제련 보장)' : ''}
+        </b>
+      </div>
+
+      <div class="forge-cost-grid">
+        <div class="forge-cost-chip">
+          <span>필요 골드:</span>
+          <b style="color:${hasGold ? '#ffd700' : '#ff5566'};">${costGold.toLocaleString()} G</b>
+        </div>
+        <div class="forge-cost-chip">
+          <span>필요 강화석:</span>
+          <b style="color:${hasStones ? '#00ffcc' : '#ff5566'};">${costStones}개</b>
+        </div>
+      </div>
+
+      ${isMax ? `
+        <button class="game-btn" disabled style="width:100%;padding:10px;opacity:0.6;">최대 제련 단계 도달 (+15)</button>
+      ` : `
+        <button class="game-btn gold-btn forge-action-btn" id="btnDoEnhance" ${canEnhance ? '' : 'disabled style="opacity:0.5;cursor:not-allowed;"'}>
+          ${canEnhance ? `차원 제련 시도 (+${item.enhance} ➔ +${item.enhance + 1})` : '재료 또는 골드 부족'}
+        </button>
+      `}
     `;
 
-    document.getElementById('btnDoEnhance').onclick = () => {
-      const res = EquipmentManager.enhanceItem(this.player, item);
-      alert(res.msg);
-      this.player.recalculateStats();
+    const enhanceBtn = document.getElementById('btnDoEnhance');
+    if (enhanceBtn && canEnhance) {
+      enhanceBtn.onclick = () => {
+        const res = EquipmentManager.enhanceItem(this.player, item);
+        alert(res.msg);
+        this.player.recalculateStats();
+        this.updateHUD();
+        this.renderBlacksmithUI('enhance');
+        this.selectEnhanceItem(item, cardId);
+      };
+    }
+  }
+
+  disassembleBulk(maxRarity) {
+    const ranks = { normal: 1, magic: 2, rare: 3 };
+    const maxRank = ranks[maxRarity] || 1;
+    let dismantledCount = 0;
+    let totalIron = 0;
+    let totalStones = 0;
+
+    for (let i = this.player.inventory.length - 1; i >= 0; i--) {
+      const it = this.player.inventory[i];
+      if (it && (it.type === 'weapon' || it.type === 'armor' || it.type === 'accessory' || it.type === 'shield')) {
+        const rRank = ranks[it.rarity] || 1;
+        if (rRank <= maxRank) {
+          const ironGain = (it.level || 1) * 2;
+          const stoneGain = it.rarity === 'rare' ? 2 : 1;
+          this.player.materials.iron_ore = (this.player.materials.iron_ore || 0) + ironGain;
+          this.player.materials.upgrade_stone = (this.player.materials.upgrade_stone || 0) + stoneGain;
+          totalIron += ironGain;
+          totalStones += stoneGain;
+          this.player.inventory.splice(i, 1);
+          dismantledCount++;
+        }
+      }
+    }
+
+    if (dismantledCount === 0) {
+      alert('조건에 해당하는 분해 대상 장비가 없습니다.');
+    } else {
+      if (this.soundMgr) this.soundMgr.playDismantle();
+      alert(`[일괄 분해 완료!] 총 ${dismantledCount}개의 장비를 분해하여 철광석 +${totalIron}개, 강화석 +${totalStones}개를 획득했습니다!`);
+      this.renderBlacksmithUI('disassemble');
       this.updateHUD();
-      this.renderBlacksmithUI('enhance');
-      this.selectEnhanceItem(item);
-    };
+    }
   }
 
   craftItem(rarity, type) {
