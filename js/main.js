@@ -430,12 +430,12 @@ class GameEngine {
     }
 
     if (this.state === 'town') {
-      document.getElementById('locationText').innerText = this.player.isTowerDestroyed ? '평화로운 행성 베이스캠프 🕊️' : '외계 행성 베이스캠프';
+      document.getElementById('locationText').innerText = this.player.isTowerDestroyed ? '평화의 캠프' : '베이스캠프';
     } else {
       if (this.dungeonMgr.currentFloor > 100) {
-        document.getElementById('locationText').innerText = `💀 무한 악몽 심연 ${this.dungeonMgr.currentFloor - 100}계층 (${this.dungeonMgr.currentFloor}F)`;
+        document.getElementById('locationText').innerText = `심연 ${this.dungeonMgr.currentFloor}F`;
       } else {
-        document.getElementById('locationText').innerText = `마계의 탑 ${this.dungeonMgr.currentFloor}F`;
+        document.getElementById('locationText').innerText = `마계탑 ${this.dungeonMgr.currentFloor}F`;
       }
     }
     document.getElementById('goldText').innerText = this.player.gold.toLocaleString();

@@ -61,17 +61,17 @@ canvas#view {
    ========================================================= */
 .player-hud-frame {
   position: absolute;
-  top: 20px;
-  left: 24px;
+  top: 14px;
+  left: 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   background: linear-gradient(135deg, rgba(22, 14, 38, 0.92) 0%, rgba(10, 6, 18, 0.85) 100%);
   border: 1px solid rgba(212, 175, 55, 0.35);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75), inset 0 0 15px rgba(180, 120, 255, 0.12);
-  backdrop-filter: blur(16px);
-  padding: 12px 24px 12px 14px;
-  border-radius: 18px 4px 18px 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.75), inset 0 0 10px rgba(180, 120, 255, 0.1);
+  backdrop-filter: blur(12px);
+  padding: 6px 14px 6px 8px;
+  border-radius: 12px;
   z-index: 20;
   pointer-events: auto;
 }
@@ -79,16 +79,17 @@ canvas#view {
 /* 메탈릭 헥사곤 아바타 */
 .player-avatar-ring {
   position: relative;
-  width: 68px;
-  height: 68px;
+  width: 46px;
+  height: 46px;
   background: radial-gradient(circle, #2a1645 0%, #120920 100%);
   border: 2px solid #e6b800;
-  box-shadow: 0 0 16px rgba(230, 184, 0, 0.4), inset 0 0 12px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 10px rgba(230, 184, 0, 0.35), inset 0 0 8px rgba(0, 0, 0, 0.8);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .avatar-img {
@@ -150,10 +151,10 @@ canvas#view {
   color: #120920;
   font-family: var(--font-title);
   font-weight: 900;
-  font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
   border: 1px solid #ffffff;
 }
 
@@ -161,8 +162,8 @@ canvas#view {
 .player-bars-column {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  width: 220px;
+  gap: 3px;
+  width: 145px;
 }
 
 .player-title-row {
@@ -170,31 +171,36 @@ canvas#view {
   justify-content: space-between;
   align-items: baseline;
   font-family: var(--font-title);
+  gap: 6px;
 }
 
 .player-name-text {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 13px;
   color: #ffffff;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .player-job-tag {
-  font-size: 13px;
+  font-size: 10.5px;
   color: #ffcc00;
-  text-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+  text-shadow: 0 0 6px rgba(255, 204, 0, 0.5);
+  white-space: nowrap;
 }
 
 /* 게이지 바 공통 */
 .hud-bar-wrapper {
   position: relative;
   width: 100%;
-  height: 14px;
+  height: 9px;
   background: rgba(0, 0, 0, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.9);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 .hud-bar-fill {
@@ -203,9 +209,9 @@ canvas#view {
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.hp-bar-fill { background: var(--crimson-hp); box-shadow: 0 0 10px rgba(255, 26, 64, 0.6); }
-.mp-bar-fill { background: var(--arcane-mp); box-shadow: 0 0 10px rgba(0, 119, 255, 0.6); }
-.exp-bar-fill { background: var(--exp-bar); height: 4px; }
+.hp-bar-fill { background: var(--crimson-hp); box-shadow: 0 0 6px rgba(255, 26, 64, 0.6); }
+.mp-bar-fill { background: var(--arcane-mp); box-shadow: 0 0 6px rgba(0, 119, 255, 0.6); }
+.exp-bar-fill { background: var(--exp-bar); height: 3px; }
 
 .hud-bar-text {
   position: absolute;
@@ -216,11 +222,12 @@ canvas#view {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 10px;
+  font-size: 7.5px;
   font-weight: 700;
   color: #ffffff;
-  letter-spacing: 0.5px;
-  text-shadow: 0 1px 3px #000;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px #000;
+  line-height: 9px;
 }
 
 /* 상시 자동 패시브 룬 인디케이터 (3개 칩) */
@@ -253,11 +260,11 @@ canvas#view {
    ========================================================= */
 .world-status-widget {
   position: absolute;
-  top: 20px;
-  right: 24px;
+  top: 14px;
+  right: 16px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   z-index: 20;
   pointer-events: auto;
 }
@@ -265,31 +272,31 @@ canvas#view {
 .location-gold-capsule {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   background: linear-gradient(135deg, rgba(22, 14, 38, 0.92) 0%, rgba(10, 6, 18, 0.85) 100%);
   border: 1px solid rgba(212, 175, 55, 0.35);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(16px);
-  padding: 10px 20px;
-  border-radius: 4px 18px 4px 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  padding: 6px 12px;
+  border-radius: 10px;
 }
 
 .location-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   font-family: var(--font-title);
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
 }
 
 .gold-counter {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 15px;
+  gap: 4px;
+  font-size: 12px;
   font-weight: 700;
   color: #ffea79;
 }
@@ -2025,64 +2032,122 @@ canvas#minimapView {
   .dock-label { font-size: 13px !important; font-weight: 700 !important; }
   .dock-key { display: none !important; }
 
-  /* 좌측 상단 프로필 컴팩트화 */
+  /* 좌측 상단 프로필 슬림 컴팩트화 (아이폰/모바일 최적화) */
   .player-hud-frame {
-    top: 10px;
-    left: 10px;
-    padding: 6px 12px 6px 8px;
-    gap: 10px;
-    border-radius: 12px;
-    max-width: calc(100vw - 160px);
+    top: 6px !important;
+    left: 6px !important;
+    padding: 4px 8px 4px 6px !important;
+    gap: 6px !important;
+    border-radius: 8px !important;
+    max-width: 175px !important;
   }
 
   .player-avatar-ring {
-    width: 44px;
-    height: 44px;
+    width: 32px !important;
+    height: 32px !important;
+    border-width: 1.5px !important;
+  }
+
+  .player-level-badge {
+    font-size: 7.5px !important;
+    padding: 0 3px !important;
+    bottom: -2px !important;
+    right: -2px !important;
   }
 
   .player-bars-column {
-    width: 120px;
-    gap: 3px;
+    width: 105px !important;
+    gap: 2px !important;
   }
 
   .player-name-text {
-    font-size: 13px;
+    font-size: 11px !important;
+    max-width: 60px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .title-badge {
+    display: none !important;
   }
 
   .player-job-tag {
-    font-size: 10px;
+    font-size: 8.5px !important;
   }
 
   .hud-bar-wrapper {
-    height: 9px;
+    height: 6px !important;
   }
 
   .hud-bar-text {
-    font-size: 8px;
+    font-size: 6.5px !important;
+    line-height: 6px !important;
   }
 
   .active-passives-deck {
-    display: none;
+    display: none !important;
   }
 
-  /* 우측 상단 월드 위젯 위치 최적화 */
+  /* 우측 상단 월드 위젯 위치 & 크기 슬림화 */
   .world-status-widget {
-    top: 10px;
-    right: 10px;
-    gap: 8px;
+    top: 6px !important;
+    right: 6px !important;
+    gap: 4px !important;
   }
 
   .location-gold-capsule {
-    padding: 6px 12px;
-    border-radius: 10px;
-    gap: 10px;
+    padding: 4px 8px !important;
+    border-radius: 8px !important;
+    gap: 6px !important;
   }
 
-  .location-indicator, .gold-counter {
-    font-size: 12px;
+  .location-indicator {
+    font-size: 10.5px !important;
+    gap: 3px !important;
   }
 
-  .location-indicator span:first-child { display: none; }
+  #locationText {
+    max-width: 65px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+  }
+
+  .gold-counter {
+    font-size: 10.5px !important;
+    gap: 3px !important;
+  }
+
+  .mobile-hamburger-btn {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .hamburger-icon {
+    font-size: 16px !important;
+  }
+
+  .hamburger-label {
+    display: none !important;
+  }
+
+  .recall-rune-btn {
+    padding: 3px 6px !important;
+    font-size: 10px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+  }
+
+  .recall-rune-btn kbd {
+    display: none !important;
+  }
 }
 
 @media (min-width: 901px) {
