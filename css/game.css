@@ -20,6 +20,10 @@
   margin: 0;
   padding: 0;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
 }
@@ -30,6 +34,7 @@ body, html {
   overflow: hidden;
   background-color: var(--bg-dark);
   color: #e6e6f0;
+  touch-action: none;
 }
 
 #app {
@@ -37,6 +42,7 @@ body, html {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  touch-action: none;
 }
 
 canvas#view {
@@ -47,6 +53,7 @@ canvas#view {
   height: 100%;
   display: block;
   cursor: crosshair;
+  touch-action: none;
 }
 
 /* =========================================================
@@ -350,13 +357,58 @@ canvas#minimapView {
   border-color: #ffd700;
 }
 
-.recall-rune-btn kbd {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 11px;
+/* 🍔 우측 상단 햄버거 메뉴 버튼 (모바일/태블릿 전용) */
+.mobile-hamburger-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(45, 20, 75, 0.95) 0%, rgba(18, 8, 35, 0.95) 100%);
+  border: 2px solid #ffd700;
   color: #ffd700;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
+  z-index: 30;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.mobile-hamburger-btn:active {
+  transform: scale(0.95);
+}
+
+.hamburger-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.hamburger-label {
+  font-family: var(--font-title);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 모바일 메뉴 드로어 어두운 백드롭 오버레이 */
+.menu-drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(5, 3, 10, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.menu-drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* =========================================================
@@ -372,6 +424,17 @@ canvas#minimapView {
   gap: 12px;
   z-index: 20;
   pointer-events: auto;
+  transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-header {
+  display: none;
+}
+
+.dock-grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .dock-btn {
@@ -411,6 +474,14 @@ canvas#minimapView {
 
 .dock-key {
   position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 8px;
+  color: #a078ff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1px 3px;
+  border-radius: 3px;
+}
   top: -4px;
   right: -4px;
   background: #110720;
@@ -1869,6 +1940,155 @@ canvas#minimapView {
   gap: 6px;
   align-items: center;
   text-align: center;
+}
+
+/* =========================================================
+   모바일 & 태블릿 (iPhone 13 Pro 등) 반응형 UI/UX 최적화
+   ========================================================= */
+@media (max-width: 900px) {
+  /* 햄버거 메뉴 버튼 노출 */
+  .mobile-hamburger-btn {
+    display: flex !important;
+  }
+
+  /* 사이드 독 -> 모바일 슬라이드 드로어 변환 */
+  .side-nav-dock {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 310px;
+    max-width: 86vw;
+    height: 100vh;
+    transform: none;
+    background: linear-gradient(180deg, rgba(20, 12, 36, 0.98) 0%, rgba(8, 4, 18, 0.99) 100%);
+    border-left: 2px solid #ffd700;
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.92);
+    z-index: 100;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    transition: right 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .side-nav-dock.open {
+    right: 0 !important;
+  }
+
+  .drawer-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  }
+
+  .drawer-title {
+    font-family: var(--font-title);
+    font-size: 18px;
+    color: #ffd700;
+    font-weight: 700;
+  }
+
+  .drawer-close-btn {
+    background: rgba(255, 50, 80, 0.2);
+    border: 1px solid #ff3355;
+    color: #ffffff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .dock-grid-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .dock-btn {
+    width: 100% !important;
+    height: 54px !important;
+    border-radius: 12px !important;
+    flex-direction: row !important;
+    gap: 10px !important;
+    padding: 0 12px !important;
+    justify-content: flex-start !important;
+  }
+
+  .dock-icon { font-size: 22px !important; }
+  .dock-label { font-size: 13px !important; font-weight: 700 !important; }
+  .dock-key { display: none !important; }
+
+  /* 좌측 상단 프로필 컴팩트화 */
+  .player-hud-frame {
+    top: 10px;
+    left: 10px;
+    padding: 6px 12px 6px 8px;
+    gap: 10px;
+    border-radius: 12px;
+    max-width: calc(100vw - 160px);
+  }
+
+  .player-avatar-ring {
+    width: 44px;
+    height: 44px;
+  }
+
+  .player-bars-column {
+    width: 120px;
+    gap: 3px;
+  }
+
+  .player-name-text {
+    font-size: 13px;
+  }
+
+  .player-job-tag {
+    font-size: 10px;
+  }
+
+  .hud-bar-wrapper {
+    height: 9px;
+  }
+
+  .hud-bar-text {
+    font-size: 8px;
+  }
+
+  .active-passives-deck {
+    display: none;
+  }
+
+  /* 우측 상단 월드 위젯 위치 최적화 */
+  .world-status-widget {
+    top: 10px;
+    right: 10px;
+    gap: 8px;
+  }
+
+  .location-gold-capsule {
+    padding: 6px 12px;
+    border-radius: 10px;
+    gap: 10px;
+  }
+
+  .location-indicator, .gold-counter {
+    font-size: 12px;
+  }
+
+  .location-indicator span:first-child { display: none; }
+}
+
+@media (min-width: 901px) {
+  .mobile-hamburger-btn {
+    display: none !important;
+  }
 }
 
 

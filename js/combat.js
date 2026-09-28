@@ -1012,30 +1012,200 @@ class Player {
     ctx.restore();
   }
 
-  // 3등신 다크 판타지 액션 캐릭터 절차적 렌더링 (로그, 파이터 및 스프라이트 폴백)
+  // 3등신 다크 판타지 액션 캐릭터 절차적 렌더링 & 직접 팔/무기 휘두름 모션
   render3HeadHero(ctx, isMoving) {
-    const walkCycle = isMoving ? Math.sin(Date.now() * 0.015) : 0;
+    const stepPhase = isMoving ? Math.sin(Date.now() * 0.018) : 0;
+    const legOffsetL = stepPhase * 5;
+    const legOffsetR = -stepPhase * 5;
 
-    if (this.job === 'rogue') {
-      // --- 3등신 암살자 로그 ---
-      // 다리 & 신발 (1등신 하체)
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(-6 + walkCycle * 2, 8, 4, 10);
-      ctx.fillRect(2 - walkCycle * 2, 8, 4, 10);
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-7 + walkCycle * 2, 15, 6, 4);
-      ctx.fillRect(1 - walkCycle * 2, 15, 6, 4);
+    // 공격 발동 시 무기 & 팔 액션 수치 계산
+    let atkProgress = 0;
+    if (this.atkCooldown > 0) {
+      const maxCd = Math.max(0.18, 0.65 / (this.statCache ? this.statCache.atkSpeed : 1));
+      atkProgress = Math.max(0, Math.min(1, 1 - (this.atkCooldown / maxCd)));
+    }
 
-      // 망토
-      ctx.fillStyle = '#0f172a';
+    if (this.job === 'warrior') {
+      // --- ⚔️ 3등신 강철의 전사 (Warrior) ---
+      // 1. 망토 (뒤쪽 흩날림)
+      ctx.fillStyle = '#450a0a';
       ctx.beginPath();
-      ctx.moveTo(-10, -4);
-      ctx.lineTo(-14, 16);
-      ctx.lineTo(-4, 12);
+      ctx.moveTo(-8, -4);
+      ctx.lineTo(-18 - Math.abs(stepPhase) * 3, 16);
+      ctx.lineTo(2, 14);
       ctx.closePath();
       ctx.fill();
 
-      // 몸통 / 가죽 갑옷 (2등신 몸통)
+      // 2. 다리 & 무장 부츠 (걸음걸이 직접 교차 모션)
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(-7 + legOffsetL, 8, 5, 10);
+      ctx.fillRect(2 + legOffsetR, 8, 5, 10);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-8 + legOffsetL, 15, 7, 4);
+      ctx.fillRect(1 + legOffsetR, 15, 7, 4);
+
+      // 3. 강철 갑옷 몸통 & 견갑
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.roundRect(-9, -4, 18, 14, 3);
+      ctx.fill();
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(-9, -4, 18, 3); // 금빛 단장
+
+      // 4. 뿔 투구 머리 & 붉은 안광
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(0, -12, 12, 0, Math.PI * 2);
+      ctx.fill();
+      // 투구 뿔
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.moveTo(-10, -14);
+      ctx.lineTo(-16, -24);
+      ctx.lineTo(-6, -18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(10, -14);
+      ctx.lineTo(16, -24);
+      ctx.lineTo(6, -18);
+      ctx.closePath();
+      ctx.fill();
+      // 안광 바이저
+      ctx.fillStyle = '#ff2244';
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#ff2244';
+      ctx.fillRect(-5, -13, 10, 3);
+      ctx.shadowBlur = 0;
+
+      // 5. 전사 대검 팔 휘두르기 액션 모션
+      ctx.save();
+      ctx.translate(4, -2);
+      const swordSwing = atkProgress > 0 ? Math.sin(atkProgress * Math.PI) * 2.2 - 0.8 : 0.2;
+      ctx.rotate(swordSwing);
+
+      // 팔
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, -3, 14, 6);
+
+      // 대검 날 & 자루
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(14, -2, 6, 4);
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(20, -5, 3, 10);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.moveTo(23, -4);
+      ctx.lineTo(46, -2);
+      ctx.lineTo(52, 0);
+      ctx.lineTo(46, 2);
+      ctx.lineTo(23, 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // 검기 궤적 이펙트
+      if (atkProgress > 0 && atkProgress < 0.8) {
+        ctx.strokeStyle = 'rgba(255, 50, 80, 0.7)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, 48, -0.6, 0.8);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+    } else if (this.job === 'mage') {
+      // --- 🪄 3등신 비전의 마법사 (Mage) ---
+      // 1. 비전 로브 바닥 펄럭임
+      ctx.fillStyle = '#2e1065';
+      ctx.beginPath();
+      ctx.moveTo(-10, 0);
+      ctx.lineTo(-14 + legOffsetL, 18);
+      ctx.lineTo(14 + legOffsetR, 18);
+      ctx.lineTo(10, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. 신발 (로브 아래 살짝 보임)
+      ctx.fillStyle = '#581c87';
+      ctx.fillRect(-6 + legOffsetL, 12, 4, 6);
+      ctx.fillRect(2 + legOffsetR, 12, 4, 6);
+
+      // 3. 로브 상의 & 금빛 장식
+      ctx.fillStyle = '#4c1d95';
+      ctx.beginPath();
+      ctx.roundRect(-8, -4, 16, 14, 3);
+      ctx.fill();
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(-2, -4, 4, 14);
+
+      // 4. 후드 머리 & 영롱한 시안색 안광
+      ctx.fillStyle = '#1e1b4b';
+      ctx.beginPath();
+      ctx.arc(0, -12, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#00f0ff';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#00f0ff';
+      ctx.fillRect(-4, -13, 3, 3);
+      ctx.fillRect(2, -13, 3, 3);
+      ctx.shadowBlur = 0;
+
+      // 5. 마법 지팡이 캐스팅 & 영창 모션
+      ctx.save();
+      ctx.translate(4, -2);
+      const castThrust = atkProgress > 0 ? Math.sin(atkProgress * Math.PI) * 14 : 0;
+      const castAngle = atkProgress > 0 ? -Math.sin(atkProgress * Math.PI) * 0.5 : 0.1;
+      ctx.translate(castThrust, 0);
+      ctx.rotate(castAngle);
+
+      // 팔
+      ctx.fillStyle = '#581c87';
+      ctx.fillRect(0, -3, 12, 5);
+
+      // 지팡이
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(12, -2, 28, 4);
+      // 마법 수정 구체
+      ctx.fillStyle = '#00ffff';
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = '#00ffff';
+      ctx.beginPath();
+      ctx.arc(42, 0, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (atkProgress > 0) {
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(42, 0, 12 + atkProgress * 10, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+    } else if (this.job === 'rogue') {
+      // --- 🗡️ 3등신 그림자 암살자 (Rogue) ---
+      // 1. 망토
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.moveTo(-10, -4);
+      ctx.lineTo(-14 - Math.abs(stepPhase) * 2, 16);
+      ctx.lineTo(-2, 12);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. 가죽 신발 (걸음걸이 직접 모션)
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-6 + legOffsetL, 8, 4, 10);
+      ctx.fillRect(2 + legOffsetR, 8, 4, 10);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-7 + legOffsetL, 15, 6, 4);
+      ctx.fillRect(1 + legOffsetR, 15, 6, 4);
+
+      // 3. 가죽 갑옷 몸통
       ctx.fillStyle = '#334155';
       ctx.beginPath();
       ctx.roundRect(-8, -4, 16, 14, 3);
@@ -1044,19 +1214,18 @@ class Player {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // 머리 / 그림자 두건 (3등신 머리)
+      // 4. 그림자 두건 & 에메랄드 안광
       ctx.fillStyle = '#090d16';
       ctx.beginPath();
       ctx.arc(0, -12, 12, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
       ctx.moveTo(-12, -12);
-      ctx.lineTo(0, -25);
+      ctx.lineTo(0, -24);
       ctx.lineTo(12, -12);
       ctx.closePath();
       ctx.fill();
 
-      // 빛나는 에메랄드 안광
       ctx.fillStyle = '#00ffaa';
       ctx.shadowBlur = 8;
       ctx.shadowColor = '#00ffaa';
@@ -1064,32 +1233,45 @@ class Player {
       ctx.fillRect(2, -13, 3, 2);
       ctx.shadowBlur = 0;
 
-      // 양손 독단검
+      // 5. 양손 독단검 교차 찌르기 모션
+      const stabL = atkProgress > 0 ? Math.sin(atkProgress * Math.PI * 2) * 12 : 0;
+      const stabR = atkProgress > 0 ? Math.cos(atkProgress * Math.PI * 2) * 10 : 0;
+
+      // 오른손 단검
+      ctx.save();
+      ctx.translate(6 + stabL, -3);
       ctx.fillStyle = '#00ffaa';
       ctx.beginPath();
-      ctx.moveTo(8, -2);
-      ctx.lineTo(18, 4);
-      ctx.lineTo(14, 8);
+      ctx.moveTo(0, -2);
+      ctx.lineTo(16, 0);
+      ctx.lineTo(0, 2);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
+
+      // 왼손 단검
+      ctx.save();
+      ctx.translate(6 + stabR, 5);
+      ctx.fillStyle = '#00ffaa';
       ctx.beginPath();
-      ctx.moveTo(-10, 2);
-      ctx.lineTo(-18, 8);
-      ctx.lineTo(-14, 12);
+      ctx.moveTo(0, -2);
+      ctx.lineTo(14, 0);
+      ctx.lineTo(0, 2);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
 
-    } else if (this.job === 'fighter') {
-      // --- 3등신 권법가 파이터 ---
-      // 다리 & 무도화 (1등신 하체)
+    } else {
+      // --- 🥊 3등신 권법가 파이터 (Fighter) ---
+      // 1. 다리 & 무도화 (걸음걸이 직접 모션)
       ctx.fillStyle = '#78350f';
-      ctx.fillRect(-7 + walkCycle * 2, 8, 5, 10);
-      ctx.fillRect(2 - walkCycle * 2, 8, 5, 10);
+      ctx.fillRect(-7 + legOffsetL, 8, 5, 10);
+      ctx.fillRect(2 + legOffsetR, 8, 5, 10);
       ctx.fillStyle = '#451a03';
-      ctx.fillRect(-8 + walkCycle * 2, 15, 7, 4);
-      ctx.fillRect(1 - walkCycle * 2, 15, 7, 4);
+      ctx.fillRect(-8 + legOffsetL, 15, 7, 4);
+      ctx.fillRect(1 + legOffsetR, 15, 7, 4);
 
-      // 도복 몸통 (2등신 몸통)
+      // 2. 도복 몸통 & 붉은 띠
       ctx.fillStyle = '#b45309';
       ctx.beginPath();
       ctx.roundRect(-9, -4, 18, 14, 3);
@@ -1097,21 +1279,22 @@ class Player {
       ctx.fillStyle = '#dc2626';
       ctx.fillRect(-9, 4, 18, 4);
 
-      // 머리 & 헤어밴드 (3등신 머리)
+      // 3. 머리 & 흩날리는 붉은 헤어밴드
       ctx.fillStyle = '#451a03';
       ctx.beginPath();
       ctx.arc(0, -12, 11, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#ef4444';
       ctx.fillRect(-11, -15, 22, 4);
+      // 헤어밴드 끈 흩날림
       ctx.beginPath();
       ctx.moveTo(-10, -13);
-      ctx.lineTo(-18, -8);
+      ctx.lineTo(-18 - Math.abs(stepPhase) * 3, -8);
       ctx.lineTo(-16, -14);
       ctx.closePath();
       ctx.fill();
 
-      // 강렬한 눈매
+      // 눈매
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-6, -11, 4, 2);
       ctx.fillRect(2, -11, 4, 2);
@@ -1119,43 +1302,19 @@ class Player {
       ctx.fillRect(-4, -11, 2, 2);
       ctx.fillRect(4, -11, 2, 2);
 
-      // 타오르는 기공 너클 권갑
+      // 4. 연타 파이어 정권 지르기 모션
+      const punchDist = atkProgress > 0 ? Math.sin(atkProgress * Math.PI * 2) * 16 : 0;
+
+      ctx.save();
+      ctx.translate(6 + punchDist, 2);
       ctx.fillStyle = '#ff6600';
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 12;
       ctx.shadowColor = '#ff6600';
       ctx.beginPath();
-      ctx.arc(10, 4, 6, 0, Math.PI * 2);
-      ctx.arc(-10, 6, 5, 0, Math.PI * 2);
+      ctx.arc(6, 0, 7, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-
-    } else if (this.job === 'warrior') {
-      ctx.fillStyle = '#475569';
-      ctx.fillRect(-6, 8, 4, 10);
-      ctx.fillRect(2, 8, 4, 10);
-      ctx.fillStyle = '#334155';
-      ctx.beginPath();
-      ctx.roundRect(-9, -4, 18, 14, 3);
-      ctx.fill();
-      ctx.fillStyle = '#1e293b';
-      ctx.beginPath();
-      ctx.arc(0, -12, 12, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#ff3344';
-      ctx.fillRect(-5, -13, 10, 2);
-    } else {
-      ctx.fillStyle = '#3b0764';
-      ctx.fillRect(-6, 8, 12, 11);
-      ctx.fillStyle = '#581c87';
-      ctx.beginPath();
-      ctx.roundRect(-8, -4, 16, 14, 3);
-      ctx.fill();
-      ctx.fillStyle = '#2e1065';
-      ctx.beginPath();
-      ctx.arc(0, -12, 12, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#00ffff';
-      ctx.fillRect(-4, -13, 8, 2);
+      ctx.restore();
     }
   }
 }

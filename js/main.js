@@ -233,21 +233,65 @@ class GameEngine {
   }
 
   setupUIBindings() {
-    document.getElementById('btnSideBag').onclick = () => this.toggleModal('bag');
-    document.getElementById('btnSideSkills').onclick = () => this.toggleModal('skills');
-    document.getElementById('btnSideBlacksmith').onclick = () => this.openBlacksmithModal();
-    document.getElementById('btnSideShop').onclick = () => this.openShopModal();
-    document.getElementById('btnSideCodex').onclick = () => this.toggleModal('codex');
-    document.getElementById('btnSidePet').onclick = () => this.toggleModal('pet');
+    // 🍔 모바일 햄버거 드로어 버튼 바인딩
+    const hamburgerBtn = document.getElementById('btnMobileHamburger');
+    const sideDock = document.getElementById('sideNavDock');
+    const backdrop = document.getElementById('menuDrawerBackdrop');
+    const closeDrawerBtn = document.getElementById('btnCloseMobileDrawer');
+
+    const closeMobileDrawer = () => {
+      if (sideDock) sideDock.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('open');
+    };
+
+    const openMobileDrawer = () => {
+      if (sideDock) sideDock.classList.add('open');
+      if (backdrop) backdrop.classList.add('open');
+    };
+
+    if (hamburgerBtn) {
+      hamburgerBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (sideDock && sideDock.classList.contains('open')) {
+          closeMobileDrawer();
+        } else {
+          openMobileDrawer();
+        }
+      };
+    }
+    if (closeDrawerBtn) closeDrawerBtn.onclick = closeMobileDrawer;
+    if (backdrop) backdrop.onclick = closeMobileDrawer;
+
+    // 📱 iOS/Safari 모바일 더블터치 화면 확대 방지
+    let lastTouchTime = 0;
+    document.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTouchTime <= 300) {
+        if (e.target && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+        }
+      }
+      lastTouchTime = now;
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+    document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+
+    document.getElementById('btnSideBag').onclick = () => { closeMobileDrawer(); this.toggleModal('bag'); };
+    document.getElementById('btnSideSkills').onclick = () => { closeMobileDrawer(); this.toggleModal('skills'); };
+    document.getElementById('btnSideBlacksmith').onclick = () => { closeMobileDrawer(); this.openBlacksmithModal(); };
+    document.getElementById('btnSideShop').onclick = () => { closeMobileDrawer(); this.openShopModal(); };
+    document.getElementById('btnSideCodex').onclick = () => { closeMobileDrawer(); this.toggleModal('codex'); };
+    document.getElementById('btnSidePet').onclick = () => { closeMobileDrawer(); this.toggleModal('pet'); };
     const btnMerc = document.getElementById('btnSideMercenary');
-    if (btnMerc) btnMerc.onclick = () => this.toggleModal('mercenary');
+    if (btnMerc) btnMerc.onclick = () => { closeMobileDrawer(); this.toggleModal('mercenary'); };
     const btnRes = document.getElementById('btnSideResearch');
-    if (btnRes) btnRes.onclick = () => this.toggleModal('research');
+    if (btnRes) btnRes.onclick = () => { closeMobileDrawer(); this.toggleModal('research'); };
     const btnRelics = document.getElementById('btnSideRelics');
-    if (btnRelics) btnRelics.onclick = () => this.toggleModal('relic_deck');
+    if (btnRelics) btnRelics.onclick = () => { closeMobileDrawer(); this.toggleModal('relic_deck'); };
     const btnAffix = document.getElementById('btnSideAffix');
-    if (btnAffix) btnAffix.onclick = () => this.toggleModal('affix');
-    document.getElementById('btnSideAccount').onclick = () => this.toggleModal('account');
+    if (btnAffix) btnAffix.onclick = () => { closeMobileDrawer(); this.toggleModal('affix'); };
+    document.getElementById('btnSideAccount').onclick = () => { closeMobileDrawer(); this.toggleModal('account'); };
 
     document.getElementById('btnSideSound').onclick = () => {
       const isMuted = !this.soundMgr.isMuted;

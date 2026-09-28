@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>마계의 탑: 차원의 심연 (Abyss Tower ARPG)</title>
   <meta name="description" content="외계 행성에 솟아오른 100층 마계의 탑을 무너뜨려 평화를 되찾는 2D 실시간 핵앤슬래시 ARPG">
   <link rel="stylesheet" href="css/game.css">
@@ -11,6 +11,9 @@
   <div id="app">
     <!-- 메인 게임 렌더 캔버스 -->
     <canvas id="view"></canvas>
+
+    <!-- 모바일 메뉴 드로어 어두운 백드롭 레이어 -->
+    <div id="menuDrawerBackdrop" class="menu-drawer-backdrop"></div>
 
     <!-- 1. 좌측 상단 플레이어 프로필 허브 (Player Frame HUD) -->
     <div class="player-hud-frame">
@@ -39,7 +42,7 @@
         </div>
 
         <!-- 경험치 미세 게이지 (EXP) -->
-        <div class="hud-bar-wrapper" style="height:4px;" title="경험치 (EXP)">
+        <div class="hud-bar-wrapper" style="height:3px;" title="경험치 (EXP)">
           <div id="expBarFill" class="hud-bar-fill exp-bar-fill" style="width: 0%;"></div>
         </div>
 
@@ -48,7 +51,7 @@
       </div>
     </div>
 
-    <!-- 2. 우측 상단 월드 나침반 & 골드/귀환 위젯 -->
+    <!-- 2. 우측 상단 월드 나침반 & 골드/귀환 & 모바일 햄버거 위젯 -->
     <div class="world-status-widget">
       <div class="location-gold-capsule">
         <div class="location-indicator">
@@ -60,7 +63,13 @@
       </div>
 
       <button id="btnRecallRune" class="recall-rune-btn" style="display:none;" title="마을 즉시 귀환 (T)">
-        <span>🏛️ 차원 귀환</span><kbd>T</kbd>
+        <span>🏛️ 귀환</span><kbd>T</kbd>
+      </button>
+
+      <!-- 🍔 오른쪽 상단 햄버거 메뉴 버튼 (모바일/태블릿용) -->
+      <button id="btnMobileHamburger" class="mobile-hamburger-btn" title="전체 메뉴 (Menu)">
+        <span class="hamburger-icon">☰</span>
+        <span class="hamburger-label">메뉴</span>
       </button>
     </div>
 
@@ -73,75 +82,83 @@
       <canvas id="minimapView" width="140" height="88"></canvas>
     </div>
 
-    <!-- 3. 우측 사이드 플로팅 독 (Floating Navigation Dock) -->
-    <div class="side-nav-dock">
-      <button id="btnSideBag" class="dock-btn" title="소지품 가방 및 장비창 (I)">
-        <span class="dock-icon">🎒</span>
-        <span class="dock-label">가방</span>
-        <span class="dock-key">I</span>
-      </button>
+    <!-- 3. 우측 사이드 플로팅 독 (모바일 슬라이드 드로어 메뉴) -->
+    <div id="sideNavDock" class="side-nav-dock">
+      <div class="drawer-header">
+        <span class="drawer-title">📜 모험 메뉴</span>
+        <button id="btnCloseMobileDrawer" class="drawer-close-btn" title="닫기">✕</button>
+      </div>
 
-      <button id="btnSideSkills" class="dock-btn" title="스킬북 & 재주 트리 (K)">
-        <span class="dock-icon">📜</span>
-        <span class="dock-label">스킬</span>
-        <span class="dock-key">K</span>
-      </button>
+      <div class="dock-grid-container">
+        <button id="btnSideBag" class="dock-btn" title="소지품 가방 및 장비창 (I)">
+          <span class="dock-icon">🎒</span>
+          <span class="dock-label">가방</span>
+          <span class="dock-key">I</span>
+        </button>
 
-      <button id="btnSideBlacksmith" class="dock-btn" title="대장장이 (강화 / 분해 / 제작)">
-        <span class="dock-icon">🔨</span>
-        <span class="dock-label">대장간</span>
-      </button>
+        <button id="btnSideSkills" class="dock-btn" title="스킬북 & 재주 트리 (K)">
+          <span class="dock-icon">📜</span>
+          <span class="dock-label">스킬</span>
+          <span class="dock-key">K</span>
+        </button>
 
-      <button id="btnSideShop" class="dock-btn" title="상인 엘리아의 보급 상점">
-        <span class="dock-icon">⚖️</span>
-        <span class="dock-label">상점</span>
-      </button>
+        <button id="btnSideBlacksmith" class="dock-btn" title="대장장이 (강화 / 분해 / 제작)">
+          <span class="dock-icon">🔨</span>
+          <span class="dock-label">대장간</span>
+        </button>
 
-      <button id="btnSideCodex" class="dock-btn" title="도감 & 업적 / 칭호 (L)">
-        <span class="dock-icon">📖</span>
-        <span class="dock-label">도감/업적</span>
-        <span class="dock-key">L</span>
-      </button>
+        <button id="btnSideShop" class="dock-btn" title="상인 엘리아의 보급 상점">
+          <span class="dock-icon">⚖️</span>
+          <span class="dock-label">상점</span>
+        </button>
 
-      <button id="btnSidePet" class="dock-btn" title="동행 펫 & 자동 루팅 서포터 (P)">
-        <span class="dock-icon">🐾</span>
-        <span class="dock-label">동행펫</span>
-        <span class="dock-key">P</span>
-      </button>
+        <button id="btnSideCodex" class="dock-btn" title="도감 & 업적 / 칭호 (L)">
+          <span class="dock-icon">📖</span>
+          <span class="dock-label">도감/업적</span>
+          <span class="dock-key">L</span>
+        </button>
 
-      <button id="btnSideMercenary" class="dock-btn" title="차원 용병단 고용 & 관리 (M)">
-        <span class="dock-icon">🤝</span>
-        <span class="dock-label">용병단</span>
-        <span class="dock-key">M</span>
-      </button>
+        <button id="btnSidePet" class="dock-btn" title="동행 펫 & 자동 루팅 서포터 (P)">
+          <span class="dock-icon">🐾</span>
+          <span class="dock-label">동행펫</span>
+          <span class="dock-key">P</span>
+        </button>
 
-      <button id="btnSideResearch" class="dock-btn" title="마을 기지 연구소 & 시설 건설 (R)">
-        <span class="dock-icon">🏛️</span>
-        <span class="dock-label">연구소</span>
-        <span class="dock-key">R</span>
-      </button>
+        <button id="btnSideMercenary" class="dock-btn" title="차원 용병단 고용 & 관리 (M)">
+          <span class="dock-icon">🤝</span>
+          <span class="dock-label">용병단</span>
+          <span class="dock-key">M</span>
+        </button>
 
-      <button id="btnSideRelics" class="dock-btn" title="보유 중인 고대 유물 덱 (U)">
-        <span class="dock-icon">📜</span>
-        <span class="dock-label">유물덱</span>
-        <span class="dock-key">U</span>
-      </button>
+        <button id="btnSideResearch" class="dock-btn" title="마을 기지 연구소 & 시설 건설 (R)">
+          <span class="dock-icon">🏛️</span>
+          <span class="dock-label">연구소</span>
+          <span class="dock-key">R</span>
+        </button>
 
-      <button id="btnSideAffix" class="dock-btn" title="무한 악몽 심연 101F+ 어픽스 설정 (Y)">
-        <span class="dock-icon">🌌</span>
-        <span class="dock-label">심연어픽스</span>
-        <span class="dock-key">Y</span>
-      </button>
+        <button id="btnSideRelics" class="dock-btn" title="보유 중인 고대 유물 덱 (U)">
+          <span class="dock-icon">📜</span>
+          <span class="dock-label">유물덱</span>
+          <span class="dock-key">U</span>
+        </button>
 
-      <button id="btnSideAccount" class="dock-btn" title="계정 및 캐릭터 슬롯 관리">
-        <span class="dock-icon">👤</span>
-        <span class="dock-label">계정</span>
-      </button>
+        <button id="btnSideAffix" class="dock-btn" title="무한 악몽 심연 101F+ 어픽스 설정 (Y)">
+          <span class="dock-icon">⚙️</span>
+          <span class="dock-label">어픽스</span>
+          <span class="dock-key">Y</span>
+        </button>
 
-      <button id="btnSideSound" class="dock-btn" title="사운드 온/오프">
-        <span id="soundIcon" class="dock-icon">🔊</span>
-        <span class="dock-label">소리</span>
-      </button>
+        <button id="btnSideAccount" class="dock-btn" title="계정 및 캐릭터 슬롯 관리">
+          <span class="dock-icon">👤</span>
+          <span class="dock-label">계정</span>
+        </button>
+
+        <button id="btnSideSound" class="dock-btn" title="사운드 온/오프">
+          <span id="soundIcon" class="dock-icon">🔊</span>
+          <span class="dock-label">소리</span>
+        </button>
+      </div>
+    </div>
     </div>
 
     <!-- 4번: 던전 차원 균열 돌발 이벤트 HUD 위젯 -->
