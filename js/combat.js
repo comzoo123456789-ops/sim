@@ -809,6 +809,12 @@ class Player {
       this.y += (my / len) * spd;
     }
 
+    // 맵 경계 제한 (마을 맵 이탈 방지)
+    if (window.game && window.game.state === 'town') {
+      this.x = Math.max(120, Math.min(680, this.x));
+      this.y = Math.max(160, Math.min(600, this.y));
+    }
+
     // 벽 충돌 방지 (던전 모드)
     if (walls && walls.length > 0) {
       walls.forEach(w => {
@@ -830,50 +836,22 @@ class Player {
     }
   }
 
-  // 렌더링 (A: 무기 외형 렌더링 & +10강 아케인 오라 이펙트 탑재)
+  // 렌더링 (퍼지는 O 완전 제거, 3등신 액션 캐릭터 일체형 렌더링)
   render(ctx, camera) {
     const sx = this.x - camera.x;
     const sy = this.y - camera.y;
 
     ctx.save();
 
-    // 1. +10강 이상 착용 시 캐릭터 발밑 & 바디 아케인 오라
-    const isHighEnhanced = (this.equip.weapon && this.equip.weapon.enhance >= 10);
-    if (isHighEnhanced) {
-      const time = Date.now() * 0.004;
-      ctx.save();
-      ctx.translate(sx, sy);
-      ctx.rotate(time);
-
-      // 회전하는 황금 마법진 링
-      ctx.strokeStyle = 'rgba(255, 215, 0, 0.45)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 14, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // 바닥 타오르는 룬 불꽃
-      const grad = ctx.createRadialGradient(0, 0, this.radius * 0.5, 0, 0, this.radius + 18);
-      grad.addColorStop(0, 'rgba(255, 200, 0, 0.25)');
-      grad.addColorStop(0.7, 'rgba(255, 100, 0, 0.15)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 18, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-    }
-
-    // 2. 캐릭터 발 밑 사실적 다크 판타지 타원형 그림자
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    // 1. 발 밑 깔끔한 타원형 그림자
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.beginPath();
-    ctx.ellipse(sx, sy + 18, 20, 8, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy + 22, 18, 7, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 3. 3등신 다크 판타지 액션 RPG 캐릭터 모델 렌더링 (Diablo / POE 스타일)
+    // 2. 3등신 다크 판타지 액션 RPG 캐릭터 모델 렌더링
     ctx.save();
-    // 마우스 조준 방향에 따른 좌우 반전
+    // 마우스/조이스틱 조준 방향에 따른 좌우 반전
     const isFacingLeft = Math.cos(this.angle) < 0;
     ctx.translate(sx, sy);
     if (isFacingLeft) {
@@ -881,133 +859,49 @@ class Player {
     }
 
     // 이동 중 상하 바운스 보빙 애니메이션
-    const isMoving = (window.game && window.game.input && (window.game.input.w || window.game.input.a || window.game.input.s || window.game.input.d));
-    const bobOffset = isMoving ? Math.sin(Date.now() * 0.015) * 2.5 : Math.sin(Date.now() * 0.003) * 0.8;
+    const isMoving = (window.game && window.game.input && (window.game.input.w || window.game.input.a || window.game.input.s || window.game.input.d || window.game.input.joyX || window.game.input.joyY));
+    const bobOffset = isMoving ? Math.sin(Date.now() * 0.016) * 2.5 : Math.sin(Date.now() * 0.003) * 0.8;
     ctx.translate(0, bobOffset);
 
-    // 고해상도 3등신 스프라이트 (워리어 / 메이지) 또는 정밀 3등신 모델 (로그 / 파이터)
-    const sdSprite = getProcessedSDSprite(this.job);
-    if (sdSprite) {
-      const sprSize = 56;
-      ctx.drawImage(sdSprite, -sprSize / 2, -sprSize / 2 - 2, sprSize, sprSize);
-    } else {
-      this.render3HeadHero(ctx, isMoving);
-    }
+    // 1.3배 확대하여 시원하고 또렷하게 캐릭터 표출
+    ctx.scale(1.3, 1.3);
+
+    // 모든 직업 일관 3등신 액션 렌더링
+    this.render3HeadHero(ctx, isMoving);
 
     ctx.restore();
 
-    // 🛡️ 패링 방어막 렌더링
+    // 3. 패링 방어막 렌더링
     if (this.isParrying) {
       ctx.save();
       ctx.strokeStyle = '#ffd700';
-      ctx.lineWidth = 3.5;
-      ctx.shadowBlur = 18;
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 14;
       ctx.shadowColor = '#ffd700';
-      ctx.beginPath();
-      ctx.arc(sx, sy, this.radius + 14, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(255, 215, 0, 0.22)';
-      ctx.beginPath();
-      ctx.arc(sx, sy, this.radius + 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // ⚔️ 카운터 스트라이크 준비 오라 렌더링
-    if (this.buffs && this.buffs.counterStrike > 0) {
-      ctx.save();
-      ctx.strokeStyle = '#ff3344';
-      ctx.lineWidth = 2.5;
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = '#ff3344';
       ctx.beginPath();
       ctx.arc(sx, sy, this.radius + 8, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
 
-    // 4. 무기 실시간 외형 렌더링 & 스윙 모션 (A 항목)
-    ctx.save();
-    ctx.translate(sx, sy);
-
-    // 공격 시 휘두르는 스윙 각도 계산
-    let swingOffset = 0;
-    if (this.atkCooldown > 0) {
-      const maxCd = Math.max(0.2, 0.65 / this.statCache.atkSpeed);
-      const progress = 1 - (this.atkCooldown / maxCd);
-      swingOffset = Math.sin(progress * Math.PI) * 0.75;
-    }
-    ctx.rotate(this.angle + swingOffset);
-
-    // 직업별 정교한 무기 모델링
-    if (this.job === 'warrior') {
-      ctx.fillStyle = '#4a5568';
-      ctx.fillRect(16, -3, 8, 6);
-      ctx.fillStyle = '#e2e8f0';
-      ctx.beginPath();
-      ctx.moveTo(24, -4);
-      ctx.lineTo(44, -2);
-      ctx.lineTo(49, 0);
-      ctx.lineTo(44, 2);
-      ctx.lineTo(24, 4);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = isHighEnhanced ? '#ffd700' : '#a0aec0';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    } else if (this.job === 'mage') {
-      ctx.fillStyle = '#78350f';
-      ctx.fillRect(14, -2, 26, 4);
-      ctx.fillStyle = '#00f0ff';
-      ctx.beginPath();
-      ctx.arc(42, 0, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    } else if (this.job === 'rogue') {
-      [-7, 7].forEach(offsetY => {
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(12, offsetY - 2, 5, 4);
-        ctx.fillStyle = '#38bdf8';
-        ctx.beginPath();
-        ctx.moveTo(17, offsetY - 3);
-        ctx.lineTo(34, offsetY);
-        ctx.lineTo(17, offsetY + 3);
-        ctx.closePath();
-        ctx.fill();
-      });
-    } else if (this.job === 'fighter') {
-      ctx.fillStyle = '#ff9900';
-      ctx.beginPath();
-      ctx.arc(22, -6, 7, 0, Math.PI * 2);
-      ctx.arc(22, 6, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-
-    ctx.restore();
-
-    // 5. 캐릭터 이름 & 레벨 (겹침 방지 다크 글래스 배지)
+    // 4. 캐릭터 이름 & 레벨 (슬림 다크 글래스 배지)
+    const isHighEnhanced = (this.equip.weapon && this.equip.weapon.enhance >= 10);
     const tagText = `Lv.${this.level} ${this.name}`;
-    ctx.font = 'bold 12px "Cinzel", "Rajdhani", sans-serif';
+    ctx.font = 'bold 11px "Cinzel", "Rajdhani", sans-serif';
     const textW = ctx.measureText(tagText).width;
 
     ctx.fillStyle = 'rgba(10, 5, 20, 0.85)';
-    ctx.strokeStyle = isHighEnhanced ? '#ffd700' : 'rgba(255, 215, 0, 0.4)';
+    ctx.strokeStyle = isHighEnhanced ? '#ffd700' : 'rgba(255, 215, 0, 0.3)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(sx - textW/2 - 8, sy - this.radius - 24, textW + 16, 18, 4);
+    ctx.roundRect(sx - textW/2 - 6, sy - this.radius - 22, textW + 12, 16, 4);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(tagText, sx, sy - this.radius - 15);
+    ctx.fillText(tagText, sx, sy - this.radius - 14);
 
     ctx.restore();
   }

@@ -2931,6 +2931,39 @@ class GameEngine {
       }
     }
 
+    // 모바일 전용 상호작용 / 던전 입장 버튼 활성화 갱신
+    const mBtnInteract = document.getElementById('mBtnInteract');
+    if (mBtnInteract) {
+      if (this.state === 'town') {
+        const nearbyNpc = this.townMgr.checkInteraction(this.player);
+        if (nearbyNpc) {
+          mBtnInteract.style.display = 'flex';
+          const label = nearbyNpc.id === 'portal' ? '입장'
+            : nearbyNpc.id === 'blacksmith' ? '대장간'
+            : nearbyNpc.id === 'shop' ? '상점'
+            : nearbyNpc.id === 'dummy' ? '훈련'
+            : nearbyNpc.id === 'mercenary' ? '용병' : '연구소';
+          mBtnInteract.innerText = label;
+          mBtnInteract.onclick = () => this.handleNPCInteraction(nearbyNpc);
+        } else {
+          mBtnInteract.style.display = 'none';
+        }
+      } else {
+        if (this.dungeonMgr && this.dungeonMgr.portal) {
+          const pd = Math.hypot(this.player.x - this.dungeonMgr.portal.x, this.player.y - this.dungeonMgr.portal.y);
+          if (pd <= this.dungeonMgr.portal.radius + 35) {
+            mBtnInteract.style.display = 'flex';
+            mBtnInteract.innerText = '다음층';
+            mBtnInteract.onclick = () => this.dungeonMgr.descendFloor(this.player);
+          } else {
+            mBtnInteract.style.display = 'none';
+          }
+        } else {
+          mBtnInteract.style.display = 'none';
+        }
+      }
+    }
+
     if (this.state === 'dungeon') {
       this.dungeonMgr.update(dt, this.player);
       this.effectMgr.update(dt, this.dungeonMgr.enemies, this.player);

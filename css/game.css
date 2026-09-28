@@ -1269,6 +1269,24 @@ canvas#minimapView {
   box-shadow: 0 0 15px rgba(0, 255, 170, 0.4);
 }
 
+.m-btn.m-interact {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background: radial-gradient(circle, #ffe066 0%, #e6a800 50%, #996e00 100%);
+  color: #120920;
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 13px;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.85);
+  animation: pulseGlow 1.5s infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.5px;
+}
+
 /* 모바일 / 태블릿 반응형 미디어 쿼리 (900px 이하) */
 @media (max-width: 900px) {
   .vstick-base {
@@ -2032,11 +2050,11 @@ canvas#minimapView {
   .dock-label { font-size: 13px !important; font-weight: 700 !important; }
   .dock-key { display: none !important; }
 
-  /* 좌측 상단 프로필 슬림 컴팩트화 (아이폰/모바일 최적화) */
+  /* 좌측 상단 프로필 슬림 컴팩트화 (아이폰 노치 및 세이프 에어리어 완벽 대응) */
   .player-hud-frame {
-    top: 6px !important;
-    left: 6px !important;
-    padding: 4px 8px 4px 6px !important;
+    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+    left: calc(env(safe-area-inset-left, 0px) + 8px) !important;
+    padding: 3px 8px 3px 5px !important;
     gap: 6px !important;
     border-radius: 8px !important;
     max-width: 175px !important;
@@ -2089,10 +2107,10 @@ canvas#minimapView {
     display: none !important;
   }
 
-  /* 우측 상단 월드 위젯 위치 & 크기 슬림화 */
+  /* 우측 상단 월드 위젯 위치 & 크기 슬림화 (아이폰 노치 완벽 대응) */
   .world-status-widget {
-    top: 6px !important;
-    right: 6px !important;
+    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 8px) !important;
     gap: 4px !important;
   }
 
@@ -2147,6 +2165,79 @@ canvas#minimapView {
 
   .recall-rune-btn kbd {
     display: none !important;
+  }
+
+  /* 🎒 모바일 인벤토리 & 모달 반응형 최적화 (가로 스크롤 완전 제거) */
+  .game-modal {
+    padding: 8px !important;
+  }
+
+  .modal-dialog {
+    max-width: 96vw !important;
+    width: 96vw !important;
+    max-height: 86vh !important;
+    margin: auto !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+  }
+
+  .bag-layout {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .char-portrait-card {
+    height: 100px !important;
+  }
+
+  .equip-slots-grid {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 5px !important;
+    margin-top: 6px !important;
+  }
+
+  .inv-grid {
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 5px !important;
+  }
+
+  .item-box {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 !important;
+    border-radius: 6px !important;
+  }
+
+  .item-ico {
+    font-size: 18px !important;
+  }
+
+  .item-name {
+    font-size: 7px !important;
+    max-width: 42px !important;
+  }
+
+  .stat-row {
+    font-size: 11px !important;
+    padding: 3px 0 !important;
+  }
+
+  /* 하단 스킬바 & 가상 조이스틱 모바일 줄맞춤 & 세이프에어리어 */
+  .bottom-action-console {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    transform: translateX(-50%) scale(0.82) !important;
+  }
+
+  .mobile-action-cluster {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 10px) !important;
+    gap: 6px !important;
+  }
+
+  .vstick-base {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    left: calc(env(safe-area-inset-left, 0px) + 10px) !important;
   }
 }
 
