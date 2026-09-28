@@ -1287,55 +1287,7 @@ canvas#minimapView {
   letter-spacing: -0.5px;
 }
 
-/* 모바일 / 태블릿 반응형 미디어 쿼리 (900px 이하) */
-@media (max-width: 900px) {
-  .vstick-base {
-    left: 14px;
-    bottom: 14px;
-    width: 100px;
-    height: 100px;
-  }
-  .vstick-knob {
-    width: 38px;
-    height: 38px;
-    margin-left: -19px;
-    margin-top: -19px;
-  }
-  .mobile-action-cluster {
-    right: 14px;
-    bottom: 14px;
-    gap: 8px;
-  }
-  .m-btn {
-    width: 48px;
-    height: 48px;
-    font-size: 20px;
-  }
-  .m-btn.m-atk {
-    width: 58px;
-    height: 58px;
-    font-size: 26px;
-  }
-  .bottom-action-console {
-    bottom: 10px;
-    transform: translateX(-50%) scale(0.85);
-  }
-  .floating-side-dock {
-    right: 10px;
-    top: 75px;
-    gap: 6px;
-  }
-  .dock-btn {
-    width: 42px;
-    height: 42px;
-  }
-  .dock-icon {
-    font-size: 16px;
-  }
-  .dock-label {
-    font-size: 8px;
-  }
-}
+/* (모바일 / 태블릿 반응형 미디어 쿼리는 스타일 시트 최하단에서 통합 관리) */
 
 /* =========================================================
    1~4순위 통합 UI 스타일 (엔딩, 도감/업적, 펫, 성소)
@@ -2050,19 +2002,21 @@ canvas#minimapView {
   .dock-label { font-size: 13px !important; font-weight: 700 !important; }
   .dock-key { display: none !important; }
 
-  /* 좌측 상단 프로필 슬림 컴팩트화 (아이폰 노치 및 세이프 에어리어 완벽 대응) */
+  /* 좌측 상단 프로필 슬림 컴팩트화 (아이폰 노치 및 다이내믹 아일랜드 아래로 안전 배치) */
   .player-hud-frame {
-    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
-    left: calc(env(safe-area-inset-left, 0px) + 8px) !important;
-    padding: 3px 8px 3px 5px !important;
+    top: max(calc(env(safe-area-inset-top, 0px) + 14px), 54px) !important;
+    left: max(calc(env(safe-area-inset-left, 0px) + 10px), 10px) !important;
+    padding: 4px 8px 4px 6px !important;
     gap: 6px !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     max-width: 175px !important;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
   }
 
   .player-avatar-ring {
-    width: 32px !important;
-    height: 32px !important;
+    width: 34px !important;
+    height: 34px !important;
     border-width: 1.5px !important;
   }
 
@@ -2107,17 +2061,21 @@ canvas#minimapView {
     display: none !important;
   }
 
-  /* 우측 상단 월드 위젯 위치 & 크기 슬림화 (아이폰 노치 완벽 대응) */
+  /* 우측 상단 월드 위젯 & 햄버거 버튼 (아이폰 노치 아래로 안전 배치 및 터치 타깃 확대) */
   .world-status-widget {
-    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
-    right: calc(env(safe-area-inset-right, 0px) + 8px) !important;
-    gap: 4px !important;
+    top: max(calc(env(safe-area-inset-top, 0px) + 14px), 54px) !important;
+    right: max(calc(env(safe-area-inset-right, 0px) + 10px), 10px) !important;
+    gap: 6px !important;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
   }
 
   .location-gold-capsule {
     padding: 4px 8px !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     gap: 6px !important;
+    height: 44px !important;
+    box-sizing: border-box !important;
   }
 
   .location-indicator {
@@ -2139,17 +2097,31 @@ canvas#minimapView {
   }
 
   .mobile-hamburger-btn {
-    width: 32px !important;
-    height: 32px !important;
+    width: 44px !important;
+    height: 44px !important;
     padding: 0 !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
+    background: linear-gradient(135deg, rgba(42, 22, 75, 0.95), rgba(18, 9, 34, 0.95)) !important;
+    border: 2px solid #ffd700 !important;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4) !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    z-index: 1001 !important;
+  }
+
+  .mobile-hamburger-btn:active {
+    transform: scale(0.92) !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.7) !important;
   }
 
   .hamburger-icon {
-    font-size: 16px !important;
+    font-size: 22px !important;
+    color: #ffd700 !important;
+    pointer-events: none !important;
   }
 
   .hamburger-label {
@@ -2159,8 +2131,9 @@ canvas#minimapView {
   .recall-rune-btn {
     padding: 3px 6px !important;
     font-size: 10px !important;
-    height: 32px !important;
-    border-radius: 8px !important;
+    height: 44px !important;
+    border-radius: 10px !important;
+    pointer-events: auto !important;
   }
 
   .recall-rune-btn kbd {
@@ -2223,21 +2196,122 @@ canvas#minimapView {
     padding: 3px 0 !important;
   }
 
-  /* 하단 스킬바 & 가상 조이스틱 모바일 줄맞춤 & 세이프에어리어 */
+  /* ⚡ 하단 스킬바 모바일 최적화 (중앙 배치, 물약/패링 중복 제거, 5개 스킬 슬롯 뚜렷하게 노출) */
   .bottom-action-console {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
-    transform: translateX(-50%) scale(0.82) !important;
+    position: fixed !important;
+    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 14px), 16px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    z-index: 98 !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    max-width: 90vw !important;
   }
 
-  .mobile-action-cluster {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
-    right: calc(env(safe-area-inset-right, 0px) + 10px) !important;
-    gap: 6px !important;
+  /* 모바일 우측 액션에 이미 존재하는 물약, 패링, 대시 코어는 하단 바에서 숨겨 스킬 슬롯만 컴팩트하게 노출 */
+  .bottom-action-console .flask-slot-container,
+  .bottom-action-console .parry-core-container,
+  .bottom-action-console .dash-core-container {
+    display: none !important;
   }
 
+  .arcane-skill-deck {
+    display: flex !important;
+    gap: 5px !important;
+    padding: 4px 6px !important;
+    background: rgba(14, 8, 26, 0.94) !important;
+    border: 1.5px solid rgba(255, 215, 0, 0.5) !important;
+    border-radius: 12px !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85), 0 0 10px rgba(180, 100, 255, 0.3) !important;
+    pointer-events: auto !important;
+  }
+
+  .skill-rune-slot {
+    width: 38px !important;
+    height: 38px !important;
+    border-width: 1.5px !important;
+    border-radius: 8px !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    cursor: pointer !important;
+  }
+
+  .skill-rune-slot:active {
+    transform: scale(0.9) !important;
+    border-color: #ffd700 !important;
+  }
+
+  .skill-rune-icon {
+    font-size: 19px !important;
+    pointer-events: none !important;
+  }
+
+  .skill-hotkey-badge {
+    font-size: 8px !important;
+    top: 2px !important;
+    left: 3px !important;
+    pointer-events: none !important;
+  }
+
+  .skill-lock-overlay {
+    font-size: 8px !important;
+    bottom: 2px !important;
+    pointer-events: none !important;
+  }
+
+  .skill-element-badge {
+    font-size: 9px !important;
+    top: 2px !important;
+    right: 2px !important;
+    pointer-events: none !important;
+  }
+
+  /* 🕹️ 좌측 가상 조이스틱 */
   .vstick-base {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
-    left: calc(env(safe-area-inset-left, 0px) + 10px) !important;
+    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 14px), 16px) !important;
+    left: max(calc(env(safe-area-inset-left, 0px) + 8px), 8px) !important;
+    width: 82px !important;
+    height: 82px !important;
+    z-index: 95 !important;
+  }
+
+  /* ⚔️ 우측 액션 클러스터 (2열 아치형 컴팩트 그리드로 스킬바와 겹침 방지) */
+  .mobile-action-cluster {
+    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 14px), 16px) !important;
+    right: max(calc(env(safe-area-inset-right, 0px) + 8px), 8px) !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 42px) !important;
+    gap: 6px !important;
+    z-index: 96 !important;
+    align-items: center !important;
+    justify-items: center !important;
+  }
+
+  .m-btn {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 17px !important;
+    border-radius: 50% !important;
+  }
+
+  .m-btn.m-atk {
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 22px !important;
+    grid-column: span 2 !important;
+    margin-top: 2px !important;
+  }
+
+  .m-btn.m-interact {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
   }
 }
 

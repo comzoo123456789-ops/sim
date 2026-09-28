@@ -233,34 +233,48 @@ class GameEngine {
   }
 
   setupUIBindings() {
-    // 🍔 모바일 햄버거 드로어 버튼 바인딩
+    // 🍔 모바일 햄버거 드로어 버튼 바인딩 (모바일 터치 즉각 반응 및 더블클릭/제스처 차단)
     const hamburgerBtn = document.getElementById('btnMobileHamburger');
     const sideDock = document.getElementById('sideNavDock');
     const backdrop = document.getElementById('menuDrawerBackdrop');
     const closeDrawerBtn = document.getElementById('btnCloseMobileDrawer');
 
-    const closeMobileDrawer = () => {
+    const closeMobileDrawer = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       if (sideDock) sideDock.classList.remove('open');
       if (backdrop) backdrop.classList.remove('open');
     };
 
-    const openMobileDrawer = () => {
+    const openMobileDrawer = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       if (sideDock) sideDock.classList.add('open');
       if (backdrop) backdrop.classList.add('open');
     };
 
     if (hamburgerBtn) {
-      hamburgerBtn.onclick = (e) => {
-        e.stopPropagation();
+      let lastTrigger = 0;
+      const toggleMenu = (e) => {
+        const now = Date.now();
+        if (now - lastTrigger < 200) return;
+        lastTrigger = now;
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         if (sideDock && sideDock.classList.contains('open')) {
-          closeMobileDrawer();
+          closeMobileDrawer(e);
         } else {
-          openMobileDrawer();
+          openMobileDrawer(e);
         }
       };
+      hamburgerBtn.addEventListener('pointerdown', toggleMenu);
+      hamburgerBtn.addEventListener('click', toggleMenu);
     }
-    if (closeDrawerBtn) closeDrawerBtn.onclick = closeMobileDrawer;
-    if (backdrop) backdrop.onclick = closeMobileDrawer;
+    if (closeDrawerBtn) {
+      closeDrawerBtn.addEventListener('pointerdown', closeMobileDrawer);
+      closeDrawerBtn.addEventListener('click', closeMobileDrawer);
+    }
+    if (backdrop) {
+      backdrop.addEventListener('pointerdown', closeMobileDrawer);
+      backdrop.addEventListener('click', closeMobileDrawer);
+    }
 
     // 📱 iOS/Safari 모바일 더블터치 화면 확대 방지
     let lastTouchTime = 0;
@@ -480,7 +494,16 @@ class GameEngine {
         <div class="skill-cd-sweeper" id="cd_sweeper_${skill.id}"></div>
       `;
 
-      slotDiv.onclick = () => {
+      let lastCastTime = 0;
+      const triggerSkillCast = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        const now = Date.now();
+        if (now - lastCastTime < 120) return;
+        lastCastTime = now;
+
         let worldTargetX = this.input.mouseX + this.camera.x;
         let worldTargetY = this.input.mouseY + this.camera.y;
         if (!this.input.mouseX && !this.input.mouseY) {
@@ -507,6 +530,9 @@ class GameEngine {
         const enemies = this.state === 'dungeon' ? this.dungeonMgr.enemies : [];
         SkillSystem.castSkill(this.player, skill.slot, worldTargetX, worldTargetY, enemies);
       };
+
+      slotDiv.addEventListener('pointerdown', triggerSkillCast);
+      slotDiv.addEventListener('click', triggerSkillCast);
 
       skillbarEl.appendChild(slotDiv);
     });
@@ -2944,7 +2970,12 @@ class GameEngine {
             : nearbyNpc.id === 'dummy' ? '훈련'
             : nearbyNpc.id === 'mercenary' ? '용병' : '연구소';
           mBtnInteract.innerText = label;
-          mBtnInteract.onclick = () => this.handleNPCInteraction(nearbyNpc);
+          const doInteract = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            this.handleNPCInteraction(nearbyNpc);
+          };
+          mBtnInteract.onclick = doInteract;
+          mBtnInteract.ontouchstart = doInteract;
         } else {
           mBtnInteract.style.display = 'none';
         }
@@ -2954,7 +2985,12 @@ class GameEngine {
           if (pd <= this.dungeonMgr.portal.radius + 35) {
             mBtnInteract.style.display = 'flex';
             mBtnInteract.innerText = '다음층';
-            mBtnInteract.onclick = () => this.dungeonMgr.descendFloor(this.player);
+            const doNextFloor = (e) => {
+              if (e) { e.preventDefault(); e.stopPropagation(); }
+              this.dungeonMgr.descendFloor(this.player);
+            };
+            mBtnInteract.onclick = doNextFloor;
+            mBtnInteract.ontouchstart = doNextFloor;
           } else {
             mBtnInteract.style.display = 'none';
           }
