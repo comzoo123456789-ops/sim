@@ -17,18 +17,76 @@ class WeaponManager {
     this.timers = {};
   }
 
+  syncOrbitals(player) {
+    const hasSuperCard = player.superWeapons.includes('super_card');
+    const cardLv = player.weapons['card'] || 0;
+
+    if (!hasSuperCard && cardLv === 0) {
+      if (this.orbitals.length > 0) this.orbitals = [];
+      return;
+    }
+
+    let targetCount = 2;
+    let targetRadius = 65;
+    let targetSpeed = 3.2;
+    let targetDmg = 16;
+    let isSuper = false;
+
+    if (hasSuperCard) {
+      const sDef = window.GAME_DATA.SUPER_WEAPONS.super_card;
+      targetCount = sDef.count || 8;
+      targetRadius = (sDef.orbitRadius || 90) * player.stats.areaMul;
+      targetSpeed = sDef.orbitSpeed || 7.0;
+      targetDmg = Math.floor(sDef.baseDmg * player.stats.atkMul);
+      isSuper = true;
+    } else if (cardLv > 0) {
+      const wDef = window.GAME_DATA.WEAPONS.card;
+      const curLv = wDef.levels[cardLv - 1] || wDef.levels[0];
+      targetCount = curLv.count || wDef.count || 2;
+      targetRadius = (curLv.orbitRadius || wDef.orbitRadius || 65) * player.stats.areaMul;
+      targetSpeed = curLv.orbitSpeed || wDef.orbitSpeed || 3.2;
+      targetDmg = Math.floor((curLv.dmg || wDef.baseDmg) * player.stats.atkMul);
+    }
+
+    if (this.orbitals.length !== targetCount || this.orbitals[0]?.isSuper !== isSuper) {
+      this.orbitals = [];
+      for (let i = 0; i < targetCount; i++) {
+        this.orbitals.push({
+          angle: (i / targetCount) * Math.PI * 2,
+          orbitRadius: targetRadius,
+          speed: targetSpeed,
+          damage: targetDmg,
+          radius: isSuper ? 16 : 12,
+          isSuper: isSuper,
+          x: player.x,
+          y: player.y,
+          hitTimer: 0
+        });
+      }
+    } else {
+      this.orbitals.forEach(orb => {
+        orb.orbitRadius = targetRadius;
+        orb.speed = targetSpeed;
+        orb.damage = targetDmg;
+      });
+    }
+  }
+
   update(dt, player, monsters, effectEngine) {
+    // 0. 법인카드 쉴드 오비탈 상시 동기화
+    this.syncOrbitals(player);
+
     // 1. 플레이어가 보유한 각 무기의 쿨타임 및 자동 발사
     Object.entries(player.weapons).forEach(([wId, level]) => {
-      // 초월 무기로 각성한 경우 기본 무기는 발사 생략
       if (player.superWeapons.includes(`super_${wId}`)) return;
+      if (wId === 'card') return; // 카드는 syncOrbitals로 상시 회전
 
       const wDef = window.GAME_DATA.WEAPONS[wId];
       if (!wDef) return;
 
       this.timers[wId] = (this.timers[wId] || 0) + dt;
       const curLv = wDef.levels[level - 1] || wDef.levels[0];
-      const actualCd = (curLv.cooldown || wDef.cooldown) * (1 - player.stats.cdReduc);
+      const actualCd = (curLv.cooldown || wDef.cooldown || 1.0) * (1 - player.stats.cdReduc);
 
       if (this.timers[wId] >= actualCd) {
         this.timers[wId] = 0;
@@ -38,11 +96,12 @@ class WeaponManager {
 
     // 2. 초월 무기 (Super Weapons) 자동 발사
     player.superWeapons.forEach(sId => {
+      if (sId === 'super_card') return; // 슈퍼 카드는 syncOrbitals로 상시 회전
       const sDef = window.GAME_DATA.SUPER_WEAPONS[sId];
       if (!sDef) return;
 
       this.timers[sId] = (this.timers[sId] || 0) + dt;
-      const actualCd = sDef.cooldown * (1 - player.stats.cdReduc);
+      const actualCd = (sDef.cooldown || 0.5) * (1 - player.stats.cdReduc);
 
       if (this.timers[sId] >= actualCd) {
         this.timers[sId] = 0;
@@ -129,6 +188,8 @@ class WeaponManager {
 
     // 5. 법인카드 쉴드 회전 업데이트
     this.orbitals.forEach(orb => {
+      if (orb.hitTimer > 0) orb.hitTimer -= dt;
+
       orb.angle += orb.speed * dt;
       orb.x = player.x + Math.cos(orb.angle) * orb.orbitRadius;
       orb.y = player.y + Math.sin(orb.angle) * orb.orbitRadius;
@@ -136,13 +197,13 @@ class WeaponManager {
       monsters.forEach(m => {
         if (!m.isAlive) return;
         if (Math.hypot(m.x - orb.x, m.y - orb.y) <= m.radius + orb.radius) {
-          orb.hitCooldown = (orb.hitCooldown || 0) - dt;
-          if (orb.hitCooldown <= 0) {
-            orb.hitCooldown = 0.2;
+          if (orb.hitTimer <= 0) {
+            orb.hitTimer = 0.18;
             m.takeDamage(orb.damage, Math.random() < player.stats.critRate);
-            m.x += Math.cos(orb.angle) * 12;
-            m.y += Math.sin(orb.angle) * 12;
+            m.x += Math.cos(orb.angle) * 15;
+            m.y += Math.sin(orb.angle) * 15;
             if (window.soundEngine) window.soundEngine.playCard();
+            if (effectEngine) effectEngine.spawnHitSpark(orb.x, orb.y, orb.isSuper ? '#ffd700' : '#38bdf8');
           }
         }
       });
@@ -293,7 +354,7 @@ class WeaponManager {
         });
       }
     } else if (wId === 'stamp') {
-      // 🛑 결재 반려 도장 (상공 낙하)
+      // 🛑 결재 반려 도장 (머리 위 수직 강타)
       const count = curLv.strikes || 1;
       const area = (curLv.area || wDef.area) * player.stats.areaMul;
 
@@ -312,24 +373,6 @@ class WeaponManager {
             hasHit: false
           });
         }, i * 180);
-      }
-    } else if (wId === 'card') {
-      // 💳 법인카드 쉴드 (주변 공전 업데이트)
-      const count = curLv.count || wDef.count || 2;
-      const radius = curLv.orbitRadius || wDef.orbitRadius || 65;
-      const speed = curLv.orbitSpeed || wDef.orbitSpeed || 3.2;
-
-      this.orbitals = [];
-      for (let i = 0; i < count; i++) {
-        this.orbitals.push({
-          angle: (i / count) * Math.PI * 2,
-          orbitRadius: radius,
-          speed: speed,
-          damage: baseDmg,
-          radius: 12,
-          x: player.x,
-          y: player.y
-        });
       }
     } else if (wId === 'shredder') {
       // 📑 문서 세단기 톱니 (나선형 회전 관통)
@@ -435,21 +478,6 @@ class WeaponManager {
           });
         }, i * 140);
       }
-    } else if (sId === 'super_card') {
-      // 👑 [블랙 무한한도 플래티넘 실드]
-      this.orbitals = [];
-      for (let i = 0; i < 8; i++) {
-        this.orbitals.push({
-          angle: (i / 8) * Math.PI * 2,
-          orbitRadius: 90,
-          speed: 6.5,
-          damage: baseDmg,
-          radius: 16,
-          isSuper: true,
-          x: player.x,
-          y: player.y
-        });
-      }
     } else if (sId === 'super_shredder') {
       // 🌀 [초고속 문서 분쇄 토네이도]
       if (window.soundEngine) window.soundEngine.playShredder();
@@ -463,60 +491,65 @@ class WeaponManager {
           vy: Math.sin(ang) * 7.5,
           damage: baseDmg,
           pierce: 999,
-          radius: 20,
-          life: 3.5,
+          radius: 18,
+          life: 3.2,
           color: '#bb33ff',
           rot: 0,
-          rotSpeed: 35,
+          rotSpeed: 30,
           hitMonsters: []
         });
       }
     }
   }
 
-  // 무기 & 투사체 렌더링 (순수 캔버스 2D 고화질 벡터 아트 - No Emojis!)
+  // 무기 & 투사체 & 장판 & 쉴드 렌더링 (순수 캔버스 2D 벡터 아트 - No Emojis!)
   render(ctx, camera) {
-    // 1. 장판(핫식스 에너지드링크) 렌더링
+    // 1. 핫식스 탄산 웅덩이 장판 렌더링
     this.puddles.forEach(pud => {
       const sx = pud.x - camera.x;
       const sy = pud.y - camera.y;
 
       ctx.save();
-      const grad = ctx.createRadialGradient(sx, sy, 5, sx, sy, pud.radius);
-      grad.addColorStop(0, 'rgba(255, 170, 0, 0.45)');
-      grad.addColorStop(0.7, 'rgba(255, 80, 0, 0.25)');
-      grad.addColorStop(1, 'rgba(255, 50, 0, 0)');
+      ctx.translate(sx, sy);
 
-      ctx.fillStyle = grad;
+      // 탄산 발포 원형 장판
+      ctx.fillStyle = pud.color + '44';
       ctx.beginPath();
-      ctx.arc(sx, sy, pud.radius, 0, Math.PI * 2);
+      ctx.arc(0, 0, pud.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // 탄산 기포 애니메이션
-      ctx.fillStyle = '#ffffff';
-      for (let b = 0; b < 6; b++) {
-        const bx = sx + Math.sin(Date.now() * 0.005 + b * 2) * (pud.radius * 0.6);
-        const by = sy + Math.cos(Date.now() * 0.004 + b * 3) * (pud.radius * 0.6);
+      ctx.strokeStyle = pud.color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = pud.color;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+
+      // 보글보글 기포 효과
+      for (let b = 0; b < 5; b++) {
+        const ba = (b / 5) * Math.PI * 2 + Math.sin(performance.now() * 0.003 + b);
+        const br = pud.radius * 0.5 + Math.cos(performance.now() * 0.004 + b) * (pud.radius * 0.3);
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
+        ctx.arc(Math.cos(ba) * br, Math.sin(ba) * br, 3, 0, Math.PI * 2);
         ctx.fill();
       }
+
       ctx.restore();
     });
 
-    // 2. 투사체(스테이플 침, 키캡, 톱니) 렌더링
+    // 2. 투사체(스테이플러 침, 키캡, 톱니 등) 렌더링
     this.projectiles.forEach(p => {
       const sx = p.x - camera.x;
       const sy = p.y - camera.y;
 
       ctx.save();
       ctx.translate(sx, sy);
-      ctx.rotate(p.rot);
+      ctx.rotate(p.rot || 0);
 
       if (p.type === 'staple' || p.type === 'super_staple') {
-        // 은빛 3D 크롬 스테이플 침
+        // 스테이플러 철제 침 (ㄷ자 메탈릭 발사체)
         const isSuper = (p.type === 'super_staple');
-        ctx.fillStyle = isSuper ? '#00f0ff' : '#e2e8f0';
+        ctx.fillStyle = isSuper ? '#00f0ff' : '#93c5fd';
         ctx.shadowColor = isSuper ? '#00f0ff' : '#60a5fa';
         ctx.shadowBlur = isSuper ? 12 : 6;
 
@@ -620,24 +653,22 @@ class WeaponManager {
         ctx.roundRect(-16, -4, 32, 10, 3);
         ctx.fill();
       } else {
-        // 착탄 후 바닥에 붉은 [반 려] 각인 표식
-        const alpha = Math.max(0, 1.8 - st.progress);
+        // 바닥 충돌 충격파 & 붉은 낙인
+        const alpha = Math.max(0, 1 - (st.progress - 1.0) * 1.25);
+        ctx.translate(sx, sy);
         ctx.globalAlpha = alpha;
 
-        ctx.fillStyle = 'rgba(220, 38, 38, 0.2)';
-        ctx.beginPath();
-        ctx.arc(sx, sy, st.radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = '#dc2626';
+        ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 3;
-        ctx.strokeRect(sx - 35, sy - 18, 70, 36);
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 14;
+        ctx.strokeRect(-24, -12, 48, 24);
 
-        ctx.fillStyle = '#dc2626';
-        ctx.font = '900 18px "Pretendard", sans-serif';
+        ctx.fillStyle = '#ef4444';
+        ctx.font = '900 13px "Pretendard", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('反 戾 (반려)', sx, sy);
+        ctx.fillText(st.isSuper ? '최종 반려' : 'REJECT', 0, 0);
       }
       ctx.restore();
     });
