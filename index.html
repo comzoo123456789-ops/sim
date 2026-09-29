@@ -20,7 +20,13 @@
           <!-- 좌측: 플레이어 프로필 & 체력 -->
           <div class="hud-player-card">
             <div class="player-avatar-box">
-              <span id="hudPlayerAvatar" class="avatar-icon">🧑‍💻</span>
+              <span id="hudPlayerAvatar" class="avatar-icon">
+                <svg viewBox="0 0 24 24" fill="none" class="svg-icon">
+                  <rect x="4" y="3" width="16" height="18" rx="3" stroke="#38bdf8" stroke-width="2"/>
+                  <circle cx="12" cy="9" r="3" fill="#38bdf8"/>
+                  <path d="M7 18c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
             </div>
             <div class="player-status-col">
               <div class="player-name-row">
@@ -36,23 +42,32 @@
 
           <!-- 중앙: 심야 야근 탈출 타이머 -->
           <div class="hud-timer-card">
-            <div class="timer-label">⏰ 탈출까지</div>
+            <div class="timer-label">
+              <svg viewBox="0 0 24 24" fill="none" class="svg-icon inline-icon"><circle cx="12" cy="12" r="9" stroke="#38bdf8" stroke-width="2"/><path d="M12 7v5l3 2" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/></svg>
+              탈출까지
+            </div>
             <div id="hudTimerText" class="timer-digits">10:00</div>
           </div>
 
           <!-- 우측: 처치 수 & 커피 코인 & 일시정지 -->
           <div class="hud-score-card">
             <div class="score-pill" title="처치 수">
-              <span class="pill-icon">💀</span>
+              <span class="pill-icon">
+                <svg viewBox="0 0 24 24" fill="none" class="svg-icon inline-icon"><path d="M12 3a8 8 0 00-8 8c0 3.5 2.2 6.5 5.5 7.5V21h5v-2.5c3.3-1 5.5-4 5.5-7.5a8 8 0 00-8-8z" fill="rgba(244,63,94,0.3)" stroke="#f43f5e" stroke-width="1.8"/><circle cx="9" cy="11" r="1.5" fill="#f43f5e"/><circle cx="15" cy="11" r="1.5" fill="#f43f5e"/></svg>
+              </span>
               <span class="pill-label">KILL</span>
               <span id="hudKillCount" class="pill-val">0</span>
             </div>
             <div class="score-pill gold" title="커피 코인">
-              <span class="pill-icon">🪙</span>
+              <span class="pill-icon">
+                <svg viewBox="0 0 24 24" fill="none" class="svg-icon inline-icon"><circle cx="12" cy="12" r="9" fill="#eab308" stroke="#ca8a04" stroke-width="1.5"/><path d="M10 8v8M10 12h4.5M10 8h4a2 2 0 010 4M10 12l4.5 4" stroke="#78350f" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </span>
               <span class="pill-label">COIN</span>
               <span id="hudGoldCount" class="pill-val">0</span>
             </div>
-            <button id="btnPauseGame" class="hud-icon-btn" title="일시정지">⏸️</button>
+            <button id="btnPauseGame" class="hud-icon-btn" title="일시정지">
+              <svg viewBox="0 0 24 24" fill="none" class="svg-icon inline-icon"><rect x="6" y="5" width="4" height="14" rx="1" fill="#38bdf8"/><rect x="14" y="5" width="4" height="14" rx="1" fill="#38bdf8"/></svg>
+            </button>
           </div>
         </div>
 
@@ -68,12 +83,12 @@
         <!-- 상단 일체형 무기 및 패시브 슬롯 바 (하단 툴바에 절대 잘리지 않음) -->
         <div class="inventory-slots-deck">
           <div class="slot-group">
-            <span class="slot-group-title">무기</span>
+            <span class="slot-group-title">무기 슬롯</span>
             <div id="hudWeaponSlots" class="slots-container"></div>
           </div>
           <div class="slot-divider"></div>
           <div class="slot-group">
-            <span class="slot-group-title">패시브</span>
+            <span class="slot-group-title">복지 패시브</span>
             <div id="hudPassiveSlots" class="slots-container"></div>
           </div>
         </div>
@@ -87,19 +102,36 @@
           <div class="lobby-title-row">
             <h2 class="modal-title">야근 탈출: 오피스 서바이벌</h2>
             <div class="lobby-gold-badge">
-              <span class="gold-icon">💰</span>
+              <span class="gold-icon">
+                <svg viewBox="0 0 24 24" fill="none" class="svg-icon inline-icon"><circle cx="12" cy="12" r="9" fill="#eab308" stroke="#ca8a04" stroke-width="1.5"/><path d="M10 8v8M10 12h4.5M10 8h4a2 2 0 010 4M10 12l4.5 4" stroke="#78350f" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </span>
               <span id="lobbyGoldVal" class="gold-text">0</span>
             </div>
           </div>
           <p class="modal-subtitle">10분간 쏟아지는 야근 폭격을 버텨내고 밤 11시 막차를 타세요!</p>
 
-          <!-- 5대 메인 탭 네비게이션 -->
+          <!-- 5대 메인 탭 네비게이션 (고급 벡터 아이콘) -->
           <div class="menu-tabs-bar">
-            <button class="menu-tab-btn active" data-tab="stage">📋 챕터/스테이지</button>
-            <button class="menu-tab-btn" data-tab="char">🧑‍💼 사원 출근</button>
-            <button class="menu-tab-btn" data-tab="shop">💰 연봉 협상</button>
-            <button class="menu-tab-btn" data-tab="ach">🏆 사내 업적</button>
-            <button class="menu-tab-btn" data-tab="bestiary">📖 업무 도감</button>
+            <button class="menu-tab-btn active" data-tab="stage">
+              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="2"/><path d="M7 8h10M7 12h7M7 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="17" cy="15" r="2.5" fill="#38bdf8" stroke="currentColor" stroke-width="1.5"/></svg>
+              <span>챕터/스테이지</span>
+            </button>
+            <button class="menu-tab-btn" data-tab="char">
+              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><rect x="4" y="3" width="16" height="18" rx="3" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9" r="3" stroke="currentColor" stroke-width="2" fill="rgba(56,189,248,0.2)"/><path d="M7 18c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 3h4" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/></svg>
+              <span>사원 출근</span>
+            </button>
+            <button class="menu-tab-btn" data-tab="shop">
+              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 6v12M15 9.5c0-1.4-1.3-2-3-2s-3 .6-3 2 1.3 2 3 2.5 3 .9 3 2.5-1.3 2-3 2-3-.8-3-2" stroke="#ffd700" stroke-width="2" stroke-linecap="round"/></svg>
+              <span>연봉 협상</span>
+            </button>
+            <button class="menu-tab-btn" data-tab="ach">
+              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><path d="M8 4h8v7a4 4 0 01-8 0V4z" stroke="currentColor" stroke-width="2" fill="rgba(255,215,0,0.15)"/><path d="M8 6H5a2 2 0 00-2 2v1a3 3 0 003 3h2M16 6h3a2 2 0 012 2v1a3 3 0 01-3 3h-2M12 15v4M9 21h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <span>사내 업적</span>
+            </button>
+            <button class="menu-tab-btn" data-tab="bestiary">
+              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="2"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="2" fill="rgba(168,85,247,0.15)"/><path d="M12 7l1.5 3 3.5.5-2.5 2.5.5 3.5-3-1.5-3 1.5.5-3.5-2.5-2.5 3.5-.5L12 7z" fill="#00f0ff"/></svg>
+              <span>업무 도감</span>
+            </button>
           </div>
         </div>
 
@@ -259,21 +291,24 @@
 
     <!-- 모바일 칼퇴 대시 버튼 (Sprint / Dodge) -->
     <button id="btnMobileDash" class="mobile-dash-btn" title="칼퇴 대시 (스페이스바 / 터치)">
-      <span class="dash-btn-icon">💨</span>
+      <span class="dash-btn-icon">
+        <svg viewBox="0 0 24 24" fill="none" class="svg-icon inline-icon"><path d="M4 12h14M15 8l4 4-4 4" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7h9M2 17h11" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.6"/></svg>
+      </span>
       <span class="dash-btn-label">대시</span>
       <div id="dashCooldownOverlay" class="dash-cooldown-overlay"></div>
     </button>
   </div>
 
   <!-- 스크립트 로드 순서 엄수 -->
-  <script src="js/sound.js?v=20260929_110"></script>
-  <script src="js/data.js?v=20260929_110"></script>
-  <script src="js/save.js?v=20260929_110"></script>
-  <script src="js/props.js?v=20260929_110"></script>
-  <script src="js/drops.js?v=20260929_110"></script>
-  <script src="js/weapons.js?v=20260929_110"></script>
-  <script src="js/monsters.js?v=20260929_110"></script>
-  <script src="js/player.js?v=20260929_110"></script>
-  <script src="js/game.js?v=20260929_110"></script>
+  <script src="js/sound.js?v=20260929_111"></script>
+  <script src="js/icons.js?v=20260929_111"></script>
+  <script src="js/data.js?v=20260929_111"></script>
+  <script src="js/save.js?v=20260929_111"></script>
+  <script src="js/props.js?v=20260929_111"></script>
+  <script src="js/drops.js?v=20260929_111"></script>
+  <script src="js/weapons.js?v=20260929_111"></script>
+  <script src="js/monsters.js?v=20260929_111"></script>
+  <script src="js/player.js?v=20260929_111"></script>
+  <script src="js/game.js?v=20260929_111"></script>
 </body>
 </html>

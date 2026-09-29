@@ -544,18 +544,18 @@ class GameEngine {
 
     const s = this.player.stats;
     const statsList = [
-      { label: '현재 체력', val: `${Math.ceil(this.player.hp)} / ${this.player.maxHp}`, icon: '❤️' },
-      { label: '공격력 배율', val: `x${s.atkMul.toFixed(2)}`, icon: '⚔️' },
-      { label: '이동 속도', val: `x${s.speedMul.toFixed(2)}`, icon: '👟' },
-      { label: '쿨타임 감소', val: `-${Math.round(s.cdReduc * 100)}%`, icon: '⚡' },
-      { label: '공격 범위', val: `+${Math.round((s.areaMul - 1) * 100)}%`, icon: '🎯' },
-      { label: '자석 흡입', val: `${s.magnetRange}px`, icon: '🧲' },
-      { label: '받는 피해 감소', val: `${Math.round(s.dmgReduc * 100)}%`, icon: '🛡️' },
-      { label: '초당 HP 재생', val: `+${s.hpRegen.toFixed(1)}/초`, icon: '🌿' },
-      { label: '치명타율', val: `${Math.round(s.critRate * 100)}%`, icon: '💥' },
-      { label: '회피율', val: `${Math.round((s.dodgeRate || 0) * 100)}%`, icon: '💨' },
-      { label: '부활 기회', val: `${this.player.reviveCount}회`, icon: '🏖️' },
-      { label: '골드 획득량', val: `x${(s.goldMul || 1.0).toFixed(2)}`, icon: '🪙' }
+      { label: '현재 체력', val: `${Math.ceil(this.player.hp)} / ${this.player.maxHp}`, icon: window.getGameIcon('heart_hp') },
+      { label: '공격력 배율', val: `x${s.atkMul.toFixed(2)}`, icon: window.getGameIcon('up_atk') },
+      { label: '이동 속도', val: `x${s.speedMul.toFixed(2)}`, icon: window.getGameIcon('up_speed') },
+      { label: '쿨타임 감소', val: `-${Math.round(s.cdReduc * 100)}%`, icon: window.getGameIcon('up_cd') },
+      { label: '공격 범위', val: `+${Math.round((s.areaMul - 1) * 100)}%`, icon: window.getGameIcon('glasses') },
+      { label: '자석 흡입', val: `${s.magnetRange}px`, icon: window.getGameIcon('up_magnet') },
+      { label: '받는 피해 감소', val: `${Math.round(s.dmgReduc * 100)}%`, icon: window.getGameIcon('headphone') },
+      { label: '초당 HP 재생', val: `+${s.hpRegen.toFixed(1)}/초`, icon: window.getGameIcon('leave') },
+      { label: '치명타율', val: `${Math.round(s.critRate * 100)}%`, icon: window.getGameIcon('bonus') },
+      { label: '회피율', val: `${Math.round((s.dodgeRate || 0) * 100)}%`, icon: window.getGameIcon('airpod') },
+      { label: '부활 기회', val: `${this.player.reviveCount}회`, icon: window.getGameIcon('leave') },
+      { label: '골드 획득량', val: `x${(s.goldMul || 1.0).toFixed(2)}`, icon: window.getGameIcon('gold_coin') }
     ];
 
     grid.innerHTML = statsList.map(item => `
@@ -634,7 +634,7 @@ class GameEngine {
 
       let starIcons = '';
       for (let s = 1; s <= 3; s++) {
-        starIcons += `<span class="star-icon ${s <= stars ? 'active' : ''}">⭐</span>`;
+        starIcons += s <= stars ? window.getGameIcon('star_gold') : window.getGameIcon('star_empty');
       }
 
       const durM = Math.floor(st.duration / 60);
@@ -649,8 +649,8 @@ class GameEngine {
         <div class="stage-card-title">${st.name}</div>
         <div class="stage-card-desc">${st.desc}</div>
         <div class="stage-card-meta">
-          <span class="stage-meta-item">⏱️ ${durM}:${durS}</span>
-          <span class="stage-meta-item">🪙 +${goldReward}</span>
+          <span class="stage-meta-item">${window.getGameIcon('timer_clock')} ${durM}:${durS}</span>
+          <span class="stage-meta-item">${window.getGameIcon('gold_coin')} +${goldReward}</span>
           ${st.boss ? '<span class="stage-meta-boss">⚠️ 보스 출현</span>' : ''}
         </div>
         ${!isUnlocked ? '<div class="stage-lock-overlay">🔒 이전 결재선 승인 필요</div>' : ''}
@@ -1014,7 +1014,7 @@ class GameEngine {
       choices.push({
         id: 'heal_' + choices.length,
         category: 'heal',
-        icon: '🍖',
+        icon: window.getGameIcon('heal'),
         title: '야근 영양제 섭취',
         typeText: '즉시 회복',
         desc: '즉시 체력을 40% 회복하고 코인 +100을 획득합니다.'
@@ -1257,7 +1257,7 @@ class GameEngine {
           }
 
           box.innerHTML = `
-            <span class="slot-icon">${isSuper ? '⚡' : (wDef ? wDef.icon : '⚔️')}</span>
+            <span class="slot-icon">${isSuper ? (window.GAME_DATA.SUPER_WEAPONS[`super_${wId}`]?.icon || wDef?.icon || '') : (wDef ? wDef.icon : '')}</span>
             <div class="slot-level-dots">${dotsHtml}</div>
           `;
         }

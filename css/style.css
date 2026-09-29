@@ -513,6 +513,96 @@ html, body {
   gap: 5px;
 }
 
+/* SVG Vector Icon System */
+.svg-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.tab-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.pill-svg-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.stat-svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-svg-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.inline-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.char-avatar-svg {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+}
+
+.weapon-svg, .passive-svg, .shop-svg, .ach-svg, .monster-svg, .stage-svg {
+  width: 24px;
+  height: 24px;
+}
+
+.upgrade-card-icon .svg-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.slot-icon .svg-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.pause-stat-icon .svg-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.shop-card-icon .svg-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.star-svg {
+  width: 16px;
+  height: 16px;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+}
+
+.stage-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ach-title, .bestiary-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .gold-text {
   font-family: var(--font-title);
   font-weight: 800;
@@ -535,15 +625,21 @@ html, body {
   margin-bottom: 8px;
 }
 
-/* 4대 메인 탭 바 */
+/* 5대 메인 탭 바 */
 .menu-tabs-bar {
   display: flex;
-  background: rgba(10, 16, 28, 0.8);
+  background: rgba(10, 16, 28, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   padding: 3px;
   gap: 4px;
   margin-top: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.menu-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .menu-tab-btn {
@@ -552,13 +648,17 @@ html, body {
   border: none;
   color: var(--text-muted);
   font-family: var(--font-main);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   padding: 7px 4px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .menu-tab-btn.active {
