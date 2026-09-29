@@ -328,88 +328,276 @@ class OfficeObstacle {
     this.y = y;
     this.width = width;
     this.height = height;
-    this.type = type; // 'partition', 'meeting_wall', 'desk_cluster'
+    // partition, meeting_wall, desk_cluster, server_rack, cafe_table, exec_desk, meeting_table, counter, plant
+    this.type = type;
+    this.seed = Math.floor(x * 7 + y * 13);
   }
 
   render(ctx, camera) {
     const sx = this.x - camera.x;
     const sy = this.y - camera.y;
+    const w = this.width;
+    const h = this.height;
 
     ctx.save();
     ctx.translate(sx, sy);
 
-    // 그림자
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.fillRect(0, this.height, this.width, 6);
-
-    if (this.type === 'partition') {
-      // 오피스 블루 파티션 벽
-      ctx.fillStyle = '#1e3a8a';
-      ctx.fillRect(0, 0, this.width, this.height);
-
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(0, 0, this.width, this.height);
-
-      // 패브릭 질감 스트라이프
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.lineWidth = 1;
-      for (let i = 8; i < this.width; i += 12) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, this.height);
-        ctx.stroke();
-      }
-    } else if (this.type === 'meeting_wall') {
-      // 회의실 유리 파티션 벽
-      ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-      ctx.fillRect(0, 0, this.width, this.height);
-
-      ctx.strokeStyle = '#00f0ff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(0, 0, this.width, this.height);
-
-      // 네온 유리 반사선
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+    // 바닥 그림자
+    if (this.type !== 'meeting_wall') {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
       ctx.beginPath();
-      ctx.moveTo(10, 0);
-      ctx.lineTo(this.width - 10, this.height);
-      ctx.stroke();
-    } else if (this.type === 'desk_cluster') {
-      // 원목 오피스 책상
-      ctx.fillStyle = '#334155';
-      ctx.strokeStyle = '#475569';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(0, 0, this.width, this.height, 6);
+      ctx.roundRect(4, 6, w, h, 8);
       ctx.fill();
-      ctx.stroke();
+    }
 
-      const a = window.assets;
-      if (a && a.get('item_monitor')) {
-        // 듀얼 모니터 + 키보드 + 머그 + 서류 (Kenney 아이템)
-        a.draw(ctx, 'fx_glow', 50, 18, 110, 60, { color: '#38bdf8', alpha: 0.35, blend: 'lighter' });
-        a.draw(ctx, 'item_monitor', 30, 18, 34, 34);
-        a.draw(ctx, 'item_monitor_wide', 70, 18, 34, 34);
-        a.draw(ctx, 'item_keyboard', 50, 42, 38, 38);
-        a.draw(ctx, 'item_mug', 88, 44, 18, 18);
-        a.draw(ctx, 'item_memo', 12, 44, 18, 18, { rot: -0.3 });
-      } else {
-        // 듀얼 모니터 (푸른 화면 발광)
-        ctx.fillStyle = '#38bdf8';
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 8;
-        ctx.fillRect(15, 8, 30, 14);
-        ctx.fillRect(55, 8, 30, 14);
-
-        // 키보드
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(30, 32, 40, 12);
-      }
+    switch (this.type) {
+      case 'partition': this.renderPartition(ctx, w, h); break;
+      case 'meeting_wall': this.renderGlassWall(ctx, w, h); break;
+      case 'server_rack': this.renderServerRack(ctx, w, h); break;
+      case 'cafe_table': this.renderCafeTable(ctx, w, h); break;
+      case 'exec_desk': this.renderExecDesk(ctx, w, h); break;
+      case 'meeting_table': this.renderMeetingTable(ctx, w, h); break;
+      case 'counter': this.renderCounter(ctx, w, h); break;
+      case 'plant': this.renderPlant(ctx, w, h); break;
+      default: this.renderDesk(ctx, w, h); break;
     }
 
     ctx.restore();
+  }
+
+  // 패브릭 파티션 + 알루미늄 캡
+  renderPartition(ctx, w, h) {
+    ctx.fillStyle = '#3b4659';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, w, h, 3);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    for (let i = 4; i < w; i += 5) ctx.fillRect(i, 2, 1, h - 4);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(0, 0, w, 2);
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(0, h - 2, w, 2);
+  }
+
+  // 회의실 유리벽 (반투명 + 프로스트 띠)
+  renderGlassWall(ctx, w, h) {
+    ctx.fillStyle = 'rgba(148, 197, 255, 0.14)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(226, 238, 255, 0.18)';
+    if (w > h) ctx.fillRect(0, h * 0.35, w, h * 0.3); else ctx.fillRect(w * 0.35, 0, w * 0.3, h);
+    ctx.strokeStyle = 'rgba(203, 213, 225, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(0.75, 0.75, w - 1.5, h - 1.5);
+    ctx.fillStyle = '#64748b';
+    const step = 70;
+    if (w > h) { for (let i = 0; i <= w; i += step) ctx.fillRect(Math.min(i, w - 3), 0, 3, h); }
+    else { for (let i = 0; i <= h; i += step) ctx.fillRect(0, Math.min(i, h - 3), w, 3); }
+  }
+
+  // 오픈 오피스 2인 책상 + 의자 + 모니터 (Kenney 아이템)
+  renderDesk(ctx, w, h) {
+    // 의자 (책상 아래쪽)
+    ctx.fillStyle = '#111827';
+    [w * 0.3, w * 0.7].forEach(cx => {
+      ctx.beginPath();
+      ctx.roundRect(cx - 11, h - 4, 22, 18, 6);
+      ctx.fill();
+      ctx.fillStyle = '#1f2937';
+      ctx.beginPath();
+      ctx.roundRect(cx - 9, h + 8, 18, 6, 3);
+      ctx.fill();
+      ctx.fillStyle = '#111827';
+    });
+
+    // 상판 (라이트 오크)
+    ctx.fillStyle = '#8b6b4a';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, w, h, 5);
+    ctx.fill();
+    ctx.fillStyle = '#a07e58';
+    ctx.beginPath();
+    ctx.roundRect(1.5, 1.5, w - 3, h - 6, 4);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+    ctx.fillRect(w / 2 - 0.5, 2, 1, h - 6);
+
+    const a = window.assets;
+    if (a && a.get('item_monitor')) {
+      a.draw(ctx, 'fx_glow', w * 0.5, h * 0.3, w * 1.1, h, { color: '#38bdf8', alpha: 0.28, blend: 'lighter' });
+      a.draw(ctx, 'item_monitor', w * 0.3, h * 0.34, 30, 30);
+      a.draw(ctx, 'item_monitor_wide', w * 0.7, h * 0.34, 30, 30);
+      a.draw(ctx, 'item_keyboard', w * 0.3, h * 0.72, 26, 26);
+      a.draw(ctx, 'item_keyboard', w * 0.7, h * 0.72, 26, 26);
+      a.draw(ctx, 'item_mug', w * 0.92, h * 0.7, 13, 13);
+      a.draw(ctx, 'item_memo', w * 0.08, h * 0.68, 14, 14, { rot: -0.3 });
+    } else {
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(w * 0.15, 8, w * 0.3, 14);
+      ctx.fillRect(w * 0.55, 8, w * 0.3, 14);
+    }
+  }
+
+  // 전산실 서버 랙 2대 (LED 점멸)
+  renderServerRack(ctx, w, h) {
+    const t = performance.now() / 1000;
+    const rackW = (w - 6) / 2;
+    for (let r = 0; r < 2; r++) {
+      const rx = r * (rackW + 6);
+      ctx.fillStyle = '#0b1220';
+      ctx.beginPath();
+      ctx.roundRect(rx, 0, rackW, h, 4);
+      ctx.fill();
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      for (let u = 0; u < 5; u++) {
+        const uy = 6 + u * ((h - 12) / 5);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(rx + 4, uy, rackW - 8, (h - 12) / 5 - 3);
+        for (let l = 0; l < 3; l++) {
+          const on = Math.sin(t * (3 + l) + this.seed + u * 1.7 + r * 3) > 0.2;
+          ctx.fillStyle = on ? (l === 2 ? '#f59e0b' : '#22d3ee') : '#0f2530';
+          ctx.fillRect(rx + rackW - 10 - l * 5, uy + 3, 3, 3);
+        }
+      }
+    }
+    ctx.fillStyle = 'rgba(34, 211, 238, 0.1)';
+    ctx.fillRect(0, h - 3, w, 3);
+  }
+
+  // 탕비실 원형 카페 테이블 + 의자 4개
+  renderCafeTable(ctx, w, h) {
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.fillStyle = '#1c1917';
+    [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dx, dy]) => {
+      ctx.beginPath();
+      ctx.arc(cx + dx * (w / 2 - 6), cy + dy * (h / 2 + 4), 9, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.fillStyle = '#e7e0d6';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, w * 0.36, h * 0.46, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#a8a29e';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    const a = window.assets;
+    if (a) {
+      a.draw(ctx, 'item_mug', cx - 12, cy - 4, 16, 16);
+      a.draw(ctx, 'item_tumbler', cx + 12, cy + 2, 16, 16);
+    }
+  }
+
+  // 임원실 월넛 책상 + 가죽 의자 + 서류
+  renderExecDesk(ctx, w, h) {
+    ctx.fillStyle = '#1c1917';
+    ctx.beginPath();
+    ctx.roundRect(w / 2 - 16, -14, 32, 20, 8);
+    ctx.fill();
+
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#5b3a24');
+    g.addColorStop(1, '#3f2716');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, w, h, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const a = window.assets;
+    if (a && a.get('item_monitor')) {
+      a.draw(ctx, 'item_monitor_wide', w * 0.5, h * 0.36, 32, 32);
+      a.draw(ctx, 'item_folder', w * 0.18, h * 0.6, 20, 20, { rot: 0.2 });
+      a.draw(ctx, 'item_document', w * 0.82, h * 0.6, 18, 18, { rot: -0.25 });
+    }
+  }
+
+  // 회의실 테이블 + 의자
+  renderMeetingTable(ctx, w, h) {
+    ctx.fillStyle = '#111827';
+    for (let i = 0; i < 3; i++) {
+      const cx = w * (0.22 + i * 0.28);
+      ctx.beginPath(); ctx.roundRect(cx - 9, -12, 18, 12, 4); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(cx - 9, h, 18, 12, 4); ctx.fill();
+    }
+    ctx.fillStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, w, h, h / 2);
+    ctx.fill();
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.roundRect(4, h - 6, w - 8, 3, 2);
+    ctx.fill();
+    const a = window.assets;
+    if (a) {
+      a.draw(ctx, 'item_document', w * 0.3, h * 0.5, 16, 16, { rot: 0.4 });
+      a.draw(ctx, 'item_memo', w * 0.55, h * 0.45, 14, 14);
+      a.draw(ctx, 'item_mug', w * 0.78, h * 0.5, 13, 13);
+    }
+  }
+
+  // 탕비실 주방 카운터 (싱크 / 커피머신 / 냉장고)
+  renderCounter(ctx, w, h) {
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(0, 0, w, h - 8);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(0, h - 8, w, 8);
+
+    // 싱크
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath(); ctx.roundRect(w * 0.18, 8, 60, h - 22, 6); ctx.fill();
+    ctx.fillStyle = '#475569';
+    ctx.beginPath(); ctx.roundRect(w * 0.18 + 4, 12, 52, h - 30, 4); ctx.fill();
+
+    // 커피머신
+    ctx.fillStyle = '#1f2937';
+    ctx.beginPath(); ctx.roundRect(w * 0.42, 4, 44, h - 14, 5); ctx.fill();
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(w * 0.42 + 8, 10, 6, 4);
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(w * 0.42 + 18, 10, 6, 4);
+
+    // 냉장고
+    ctx.fillStyle = '#f1f5f9';
+    ctx.beginPath(); ctx.roundRect(w - 70, -6, 60, h + 2, 5); ctx.fill();
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(w - 20, 6, 3, h - 20);
+
+    const a = window.assets;
+    if (a) {
+      a.draw(ctx, 'item_mug', w * 0.62, h * 0.4, 16, 16);
+      a.draw(ctx, 'item_mug', w * 0.66, h * 0.45, 16, 16);
+      a.draw(ctx, 'item_tumbler', w * 0.72, h * 0.4, 18, 18);
+    }
+  }
+
+  // 사무실 화분
+  renderPlant(ctx, w, h) {
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.fillStyle = '#e5e7eb';
+    ctx.beginPath();
+    ctx.arc(cx, cy, w * 0.36, 0, Math.PI * 2);
+    ctx.fill();
+    const leaves = ['#15803d', '#16a34a', '#22c55e'];
+    for (let i = 0; i < 9; i++) {
+      const ang = (i / 9) * Math.PI * 2 + this.seed;
+      const r = w * 0.32;
+      ctx.fillStyle = leaves[i % 3];
+      ctx.beginPath();
+      ctx.ellipse(cx + Math.cos(ang) * r * 0.55, cy + Math.sin(ang) * r * 0.55, r * 0.55, r * 0.28, ang, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#4ade80';
+    ctx.beginPath();
+    ctx.arc(cx, cy, w * 0.12, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
@@ -425,52 +613,84 @@ class OfficePropManager {
     this.generateMapLayout();
   }
 
+  // 사각형 겹침 검사 (여백 포함)
+  overlapsObstacle(x, y, w, h, pad = 20) {
+    return this.obstacles.some(o => x < o.x + o.width + pad && x + w + pad > o.x && y < o.y + o.height + pad && y + h + pad > o.y);
+  }
+
+  // 회의실(출입구 앞 여백 포함)과 겹치는지 검사
+  overlapsRoom(x, y, w, h, pad = 40) {
+    return OfficeMap.MEETING_ROOMS.some(r => x < r.x + r.w + pad && x + w + pad > r.x && y < r.y + r.h + pad && y + h + pad > r.y);
+  }
+
+  // 회의실과 겹치지 않을 때만 가구 배치
+  addFurniture(x, y, w, h, type) {
+    if (this.overlapsRoom(x, y, w, h)) return;
+    this.obstacles.push(new OfficeObstacle(x, y, w, h, type));
+  }
+
   generateMapLayout() {
-    const mapSize = 2400;
-    const propTypes = ['water_purifier', 'vending_machine', 'copier', 'cabinet'];
+    const mapSize = OfficeMap.SIZE;
 
-    // 1. 파괴 가능한 인터랙션 오피스 오브젝트 분산 배치
-    for (let i = 0; i < 48; i++) {
-      const type = propTypes[i % propTypes.length];
-      const px = 150 + Math.random() * (mapSize - 300);
-      const py = 150 + Math.random() * (mapSize - 300);
+    // 1. 회의실 4개 (유리벽 + 회의 테이블)
+    OfficeMap.MEETING_ROOMS.forEach(r => {
+      const t = 'meeting_wall';
+      this.obstacles.push(new OfficeObstacle(r.x, r.y, r.w, 16, t)); // 상단
+      this.obstacles.push(new OfficeObstacle(r.x, r.y, 16, r.h, t)); // 좌측
+      this.obstacles.push(new OfficeObstacle(r.x + r.w - 16, r.y, 16, r.h, t)); // 우측
+      this.obstacles.push(new OfficeObstacle(r.x, r.y + r.h - 16, r.w * 0.6, 16, t)); // 하단 (출입구 개방)
+      this.obstacles.push(new OfficeObstacle(r.x + r.w / 2 - 70, r.y + r.h / 2 - 20, 140, 46, 'meeting_table'));
+    });
 
-      // 시작 지점(1200, 1200) 근처 150px 이내는 비움
-      if (Math.hypot(px - 1200, py - 1200) > 150) {
-        this.props.push(new OfficeProp(type, px, py));
+    // 2. 구역별 가구 (오픈오피스 책상 / 탕비실 테이블 / 전산실 랙 / 임원 책상)
+    const furnitureByZone = {
+      office: 'desk_cluster',
+      pantry: 'cafe_table',
+      server: 'server_rack',
+      exec: 'exec_desk'
+    };
+    for (let rx = 300; rx <= 2100; rx += 400) {
+      for (let ry = 300; ry <= 2100; ry += 400) {
+        if (Math.abs(rx - 1200) < 150 && Math.abs(ry - 1200) < 150) continue;
+        const zone = OfficeMap.zoneAt(rx, ry);
+        if (zone === 'lobby') continue;
+        const type = furnitureByZone[zone];
+        if (type === 'cafe_table') this.addFurniture(rx - 36, ry - 28, 72, 56, type);
+        else if (type === 'server_rack') this.addFurniture(rx - 50, ry - 40, 100, 80, type);
+        else this.addFurniture(rx - 50, ry - 30, 100, 60, type);
       }
     }
 
-    // 2. 오피스 회의실 4개 (A, B, C, D 룸)
-    const rooms = [
-      { x: 400, y: 400, w: 280, h: 200, type: 'meeting_wall' },
-      { x: 1700, y: 400, w: 280, h: 200, type: 'meeting_wall' },
-      { x: 400, y: 1700, w: 280, h: 200, type: 'meeting_wall' },
-      { x: 1700, y: 1700, w: 280, h: 200, type: 'meeting_wall' },
-    ];
-
-    rooms.forEach(r => {
-      this.obstacles.push(new OfficeObstacle(r.x, r.y, r.w, 16, r.type)); // 상단 벽
-      this.obstacles.push(new OfficeObstacle(r.x, r.y, 16, r.h, r.type)); // 좌측 벽
-      this.obstacles.push(new OfficeObstacle(r.x + r.w - 16, r.y, 16, r.h, r.type)); // 우측 벽
-      this.obstacles.push(new OfficeObstacle(r.x, r.y + r.h - 16, r.w * 0.6, 16, r.type)); // 하단 벽(출입문 오픈)
-    });
-
-    // 3. 중앙 파티션 기둥들
+    // 3. 중앙 파티션 (오픈오피스 / 임원실 구역만)
     for (let x = 600; x <= 1800; x += 400) {
       for (let y = 600; y <= 1800; y += 400) {
-        if (Math.hypot(x - 1200, y - 1200) > 200) {
-          this.obstacles.push(new OfficeObstacle(x - 40, y - 6, 80, 12, 'partition'));
+        if (Math.hypot(x - 1200, y - 1200) <= 200) continue;
+        const zone = OfficeMap.zoneAt(x, y);
+        if (zone === 'office' || zone === 'exec') {
+          this.addFurniture(x - 40, y - 6, 80, 12, 'partition');
         }
       }
     }
 
-    // 4. 고정 오피스 책상 군집 (물리 충돌 적용)
-    for (let rx = 300; rx <= 2100; rx += 400) {
-      for (let ry = 300; ry <= 2100; ry += 400) {
-        if (Math.abs(rx - 1200) < 150 && Math.abs(ry - 1200) < 150) continue;
-        this.obstacles.push(new OfficeObstacle(rx - 50, ry - 30, 100, 60, 'desk_cluster'));
-      }
+    // 4. 탕비실 주방 카운터 (상단 벽면)
+    this.obstacles.push(new OfficeObstacle(1300, 70, 700, 44, 'counter'));
+
+    // 5. 화분 (로비 네 모서리 + 구역 경계)
+    [[960, 960], [1440, 960], [960, 1440], [1440, 1440], [1150, 130], [1250, 2270], [130, 1150], [2270, 1250]]
+      .forEach(([x, y]) => this.obstacles.push(new OfficeObstacle(x - 18, y - 18, 36, 36, 'plant')));
+
+    // 6. 파괴 가능한 기물 (가구와 겹치지 않게 분산 배치)
+    const propTypes = ['water_purifier', 'vending_machine', 'copier', 'cabinet'];
+    let placed = 0;
+    for (let i = 0; i < 200 && placed < 44; i++) {
+      const type = propTypes[placed % propTypes.length];
+      const px = 150 + Math.random() * (mapSize - 300);
+      const py = 170 + Math.random() * (mapSize - 320);
+      if (Math.hypot(px - 1200, py - 1200) < 180) continue;
+      if (this.overlapsObstacle(px - 30, py - 36, 60, 72)) continue;
+      if (this.props.some(p => Math.hypot(p.x - px, p.y - py) < 90)) continue;
+      this.props.push(new OfficeProp(type, px, py));
+      placed++;
     }
   }
 

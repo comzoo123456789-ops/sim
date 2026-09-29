@@ -339,6 +339,7 @@ class GameEngine {
     this.propMgr = new OfficePropManager();
     this.dropMgr = new DropManager();
     this.effectEngine = new EffectEngine();
+    this.officeMap = new OfficeMap();
 
     this.camera = { x: 0, y: 0 };
     this.input = {
@@ -390,6 +391,7 @@ class GameEngine {
     this.canvas.width = Math.round(this.viewW * dpr);
     this.canvas.height = Math.round(this.viewH * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (this.officeMap) this.officeMap.setScale(dpr);
   }
 
   setupInputListeners() {
@@ -530,6 +532,8 @@ class GameEngine {
         btnModeSurvival.classList.remove('active');
         const grid = document.getElementById('stageGridContainer');
         if (grid) grid.style.display = 'flex';
+        const survivalCard = document.getElementById('survivalInfoCard');
+        if (survivalCard) survivalCard.hidden = true;
         this.updateStageSelectedInfo();
         if (window.soundEngine) window.soundEngine.playClick();
       };
@@ -540,10 +544,9 @@ class GameEngine {
         btnModeStage.classList.remove('active');
         const grid = document.getElementById('stageGridContainer');
         if (grid) grid.style.display = 'none';
-        const titleEl = document.getElementById('selectedStageTitle');
-        const rewardEl = document.getElementById('selectedStageReward');
-        if (titleEl) titleEl.innerText = '모드: ⏱️ 10분 무한 심야 서바이벌 (막차 탈출)';
-        if (rewardEl) rewardEl.innerText = '보스 처치 및 생존 시 대량의 코인 획득!';
+        const survivalCard = document.getElementById('survivalInfoCard');
+        if (survivalCard) survivalCard.hidden = false;
+        this.updateStageSelectedInfo();
         if (window.soundEngine) window.soundEngine.playClick();
       };
     }
@@ -708,41 +711,40 @@ class GameEngine {
   }
 
   setupLobbyTabs() {
+    const panels = {
+      stage: 'tabPanelStage',
+      char: 'tabPanelChar',
+      shop: 'tabPanelShop',
+      ach: 'tabPanelAch',
+      bestiary: 'tabPanelBestiary'
+    };
+    const renderers = {
+      stage: () => this.renderStageSelectGrid(),
+      char: () => this.renderCharSelectGrid(),
+      shop: () => this.renderShop(),
+      ach: () => this.renderAchievements(),
+      bestiary: () => this.renderBestiary()
+    };
+
     const tabs = document.querySelectorAll('.menu-tab-btn');
     tabs.forEach(btn => {
       btn.onclick = () => {
         const targetTab = btn.getAttribute('data-tab');
-        tabs.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        tabs.forEach(b => b.classList.toggle('active', b === btn));
+        Object.entries(panels).forEach(([key, id]) => {
+          const panel = document.getElementById(id);
+          if (panel) panel.classList.toggle('active', key === targetTab);
+        });
 
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        // 출근 바는 스테이지 / 사원 탭에서만 노출
+        const actionBar = document.getElementById('lobbyActionBar');
+        if (actionBar) actionBar.hidden = !(targetTab === 'stage' || targetTab === 'char');
 
-        if (targetTab === 'stage') {
-          const panel = document.getElementById('tabPanelStage');
-          if (panel) panel.classList.add('active');
-          this.renderStageSelectGrid();
-        }
-        if (targetTab === 'char') {
-          const panel = document.getElementById('tabPanelChar');
-          if (panel) panel.classList.add('active');
-          this.renderCharSelectGrid();
-        }
-        if (targetTab === 'shop') {
-          const panel = document.getElementById('tabPanelShop');
-          if (panel) panel.classList.add('active');
-          this.renderShop();
-        }
-        if (targetTab === 'ach') {
-          const panel = document.getElementById('tabPanelAch');
-          if (panel) panel.classList.add('active');
-          this.renderAchievements();
-        }
-        if (targetTab === 'bestiary') {
-          const panel = document.getElementById('tabPanelBestiary');
-          if (panel) panel.classList.add('active');
-          this.renderBestiary();
-        }
+        const body = document.querySelector('.lobby-body');
+        if (body) body.scrollTop = 0;
 
+        if (renderers[targetTab]) renderers[targetTab]();
+        this.updateStageSelectedInfo();
         if (window.soundEngine) window.soundEngine.playClick();
       };
     });
@@ -751,28 +753,54 @@ class GameEngine {
   updateLobbyGold() {
     const gold = window.saveMgr ? window.saveMgr.getGold() : 0;
     const el = document.getElementById('lobbyGoldVal');
-    if (el) el.innerText = `${gold}`;
+    if (el) el.innerText = gold.toLocaleString();
+  }
+
+  getChapter1() {
+    const chapters = window.GAME_DATA && window.GAME_DATA.CHAPTERS;
+    if (!chapters) return null;
+    return chapters.ch1 || (Array.isArray(chapters) ? chapters[0] : null);
+  }
+
+  // 스테이지 이름에서 "1-1 " 접두어 제거 (번호는 카드 좌측 배지로 표시)
+  stageDisplayName(st) {
+    return st.name.replace(/^\d+-\d+\s*/, '');
   }
 
   renderStageSelectGrid() {
     const grid = document.getElementById('stageGridContainer');
-    if (!grid) return;
+    const ch1 = this.getChapter1();
+    if (!grid || !ch1 || !ch1.stages) return;
     grid.innerHTML = '';
 
-    const ch1 = (window.GAME_DATA && window.GAME_DATA.CHAPTERS) ? (window.GAME_DATA.CHAPTERS.ch1 || (Array.isArray(window.GAME_DATA.CHAPTERS) ? window.GAME_DATA.CHAPTERS[0] : null)) : null;
-    if (!ch1 || !ch1.stages) return;
+    const lockSvg = '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.8"/></svg>';
+    let cleared = 0;
 
     ch1.stages.forEach(st => {
       const isUnlocked = window.saveMgr ? window.saveMgr.isStageUnlocked(st.id) : (st.id === '1-1');
       const stars = window.saveMgr ? window.saveMgr.getStageStars(st.id) : 0;
       const isSelected = st.id === this.selectedStageId;
+      if (stars > 0) cleared++;
 
       const card = document.createElement('div');
-      card.className = `stage-card ${isUnlocked ? 'unlocked' : 'locked'} ${isSelected ? 'selected' : ''}`;
+      card.className = ['stage-card', isUnlocked ? 'unlocked' : 'locked', isSelected ? 'selected' : '', st.boss ? 'boss' : ''].join(' ').trim();
+
+      const [chapterNo, stageNo] = st.id.split('-');
+      const numHtml = `<div class="stage-num"><small>STAGE</small>${chapterNo}-${stageNo}</div>`;
+
+      if (!isUnlocked) {
+        card.innerHTML = `
+          ${numHtml}
+          <div class="stage-card-body"><div class="stage-card-title">${this.stageDisplayName(st)}</div></div>
+          <div class="stage-card-side"><span class="stage-lock">${lockSvg}</span></div>
+        `;
+        grid.appendChild(card);
+        return;
+      }
 
       let starIcons = '';
       for (let s = 1; s <= 3; s++) {
-        starIcons += s <= stars ? window.getGameIcon('star_gold') : window.getGameIcon('star_empty');
+        starIcons += window.getGameIcon(s <= stars ? 'star_gold' : 'star_empty');
       }
 
       const durM = Math.floor(st.duration / 60);
@@ -780,55 +808,61 @@ class GameEngine {
       const goldReward = st.goldReward || st.reward || 200;
 
       card.innerHTML = `
-        <div class="stage-card-icon-box">
-          ${st.icon || window.getGameIcon('stage_open_office')}
-        </div>
+        ${numHtml}
         <div class="stage-card-body">
-          <div class="stage-card-header">
-            <div class="stage-id-pill">${st.id}</div>
-            <div class="stage-stars-row">${starIcons}</div>
-          </div>
-          <div class="stage-card-title">${st.name}</div>
+          <div class="stage-card-title">${this.stageDisplayName(st)}</div>
           <div class="stage-card-desc">${st.desc}</div>
           <div class="stage-card-meta">
             <span class="stage-meta-tag">${window.getGameIcon('timer_clock')} ${durM}:${durS}</span>
-            <span class="stage-meta-tag reward">${window.getGameIcon('gold_coin')} +${goldReward} 코인</span>
-            ${st.boss ? '<span class="stage-meta-tag boss">⚠️ 보스 출현</span>' : ''}
+            <span class="stage-meta-tag reward">${window.getGameIcon('gold_coin')} ${goldReward}</span>
+            ${st.boss ? '<span class="stage-meta-tag boss">보스 출현</span>' : ''}
           </div>
         </div>
-        ${!isUnlocked ? '<div class="stage-lock-overlay">🔒 이전 결재선 승인 필요</div>' : ''}
+        <div class="stage-card-side"><div class="stage-stars-row">${starIcons}</div></div>
       `;
 
-      if (isUnlocked) {
-        card.onclick = (e) => {
-          if (e) { e.preventDefault(); e.stopPropagation(); }
-          this.selectedStageId = st.id;
-          document.querySelectorAll('.stage-card').forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-          this.updateStageSelectedInfo();
-          if (window.soundEngine) window.soundEngine.playClick();
-        };
-      }
+      card.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        this.selectedStageId = st.id;
+        grid.querySelectorAll('.stage-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        this.updateStageSelectedInfo();
+        if (window.soundEngine) window.soundEngine.playClick();
+      };
 
       grid.appendChild(card);
     });
+
+    // 챕터 진행도
+    const total = ch1.stages.length;
+    const fill = document.getElementById('chapterProgressFill');
+    const text = document.getElementById('chapterProgressText');
+    if (fill) fill.style.width = `${(cleared / total) * 100}%`;
+    if (text) text.innerText = `${cleared} / ${total} 클리어`;
 
     this.updateStageSelectedInfo();
   }
 
   updateStageSelectedInfo() {
-    const ch1 = (window.GAME_DATA && window.GAME_DATA.CHAPTERS) ? (window.GAME_DATA.CHAPTERS.ch1 || (Array.isArray(window.GAME_DATA.CHAPTERS) ? window.GAME_DATA.CHAPTERS[0] : null)) : null;
-    if (!ch1 || !ch1.stages) return;
-
-    const st = ch1.stages.find(s => s.id === this.selectedStageId) || ch1.stages[0];
     const titleEl = document.getElementById('selectedStageTitle');
     const rewardEl = document.getElementById('selectedStageReward');
+    if (!titleEl || !rewardEl) return;
 
-    if (this.selectedMode === 'stage' && st) {
-      const goldReward = st.goldReward || st.reward || 200;
-      if (titleEl) titleEl.innerText = `선택된 결재선: [${st.id}] ${st.name} (${Math.floor(st.duration / 60)}분)`;
-      if (rewardEl) rewardEl.innerText = `클리어 보상: +${goldReward} 코인 | 3성 달성 시 추가 보너스`;
+    const charData = window.GAME_DATA.CHARACTERS[this.selectedCharId];
+    const charName = charData ? charData.name : '';
+
+    if (this.selectedMode === 'survival') {
+      titleEl.innerText = '10분 무한 서바이벌';
+      rewardEl.innerText = `${charName} · 보스 처치 시 대량 코인`;
+      return;
     }
+
+    const ch1 = this.getChapter1();
+    if (!ch1 || !ch1.stages) return;
+    const st = ch1.stages.find(s => s.id === this.selectedStageId) || ch1.stages[0];
+    const goldReward = st.goldReward || st.reward || 200;
+    titleEl.innerText = `${st.id} ${this.stageDisplayName(st)}`;
+    rewardEl.innerText = `${charName} · 클리어 +${goldReward} 코인`;
   }
 
   renderCharSelectGrid() {
@@ -836,22 +870,43 @@ class GameEngine {
     if (!grid) return;
     grid.innerHTML = '';
 
-    Object.values(window.GAME_DATA.CHARACTERS).forEach(c => {
+    const chars = Object.values(window.GAME_DATA.CHARACTERS);
+    const maxHp = Math.max(...chars.map(c => c.baseHp * (1 + (c.bonus.hpMul || 0))));
+    const maxSpd = Math.max(...chars.map(c => c.speed * (1 + (c.bonus.speedMul || 0))));
+
+    chars.forEach(c => {
+      const hp = Math.round(c.baseHp * (1 + (c.bonus.hpMul || 0)));
+      const spd = c.speed * (1 + (c.bonus.speedMul || 0));
+      const weapon = window.GAME_DATA.WEAPONS[c.initialWeapon];
+
       const card = document.createElement('div');
-      card.className = 'char-select-card' + (c.id === this.selectedCharId ? ' selected' : '');
+      card.className = 'char-card' + (c.id === this.selectedCharId ? ' selected' : '');
       card.innerHTML = `
-        <div class="char-card-avatar">${c.avatar}</div>
-        <div class="char-card-info">
-          <div class="char-card-name">${c.name} <small style="color:#94a3b8;">(${c.title})</small></div>
-          <div style="font-size:12px;color:#cbd5e1;margin-bottom:3px;">${c.desc}</div>
-          <div class="char-card-bonus">✨ ${c.bonusText}</div>
+        <div class="char-portrait">${c.avatar}</div>
+        <div class="char-info">
+          <div class="char-name-row">
+            <span class="char-name">${c.name}</span>
+            <span class="char-title">${c.title}</span>
+          </div>
+          <p class="char-desc">${c.desc}</p>
+          <div class="char-stats">
+            <span class="char-stat-label">체력</span>
+            <span class="char-stat-bar hp"><i style="width:${(hp / maxHp) * 100}%"></i></span>
+            <span class="char-stat-val">${hp}</span>
+            <span class="char-stat-label">속도</span>
+            <span class="char-stat-bar"><i style="width:${(spd / maxSpd) * 100}%"></i></span>
+            <span class="char-stat-val">${spd.toFixed(1)}</span>
+          </div>
+          <div class="char-perk">${weapon ? weapon.icon : ''}<span>${weapon ? weapon.name : ''} · ${c.bonusText}</span></div>
         </div>
+        <span class="char-check">✓</span>
       `;
       card.onclick = (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         this.selectedCharId = c.id;
-        document.querySelectorAll('.char-select-card').forEach(el => el.classList.remove('selected'));
+        grid.querySelectorAll('.char-card').forEach(el => el.classList.remove('selected'));
         card.classList.add('selected');
+        this.updateStageSelectedInfo();
         if (window.soundEngine) window.soundEngine.playXP();
       };
       grid.appendChild(card);
@@ -862,6 +917,7 @@ class GameEngine {
     const grid = document.getElementById('shopGrid');
     if (!grid) return;
     grid.innerHTML = '';
+    const gold = window.saveMgr ? window.saveMgr.getGold() : 0;
 
     Object.values(window.GAME_DATA.SHOP_UPGRADES).forEach(up => {
       const curLv = window.saveMgr ? window.saveMgr.getUpgradeLevel(up.id) : 0;
@@ -876,18 +932,14 @@ class GameEngine {
       const card = document.createElement('div');
       card.className = 'shop-card';
       card.innerHTML = `
-        <div class="shop-card-left">
-          <div class="shop-card-icon">${up.icon}</div>
-          <div class="shop-card-info">
-            <div class="shop-card-name-row">
-              <span class="shop-card-name">${up.name}</span>
-              <div class="shop-pips-row">${pipsHtml}</div>
-            </div>
-            <div class="shop-card-desc">${up.desc} (현재: Lv.${curLv}/${up.maxLv})</div>
-          </div>
+        <div class="shop-card-icon">${up.icon}</div>
+        <div class="shop-card-info">
+          <span class="shop-card-name">${up.name}</span>
+          <span class="shop-card-desc">${up.desc}</span>
+          <div class="shop-pips-row">${pipsHtml}</div>
         </div>
-        <button class="shop-buy-btn ${isMax ? 'maxed' : ''}" data-id="${up.id}">
-          ${isMax ? '최대 레벨' : `+ ${cost} 코인`}
+        <button class="shop-buy-btn ${isMax ? 'maxed' : (gold < cost ? 'poor' : '')}">
+          ${isMax ? 'MAX' : `${window.getGameIcon('gold_coin')}${cost.toLocaleString()}`}
         </button>
       `;
 
@@ -899,8 +951,8 @@ class GameEngine {
             if (window.soundEngine) window.soundEngine.playBuy();
             this.updateLobbyGold();
             this.renderShop();
-          } else {
-            if (window.soundEngine) window.soundEngine.playHit();
+          } else if (window.soundEngine) {
+            window.soundEngine.playHit();
           }
         };
       }
@@ -913,21 +965,27 @@ class GameEngine {
     const list = document.getElementById('achList');
     if (!list) return;
     list.innerHTML = '';
+    let done = 0;
 
     window.GAME_DATA.ACHIEVEMENTS.forEach(ach => {
       const isDone = window.saveMgr ? !!window.saveMgr.data.achievements[ach.id] : false;
+      if (isDone) done++;
 
       const card = document.createElement('div');
       card.className = 'ach-card' + (isDone ? ' completed' : '');
       card.innerHTML = `
+        <div class="ach-icon">${ach.icon}</div>
         <div class="ach-card-info">
-          <div class="ach-title">${ach.icon} ${ach.name}</div>
+          <div class="ach-title">${ach.name}</div>
           <div class="ach-desc">${ach.desc}</div>
         </div>
-        <div class="ach-badge">${isDone ? '달성 완료 ✨' : `보상: ${ach.reward} 코인`}</div>
+        <div class="ach-badge">${isDone ? '달성' : `${window.getGameIcon('gold_coin')}${ach.reward}`}</div>
       `;
       list.appendChild(card);
     });
+
+    const count = document.getElementById('achCount');
+    if (count) count.innerText = `${done} / ${window.GAME_DATA.ACHIEVEMENTS.length}`;
   }
 
   renderBestiary() {
@@ -936,32 +994,40 @@ class GameEngine {
     list.innerHTML = '';
 
     const unlocked = window.saveMgr ? (window.saveMgr.data.unlockedBestiary || []) : [];
+    let found = 0;
 
     window.GAME_DATA.BESTIARY.forEach(b => {
       const isUnlocked = unlocked.includes(b.id);
-      const card = document.createElement('div');
-      card.className = 'bestiary-card' + (isUnlocked ? ' unlocked' : ' locked');
+      const isBoss = b.id.startsWith('boss_');
+      if (isUnlocked) found++;
 
-      if (isUnlocked) {
-        card.innerHTML = `
-          <div class="bestiary-card-info">
-            <div class="bestiary-title">${b.icon} ${b.name} <small style="color:#00f0ff;font-size:11px;">[${b.type}]</small></div>
-            <div class="bestiary-desc">${b.desc}</div>
-            <div class="bestiary-strategy">💡 공략법: ${b.strategy}</div>
+      const card = document.createElement('div');
+      card.className = ['bestiary-card', isUnlocked ? 'unlocked' : 'locked', isBoss ? 'boss' : ''].join(' ').trim();
+      card.innerHTML = isUnlocked ? `
+          <div class="bestiary-head">
+            <div class="bestiary-icon">${b.icon}</div>
+            <div>
+              <div class="bestiary-name">${b.name}</div>
+              <div class="bestiary-type">${b.type}</div>
+            </div>
           </div>
-          <div class="ach-badge" style="background:rgba(0,240,255,0.15);color:#00f0ff;border:1px solid rgba(0,240,255,0.3);">해금됨</div>
-        `;
-      } else {
-        card.innerHTML = `
-          <div class="bestiary-card-info">
-            <div class="bestiary-title">🔒 ??? <small style="color:#64748b;font-size:11px;">[미확인 업무 괴물]</small></div>
-            <div class="bestiary-desc" style="color:#64748b;">이 몬스터를 처치하여 사내 업무 도감을 해금하세요.</div>
+          <div class="bestiary-desc">${b.desc}</div>
+          <div class="bestiary-strategy">${b.strategy}</div>
+        ` : `
+          <div class="bestiary-head">
+            <div class="bestiary-icon">${b.icon}</div>
+            <div>
+              <div class="bestiary-name">???</div>
+              <div class="bestiary-type">${isBoss ? '보스' : '미확인'}</div>
+            </div>
           </div>
-          <div class="ach-badge" style="background:rgba(100,116,139,0.2);color:#94a3b8;">미처치</div>
+          <div class="bestiary-desc">처치하면 정보가 해금됩니다.</div>
         `;
-      }
       list.appendChild(card);
     });
+
+    const count = document.getElementById('bestiaryCount');
+    if (count) count.innerText = `${found} / ${window.GAME_DATA.BESTIARY.length}`;
   }
 
   startGame(charId, stageId = null, mode = 'stage') {
@@ -1269,7 +1335,7 @@ class GameEngine {
       }
     }
 
-    const stageTitle = this.currentStage ? this.currentStage.name : '스테이지';
+    const stageTitle = this.currentStage ? this.stageDisplayName(this.currentStage) : '스테이지';
     const subEl = document.getElementById('stageClearSubtitle');
     if (subEl) subEl.innerText = `[${this.currentStageId}] ${stageTitle} 결재 승인 완료! (${stars}성 획득)`;
 
@@ -1457,162 +1523,9 @@ class GameEngine {
     }
   }
 
-  // 리얼 테크 오피스 2D 맵 렌더러 (5대 테마 구역 + 정밀 오피스 벡터 그래픽)
+  // 사무실 맵 렌더링 (정적 레이어는 OfficeMap 청크 캐시, 엘리베이터/비네팅만 매 프레임)
   renderOfficeMap(ctx, camera) {
-    const mapW = 2400;
-    const mapH = 2400;
-    const tileSize = 80;
-
-    const startX = Math.max(0, Math.floor(camera.x / tileSize) * tileSize);
-    const startY = Math.max(0, Math.floor(camera.y / tileSize) * tileSize);
-    const endX = Math.min(mapW, startX + this.viewW + tileSize * 2);
-    const endY = Math.min(mapH, startY + this.viewH + tileSize * 2);
-
-    // 1. 구역별 바닥재 렌더링
-    for (let x = startX; x < endX; x += tileSize) {
-      for (let y = startY; y < endY; y += tileSize) {
-        const sx = x - camera.x;
-        const sy = y - camera.y;
-
-        const inCenterLobby = (x >= 900 && x < 1500 && y >= 900 && y < 1500);
-        const inPantry = (x >= 1200 && y < 1200);
-        const inServerRoom = (x < 1200 && y >= 1200);
-        const inExecutive = (x >= 1200 && y >= 1200);
-
-        if (inCenterLobby) {
-          // 중앙 테라조 대리석 로비
-          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#1e293b' : '#334155';
-          ctx.fillRect(sx, sy, tileSize, tileSize);
-          // 골드 트림 라인
-          ctx.strokeStyle = 'rgba(234, 179, 8, 0.15)';
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(sx, sy, tileSize, tileSize);
-        } else if (inPantry) {
-          // 탕비실 & 라운지 (오크 우드 플랭크)
-          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#292524' : '#1c1917';
-          ctx.fillRect(sx, sy, tileSize, tileSize);
-          // 우드 결 라인
-          ctx.strokeStyle = 'rgba(180, 83, 9, 0.12)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(sx, sy, tileSize, tileSize);
-          ctx.beginPath();
-          ctx.moveTo(sx, sy + 25);
-          ctx.lineTo(sx + tileSize, sy + 25);
-          ctx.moveTo(sx, sy + 55);
-          ctx.lineTo(sx + tileSize, sy + 55);
-          ctx.stroke();
-        } else if (inServerRoom) {
-          // IDC 서버실 (천공 강철 패널)
-          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#090d16' : '#0f172a';
-          ctx.fillRect(sx, sy, tileSize, tileSize);
-          // 펀칭 메탈 도트
-          ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
-          ctx.beginPath();
-          ctx.arc(sx + 20, sy + 20, 2, 0, Math.PI * 2);
-          ctx.arc(sx + 60, sy + 20, 2, 0, Math.PI * 2);
-          ctx.arc(sx + 20, sy + 60, 2, 0, Math.PI * 2);
-          ctx.arc(sx + 60, sy + 60, 2, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(sx, sy, tileSize, tileSize);
-        } else if (inExecutive) {
-          // 임원실 & 대회의실 (월넛 & 버건디)
-          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#181119' : '#221520';
-          ctx.fillRect(sx, sy, tileSize, tileSize);
-          ctx.strokeStyle = 'rgba(244, 63, 94, 0.1)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(sx, sy, tileSize, tileSize);
-        } else {
-          // 일반 오픈 오피스 (차콜 직조 타일)
-          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#0f172a' : '#141e33';
-          ctx.fillRect(sx, sy, tileSize, tileSize);
-          ctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(sx, sy, tileSize, tileSize);
-        }
-      }
-    }
-
-    // 2. 오피스 구역 타이틀 바닥 네온 마킹
-    this.renderZoneSign(ctx, camera, 400, 200, '💻 DEV & DESIGN OPEN OFFICE', '#38bdf8');
-    this.renderZoneSign(ctx, camera, 1800, 200, '☕ PANTRY & SNACK LOUNGE', '#fbbf24');
-    this.renderZoneSign(ctx, camera, 400, 2100, '🖥️ IDC SERVER & INFRA ROOM', '#00f0ff');
-    this.renderZoneSign(ctx, camera, 1800, 2100, '👔 EXECUTIVE SUITE & BOARDROOM', '#f43f5e');
-
-    // 3. 중앙 비상구 엘리베이터 및 탈출 지점 (1200, 1200)
-    const exitX = 1200 - camera.x;
-    const exitY = 1200 - camera.y;
-    ctx.save();
-    ctx.fillStyle = '#020617';
-    ctx.strokeStyle = '#22c55e';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#22c55e';
-    ctx.shadowBlur = 12;
-
-    ctx.beginPath();
-    ctx.roundRect(exitX - 80, exitY - 80, 160, 160, 16);
-    ctx.fill();
-    ctx.stroke();
-
-    // 엘리베이터 문 슬릿
-    ctx.strokeStyle = 'rgba(34, 197, 94, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(exitX, exitY - 70);
-    ctx.lineTo(exitX, exitY + 70);
-    ctx.stroke();
-
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = '#22c55e';
-    ctx.font = '900 13px "Pretendard", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('EMERGENCY ESCAPE ELEVATOR', exitX, exitY - 25);
-    ctx.font = '900 18px "Pretendard", sans-serif';
-    ctx.fillText('[ 20F ▲ ]', exitX, exitY + 5);
-    ctx.font = 'bold 12px "Pretendard", sans-serif';
-    ctx.fillText('🚨 정시 퇴근 탈출구', exitX, exitY + 30);
-    ctx.restore();
-
-    // 4. 맵 경계 벽면 렌더링
-    this.renderMapBorders(ctx, camera, mapW, mapH);
-
-    // 5. 캐릭터 주변 부드러운 야근 조명 비네팅 효과
-    const pScreenX = this.player ? this.player.x - camera.x : this.viewW / 2;
-    const pScreenY = this.player ? this.player.y - camera.y : this.viewH / 2;
-
-    ctx.save();
-    const vigGrad = ctx.createRadialGradient(pScreenX, pScreenY, 200, pScreenX, pScreenY, 700);
-    vigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    vigGrad.addColorStop(0.65, 'rgba(3, 7, 18, 0.35)');
-    vigGrad.addColorStop(1, 'rgba(2, 6, 23, 0.92)');
-    ctx.fillStyle = vigGrad;
-    ctx.fillRect(0, 0, this.viewW, this.viewH);
-    ctx.restore();
-  }
-
-  renderZoneSign(ctx, camera, x, y, text, color) {
-    const sx = x - camera.x;
-    const sy = y - camera.y;
-    if (sx < -200 || sx > this.viewW + 200 || sy < -100 || sy > this.viewH + 100) return;
-
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.globalAlpha = 0.35;
-    ctx.font = '900 22px "Pretendard", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(text, sx, sy);
-    ctx.restore();
-  }
-
-  renderMapBorders(ctx, camera, mapW, mapH) {
-    ctx.save();
-    ctx.strokeStyle = '#3b82f6';
-    ctx.lineWidth = 6;
-    ctx.shadowColor = '#3b82f6';
-    ctx.shadowBlur = 10;
-    ctx.strokeRect(-camera.x, -camera.y, mapW, mapH);
-    ctx.restore();
+    this.officeMap.render(ctx, camera, this.viewW, this.viewH, this.player);
   }
 
   gameLoop(now) {

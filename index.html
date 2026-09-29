@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>야근 탈출: 오피스 서바이벌 (Office Escape Survivor)</title>
   <meta name="description" content="쏟아지는 업무와 상사들을 물리치고 10분 만에 정시 퇴근하라! 2D 로그라이크 탄막 서바이벌">
-  <link rel="stylesheet" href="css/style.css?v=20260929_130">
+  <link rel="stylesheet" href="css/style.css?v=20260929_141">
 </head>
 <body>
   <div id="app">
@@ -95,91 +95,143 @@
       </div>
     </div>
 
-    <!-- 메인 로비 모달 (캐릭터 선택 / 연봉 협상 / 업적 / 도감) -->
-    <div id="charSelectModal" class="modal-overlay active">
-      <div class="modal-window lobby-window">
-        <div class="modal-header lobby-header">
-          <div class="lobby-title-row">
-            <h2 class="modal-title">야근 탈출: 오피스 서바이벌</h2>
-            <div class="lobby-gold-badge">
-              <span class="gold-icon">
-                <svg viewBox="0 0 24 24" fill="none" class="svg-icon inline-icon"><circle cx="12" cy="12" r="9" fill="#eab308" stroke="#ca8a04" stroke-width="1.5"/><path d="M10 8v8M10 12h4.5M10 8h4a2 2 0 010 4M10 12l4.5 4" stroke="#78350f" stroke-width="1.8" stroke-linecap="round"/></svg>
-              </span>
-              <span id="lobbyGoldVal" class="gold-text">0</span>
+    <!-- 메인 로비 (챕터 / 사원 / 연봉 협상 / 업적 / 도감) -->
+    <div id="charSelectModal" class="modal-overlay lobby-overlay active">
+      <div class="lobby-shell">
+        <!-- 상단 바 -->
+        <header class="lobby-topbar">
+          <div class="lobby-brand">
+            <div class="brand-mark">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" stroke="#38bdf8" stroke-width="1.8"/><path d="M8.5 7h2M13.5 7h2M8.5 10.5h2M13.5 10.5h2M8.5 14h2M13.5 14h2" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round"/><path d="M10.5 21v-3h3v3" stroke="#38bdf8" stroke-width="1.8"/></svg>
+            </div>
+            <div class="brand-text">
+              <h1 class="brand-title">야근 탈출</h1>
+              <span class="brand-sub">OFFICE ESCAPE SURVIVOR</span>
             </div>
           </div>
-          <p class="modal-subtitle">10분간 쏟아지는 야근 폭격을 버텨내고 밤 11시 막차를 타세요!</p>
-
-          <!-- 5대 메인 탭 네비게이션 (고급 벡터 아이콘) -->
-          <div class="menu-tabs-bar">
-            <button class="menu-tab-btn active" data-tab="stage">
-              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="2"/><path d="M7 8h10M7 12h7M7 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="17" cy="15" r="2.5" fill="#38bdf8" stroke="currentColor" stroke-width="1.5"/></svg>
-              <span>챕터/스테이지</span>
-            </button>
-            <button class="menu-tab-btn" data-tab="char">
-              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><rect x="4" y="3" width="16" height="18" rx="3" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9" r="3" stroke="currentColor" stroke-width="2" fill="rgba(56,189,248,0.2)"/><path d="M7 18c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 3h4" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/></svg>
-              <span>사원 출근</span>
-            </button>
-            <button class="menu-tab-btn" data-tab="shop">
-              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 6v12M15 9.5c0-1.4-1.3-2-3-2s-3 .6-3 2 1.3 2 3 2.5 3 .9 3 2.5-1.3 2-3 2-3-.8-3-2" stroke="#ffd700" stroke-width="2" stroke-linecap="round"/></svg>
-              <span>연봉 협상</span>
-            </button>
-            <button class="menu-tab-btn" data-tab="ach">
-              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><path d="M8 4h8v7a4 4 0 01-8 0V4z" stroke="currentColor" stroke-width="2" fill="rgba(255,215,0,0.15)"/><path d="M8 6H5a2 2 0 00-2 2v1a3 3 0 003 3h2M16 6h3a2 2 0 012 2v1a3 3 0 01-3 3h-2M12 15v4M9 21h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              <span>사내 업적</span>
-            </button>
-            <button class="menu-tab-btn" data-tab="bestiary">
-              <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="2"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="2" fill="rgba(168,85,247,0.15)"/><path d="M12 7l1.5 3 3.5.5-2.5 2.5.5 3.5-3-1.5-3 1.5.5-3.5-2.5-2.5 3.5-.5L12 7z" fill="#00f0ff"/></svg>
-              <span>업무 도감</span>
-            </button>
+          <div class="lobby-gold-badge" title="보유 커피 코인">
+            <svg viewBox="0 0 24 24" fill="none" class="svg-icon"><circle cx="12" cy="12" r="9" fill="#fbbf24" stroke="#d97706" stroke-width="1.5"/><path d="M10 8v8M10 12h4.5M10 8h4a2 2 0 010 4M10 12l4.5 4" stroke="#78350f" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span id="lobbyGoldVal" class="gold-text">0</span>
           </div>
-        </div>
+        </header>
 
-        <!-- 탭 0: 챕터 & 스테이지 (1-1 ~ 1-10) 패널 -->
-        <div id="tabPanelStage" class="tab-panel active">
-          <div class="chapter-header-box">
-            <div class="chapter-title-col">
-              <span class="chapter-badge">CHAPTER 1</span>
-              <h3 class="chapter-title">🏢 판교 테크노밸리 스타트업 본사</h3>
-              <p class="chapter-subtitle">1-1 탕비실부터 1-10 대표이사실까지 10단계 결재선을 차례로 돌파하세요!</p>
+        <!-- 스크롤 본문 -->
+        <main class="lobby-body">
+          <!-- 탭 0: 챕터 & 스테이지 -->
+          <section id="tabPanelStage" class="tab-panel active">
+            <div class="chapter-hero">
+              <div class="chapter-hero-art" aria-hidden="true"></div>
+              <div class="chapter-hero-info">
+                <span class="chapter-badge">CHAPTER 1</span>
+                <h2 class="chapter-title">판교 스타트업 본사</h2>
+                <p class="chapter-subtitle">탕비실부터 대표이사실까지, 10단계 결재선을 돌파하고 퇴근하세요.</p>
+                <div class="chapter-progress">
+                  <div class="chapter-progress-track"><div id="chapterProgressFill" class="chapter-progress-fill"></div></div>
+                  <span id="chapterProgressText" class="chapter-progress-text">0 / 10</span>
+                </div>
+              </div>
             </div>
+
             <div class="mode-toggle-group">
-              <button id="btnModeStage" class="mode-toggle-btn active">🚀 스테이지 돌파 (1-1~1-10)</button>
-              <button id="btnModeSurvival" class="mode-toggle-btn">⏱️ 10분 무한 서바이벌</button>
+              <button id="btnModeStage" class="mode-toggle-btn active">스테이지</button>
+              <button id="btnModeSurvival" class="mode-toggle-btn">10분 서바이벌</button>
             </div>
-          </div>
-          <div class="stage-grid-container" id="stageGridContainer"></div>
-          <div class="modal-footer stage-footer">
-            <div class="stage-selected-info">
-              <span id="selectedStageTitle" class="stage-selected-title">선택된 스테이지: 1-1 탕비실 커피 쟁탈전</span>
-              <span id="selectedStageReward" class="stage-selected-reward">클리어 보상: +200 코인</span>
+
+            <div class="stage-grid-container" id="stageGridContainer"></div>
+
+            <div id="survivalInfoCard" class="survival-card" hidden>
+              <h3>10분 무한 심야 서바이벌</h3>
+              <p>밤 11시 막차까지 10분을 버티세요. 시간이 지날수록 업무 몬스터와 상사가 몰려옵니다.</p>
+              <ul class="survival-timeline">
+                <li><b>08:30</b>전사 엑셀 #REF! 대참사</li>
+                <li><b>07:00</b>중간보스 꼰대 과장 등장</li>
+                <li><b>05:30</b>탕비실 간식 도둑 총공격</li>
+                <li><b>04:00</b>엘리트보스 분노의 부장님</li>
+                <li><b>02:30</b>전층 복사기 과열 폭주</li>
+                <li><b>01:00</b>최종보스 철야 지시 대표이사</li>
+              </ul>
             </div>
-            <button id="btnStartSelectedStage" class="btn-primary">스테이지 출근하기 ➔</button>
+          </section>
+
+          <!-- 탭 1: 사원 선택 -->
+          <section id="tabPanelChar" class="tab-panel">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">출근할 사원 선택</h2>
+                <p class="panel-desc">사원마다 기본 무기와 특성이 다릅니다.</p>
+              </div>
+            </div>
+            <div class="char-card-grid" id="charCardGrid"></div>
+          </section>
+
+          <!-- 탭 2: 연봉 협상 (영구 강화) -->
+          <section id="tabPanelShop" class="tab-panel">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">연봉 협상</h2>
+                <p class="panel-desc">코인으로 영구 능력치를 올립니다. 모든 사원에게 적용됩니다.</p>
+              </div>
+            </div>
+            <div class="shop-grid" id="shopGrid"></div>
+          </section>
+
+          <!-- 탭 3: 사내 업적 -->
+          <section id="tabPanelAch" class="tab-panel">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">사내 업적</h2>
+                <p class="panel-desc">달성하면 보너스 코인이 지급됩니다.</p>
+              </div>
+              <span id="achCount" class="panel-count">0 / 0</span>
+            </div>
+            <div class="ach-list" id="achList"></div>
+          </section>
+
+          <!-- 탭 4: 업무 도감 -->
+          <section id="tabPanelBestiary" class="tab-panel">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">업무 도감</h2>
+                <p class="panel-desc">처치한 업무 몬스터의 정보와 공략법입니다.</p>
+              </div>
+              <span id="bestiaryCount" class="panel-count">0 / 0</span>
+            </div>
+            <div class="bestiary-list" id="bestiaryList"></div>
+          </section>
+        </main>
+
+        <!-- 하단 출근 액션 바 (스테이지 / 사원 탭) -->
+        <div id="lobbyActionBar" class="lobby-action-bar">
+          <div class="stage-selected-info">
+            <span id="selectedStageTitle" class="stage-selected-title"></span>
+            <span id="selectedStageReward" class="stage-selected-reward"></span>
           </div>
+          <button id="btnStartSelectedStage" class="btn-primary">출근하기</button>
         </div>
 
-        <!-- 탭 1: 사원 출근 패널 -->
-        <div id="tabPanelChar" class="tab-panel">
-          <div class="char-card-grid" id="charCardGrid"></div>
-          <div class="modal-footer">
-            <button id="btnStartGame" class="btn-primary">선택 사원으로 출근 ➔</button>
-          </div>
-        </div>
-
-        <!-- 탭 2: 연봉 협상 (영구 강화 상점) 패널 -->
-        <div id="tabPanelShop" class="tab-panel">
-          <div class="shop-grid" id="shopGrid"></div>
-        </div>
-
-        <!-- 탭 3: 사내 업적실 패널 -->
-        <div id="tabPanelAch" class="tab-panel">
-          <div class="ach-list" id="achList"></div>
-        </div>
-
-        <!-- 탭 4: 업무 도감 패널 -->
-        <div id="tabPanelBestiary" class="tab-panel">
-          <div class="bestiary-list" id="bestiaryList"></div>
-        </div>
+        <!-- 하단 탭 내비게이션 -->
+        <nav class="lobby-nav">
+          <button class="menu-tab-btn active" data-tab="stage">
+            <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>스테이지</span>
+          </button>
+          <button class="menu-tab-btn" data-tab="char">
+            <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>사원</span>
+          </button>
+          <button class="menu-tab-btn" data-tab="shop">
+            <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><path d="M4 18l4-5 3.5 3L16 9l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 9h4v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>연봉협상</span>
+          </button>
+          <button class="menu-tab-btn" data-tab="ach">
+            <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><path d="M8 4h8v6a4 4 0 01-8 0V4z" stroke="currentColor" stroke-width="1.8"/><path d="M8 6H5v1.5A3.5 3.5 0 008 11M16 6h3v1.5A3.5 3.5 0 0116 11M12 14v4M9 20h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>업적</span>
+          </button>
+          <button class="menu-tab-btn" data-tab="bestiary">
+            <svg viewBox="0 0 24 24" fill="none" class="svg-icon tab-icon"><path d="M5 4.5A1.5 1.5 0 016.5 3H19v16H6.5A1.5 1.5 0 005 20.5v-16z" stroke="currentColor" stroke-width="1.8"/><path d="M5 20.5A1.5 1.5 0 016.5 19H19v2H6.5" stroke="currentColor" stroke-width="1.8"/><path d="M9 8h6M9 12h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>도감</span>
+          </button>
+        </nav>
       </div>
     </div>
 
@@ -300,16 +352,17 @@
   </div>
 
   <!-- 스크립트 로드 순서 엄수 -->
-  <script src="js/sound.js?v=20260929_130"></script>
-  <script src="js/icons.js?v=20260929_130"></script>
-  <script src="js/assets.js?v=20260929_130"></script>
-  <script src="js/data.js?v=20260929_130"></script>
-  <script src="js/save.js?v=20260929_130"></script>
-  <script src="js/props.js?v=20260929_130"></script>
-  <script src="js/drops.js?v=20260929_130"></script>
-  <script src="js/weapons.js?v=20260929_130"></script>
-  <script src="js/monsters.js?v=20260929_130"></script>
-  <script src="js/player.js?v=20260929_130"></script>
-  <script src="js/game.js?v=20260929_130"></script>
+  <script src="js/sound.js?v=20260929_141"></script>
+  <script src="js/icons.js?v=20260929_141"></script>
+  <script src="js/assets.js?v=20260929_141"></script>
+  <script src="js/data.js?v=20260929_141"></script>
+  <script src="js/save.js?v=20260929_141"></script>
+  <script src="js/map.js?v=20260929_141"></script>
+  <script src="js/props.js?v=20260929_141"></script>
+  <script src="js/drops.js?v=20260929_141"></script>
+  <script src="js/weapons.js?v=20260929_141"></script>
+  <script src="js/monsters.js?v=20260929_141"></script>
+  <script src="js/player.js?v=20260929_141"></script>
+  <script src="js/game.js?v=20260929_141"></script>
 </body>
 </html>
