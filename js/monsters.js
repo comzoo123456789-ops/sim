@@ -456,6 +456,12 @@ class MonsterManager {
     this.enemyBullets = [];
     this.warningZones = [];
     this.spawnTimer = 0;
+    this.boss1Spawned = false;
+    this.boss2Spawned = false;
+    this.boss3Spawned = false;
+    this.event1Spawned = false;
+    this.event2Spawned = false;
+    this.event3Spawned = false;
   }
 
   spawnChildSlimes(x, y) {
@@ -498,8 +504,8 @@ class MonsterManager {
       this.spawnWave(player, gameTime);
     }
 
-    // 2. 보스 시간대 체크 (03:00 김과장, 07:00 박부장, 10:00 대표이사)
-    this.checkBossTimeline(gameTime);
+    // 2. 보스 및 돌발 이벤트 시간대 체크
+    this.checkBossTimeline(gameTime, player, effectEngine);
 
     // 3. 몬스터 업데이트
     for (let i = this.monsters.length - 1; i >= 0; i--) {
@@ -555,22 +561,69 @@ class MonsterManager {
     }
   }
 
-  checkBossTimeline(gameTime) {
+  checkBossTimeline(gameTime, player, effectEngine) {
     const elapsed = 600 - gameTime;
 
-    // 3분(180초) 경과 시 꼰대 과장 출현
+    // 돌발 이벤트 1: 08:30 (경과 90초) - 엑셀 대참사 (#REF! 슬라임 떼 소환)
+    if (elapsed >= 90 && !this.event1Spawned && player) {
+      this.event1Spawned = true;
+      if (effectEngine) {
+        effectEngine.spawnEventBanner('🚨 [돌발 업무] 전사 엑셀 #REF! 오류 대참사!', '증식하는 수식 슬라임 떼가 몰려옵니다!', '#10b981');
+        effectEngine.screenShake(10, 0.4);
+      }
+      if (window.soundEngine) window.soundEngine.playBossAlert();
+      for (let i = 0; i < 14; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 320 + Math.random() * 80;
+        this.monsters.push(new Monster('slime', player.x + Math.cos(ang) * dist, player.y + Math.sin(ang) * dist));
+      }
+    }
+
+    // 보스 1: 07:00 (경과 180초) - 꼰대 과장 출현
     if (elapsed >= 180 && !this.boss1Spawned) {
       this.boss1Spawned = true;
       this.spawnBoss('boss_manager');
     }
 
-    // 6분(360초) 경과 시 분노의 부장님 출현
+    // 돌발 이벤트 2: 05:30 (경과 270초) - 탕비실 커피 도둑들의 습격
+    if (elapsed >= 270 && !this.event2Spawned && player) {
+      this.event2Spawned = true;
+      if (effectEngine) {
+        effectEngine.spawnEventBanner('🚨 [돌발 업무] 탕비실 간식 도둑들의 총공격!', '빠른 도둑들을 소탕하고 황금 원두를 쟁탈하세요!', '#f59e0b');
+        effectEngine.screenShake(10, 0.4);
+      }
+      if (window.soundEngine) window.soundEngine.playBossAlert();
+      for (let i = 0; i < 10; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 340 + Math.random() * 80;
+        const thief = new Monster('thief', player.x + Math.cos(ang) * dist, player.y + Math.sin(ang) * dist, 1.1);
+        thief.speed *= 1.25;
+        this.monsters.push(thief);
+      }
+    }
+
+    // 보스 2: 04:00 (경과 360초) - 분노의 부장님 출현
     if (elapsed >= 360 && !this.boss2Spawned) {
       this.boss2Spawned = true;
       this.spawnBoss('boss_director');
     }
 
-    // 9분(540초) 경과 시 최종 보스 대표이사 출현
+    // 돌발 이벤트 3: 02:30 (경과 450초) - 폭주 복사기 융단 폭격
+    if (elapsed >= 450 && !this.event3Spawned && player) {
+      this.event3Spawned = true;
+      if (effectEngine) {
+        effectEngine.spawnEventBanner('🚨 [돌발 업무] 전층 복사기 과열 폭주 발생!', '사방에서 날아오는 토너 탄막을 회피하세요!', '#a855f7');
+        effectEngine.screenShake(12, 0.5);
+      }
+      if (window.soundEngine) window.soundEngine.playBossAlert();
+      for (let i = 0; i < 8; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 350 + Math.random() * 80;
+        this.monsters.push(new Monster('copier', player.x + Math.cos(ang) * dist, player.y + Math.sin(ang) * dist, 1.2));
+      }
+    }
+
+    // 보스 3: 01:00 (경과 540초) - 최종 보스 대표이사 출현
     if (elapsed >= 540 && !this.boss3Spawned) {
       this.boss3Spawned = true;
       this.spawnBoss('boss_ceo');

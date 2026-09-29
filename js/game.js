@@ -56,10 +56,25 @@ class EffectEngine {
     });
   }
 
+  spawnEventBanner(title, subtitle, color = '#ef4444') {
+    this.eventBanner = {
+      title,
+      subtitle,
+      color,
+      timer: 3.5,
+      maxTimer: 3.5
+    };
+  }
+
   update(dt) {
     if (this.shakeDuration > 0) {
       this.shakeDuration -= dt;
       if (this.shakeDuration <= 0) this.shakeMag = 0;
+    }
+
+    if (this.eventBanner && this.eventBanner.timer > 0) {
+      this.eventBanner.timer -= dt;
+      if (this.eventBanner.timer <= 0) this.eventBanner = null;
     }
 
     // 텍스트 업데이트
@@ -134,6 +149,46 @@ class EffectEngine {
       ctx.fillText(t.text, sx, sy);
       ctx.restore();
     });
+
+    // 4. 돌발 이벤트 배너 렌더링
+    if (this.eventBanner && this.eventBanner.timer > 0) {
+      const b = this.eventBanner;
+      let alpha = 1.0;
+      if (b.timer > b.maxTimer - 0.5) {
+        alpha = (b.maxTimer - b.timer) / 0.5;
+      } else if (b.timer < 0.5) {
+        alpha = b.timer / 0.5;
+      }
+
+      const cx = ctx.canvas.width / 2;
+      const cy = 135;
+
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = 18;
+
+      ctx.beginPath();
+      ctx.roundRect(cx - 180, cy - 24, 360, 48, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 14px "Pretendard", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(b.title, cx, cy - 4);
+
+      ctx.fillStyle = b.color;
+      ctx.font = 'bold 11px "Pretendard", sans-serif';
+      ctx.fillText(b.subtitle, cx, cy + 13);
+
+      ctx.restore();
+    }
   }
 }
 
@@ -209,6 +264,14 @@ class GameEngine {
       if (e.key === 'ArrowDown') this.input.arrowDown = true;
       if (e.key === 'ArrowLeft') this.input.arrowLeft = true;
       if (e.key === 'ArrowRight') this.input.arrowRight = true;
+
+      // 스페이스바 / 쉬프트 키로 칼퇴 대시 발동!
+      if (e.code === 'Space' || e.key === 'Shift' || e.key === ' ') {
+        e.preventDefault();
+        if (this.state === 'playing' && this.player) {
+          this.player.dash();
+        }
+      }
     });
 
     window.addEventListener('keyup', e => {
@@ -224,10 +287,25 @@ class GameEngine {
     });
   }
 
-  // 모바일 다이내믹 가상 조이스틱 터치 컨트롤
+  // 모바일 다이내믹 가상 조이스틱 및 대시 터치 컨트롤
   setupTouchControls() {
     const joyBase = document.getElementById('joystickBase');
     const joyStick = document.getElementById('joystickStick');
+    const dashBtn = document.getElementById('btnMobileDash');
+
+    if (dashBtn) {
+      const triggerDash = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (this.state === 'playing' && this.player) {
+          this.player.dash();
+        }
+      };
+      dashBtn.addEventListener('touchstart', triggerDash, { passive: false });
+      dashBtn.addEventListener('click', triggerDash);
+    }
 
     let touchId = null;
     let startX = 0;
@@ -238,7 +316,7 @@ class GameEngine {
       if (this.state !== 'playing') return;
       if (touchId === null && e.changedTouches.length > 0) {
         const touch = e.changedTouches[0];
-        if (e.target.closest('.modal-window')) return;
+        if (e.target.closest('.modal-window') || e.target.closest('#btnMobileDash') || e.target.closest('.hud-top-bar')) return;
 
         touchId = touch.identifier;
         startX = touch.clientX;
@@ -873,6 +951,21 @@ class GameEngine {
     const m = Math.floor(this.gameTime / 60).toString().padStart(2, '0');
     const s = Math.floor(this.gameTime % 60).toString().padStart(2, '0');
     document.getElementById('hudTimerText').innerText = `${m}:${s}`;
+
+    // 대시 버튼 쿨타임 UI 업데이트
+    const dashOverlay = document.getElementById('dashCooldownOverlay');
+    const dashBtn = document.getElementById('btnMobileDash');
+    if (dashOverlay && dashBtn) {
+      if (this.player.dashCooldown > 0) {
+        const maxCd = this.player.maxDashCooldown * (1 - this.player.stats.cdReduc * 0.4);
+        const rate = this.player.dashCooldown / maxCd;
+        dashOverlay.style.height = `${Math.min(100, Math.max(0, rate * 100))}%`;
+        dashBtn.classList.add('cooling');
+      } else {
+        dashOverlay.style.height = '0%';
+        dashBtn.classList.remove('cooling');
+      }
+    }
 
     // 무기 및 패시브 슬롯 렌더링
     const wSlots = document.getElementById('hudWeaponSlots');

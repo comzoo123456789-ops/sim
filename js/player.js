@@ -39,6 +39,15 @@ class Player {
     // 기본 무기 등록
     this.weapons[charData.initialWeapon] = 1;
 
+    // 칼퇴 대시 (Sprint / Dodge Skill)
+    this.isDashing = false;
+    this.dashTimer = 0;
+    this.dashCooldown = 0;
+    this.maxDashCooldown = 2.8;
+    this.dashVx = 0;
+    this.dashVy = 0;
+    this.ghostTrails = [];
+
     // 종합 스탯 캐시
     this.stats = {
       atkMul: 1.0 + (charData.bonus.atkMul || 0),
@@ -181,6 +190,29 @@ class Player {
     }
   }
 
+  dash() {
+    if (this.isDead || this.dashCooldown > 0 || this.isDashing) return;
+
+    this.isDashing = true;
+    this.dashTimer = 0.22;
+    this.dashCooldown = this.maxDashCooldown * (1 - this.stats.cdReduc * 0.4);
+    this.invincibleTimer = 0.28;
+
+    // 대시 방향 산출
+    let dirX = this.vx !== 0 ? Math.sign(this.vx) : (this.facing === 'left' ? -1 : 1);
+    let dirY = this.vy !== 0 ? Math.sign(this.vy) : 0;
+    const len = Math.hypot(dirX, dirY) || 1;
+
+    this.dashVx = (dirX / len) * 11;
+    this.dashVy = (dirY / len) * 11;
+
+    if (window.soundEngine) window.soundEngine.playTone(680, 'triangle', 0.12, 0.25, 0.01);
+    if (window.game && window.game.effectEngine) {
+      window.game.effectEngine.spawnShockwave(this.x, this.y, 45, '#00f0ff');
+      window.game.effectEngine.spawnFloatingText(this.x, this.y - 25, '💨 대시!', '#00f0ff');
+    }
+  }
+
   update(dt, input) {
     if (this.isDead) return;
 
@@ -193,39 +225,69 @@ class Player {
       this.hp = Math.min(this.maxHp, this.hp + this.stats.hpRegen * dt);
     }
 
-    // 조이스틱 및 키보드 입력 통합
-    let mx = 0;
-    let my = 0;
-
-    if (input.w || input.arrowUp) my -= 1;
-    if (input.s || input.arrowDown) my += 1;
-    if (input.a || input.arrowLeft) mx -= 1;
-    if (input.d || input.arrowRight) mx += 1;
-
-    if (input.joyX || input.joyY) {
-      mx += input.joyX;
-      my += input.joyY;
+    // 대시 쿨타임 업데이트
+    if (this.dashCooldown > 0) {
+      this.dashCooldown -= dt;
+      if (this.dashCooldown < 0) this.dashCooldown = 0;
     }
 
-    const isMoving = (mx !== 0 || my !== 0);
+    // 대시 잔상 업데이트
+    for (let i = this.ghostTrails.length - 1; i >= 0; i--) {
+      const g = this.ghostTrails[i];
+      g.alpha -= dt * 4;
+      if (g.alpha <= 0) this.ghostTrails.splice(i, 1);
+    }
 
-    if (isMoving) {
-      const len = Math.hypot(mx, my);
-      const baseSpd = this.charData.speed * this.stats.speedMul * 60 * dt;
-      this.vx = (mx / len) * baseSpd;
-      this.vy = (my / len) * baseSpd;
+    if (this.isDashing) {
+      this.dashTimer -= dt;
+      this.x += this.dashVx * 60 * dt;
+      this.y += this.dashVy * 60 * dt;
 
-      this.x += this.vx;
-      this.y += this.vy;
+      this.ghostTrails.push({
+        x: this.x,
+        y: this.y,
+        facing: this.facing,
+        alpha: 0.6
+      });
 
-      if (mx < -0.1) this.facing = 'left';
-      else if (mx > 0.1) this.facing = 'right';
-
-      this.walkTimer += dt * 10;
+      if (this.dashTimer <= 0) {
+        this.isDashing = false;
+      }
     } else {
-      this.vx = 0;
-      this.vy = 0;
-      this.walkTimer = 0;
+      // 조이스틱 및 키보드 입력 통합
+      let mx = 0;
+      let my = 0;
+
+      if (input.w || input.arrowUp) my -= 1;
+      if (input.s || input.arrowDown) my += 1;
+      if (input.a || input.arrowLeft) mx -= 1;
+      if (input.d || input.arrowRight) mx += 1;
+
+      if (input.joyX || input.joyY) {
+        mx += input.joyX;
+        my += input.joyY;
+      }
+
+      const isMoving = (mx !== 0 || my !== 0);
+
+      if (isMoving) {
+        const len = Math.hypot(mx, my);
+        const baseSpd = this.charData.speed * this.stats.speedMul * 60 * dt;
+        this.vx = (mx / len) * baseSpd;
+        this.vy = (my / len) * baseSpd;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (mx < -0.1) this.facing = 'left';
+        else if (mx > 0.1) this.facing = 'right';
+
+        this.walkTimer += dt * 10;
+      } else {
+        this.vx = 0;
+        this.vy = 0;
+        this.walkTimer = 0;
+      }
     }
 
     // 맵 경계 제한 (2400 x 2400)
@@ -237,6 +299,21 @@ class Player {
   render(ctx, camera) {
     const sx = this.x - camera.x;
     const sy = this.y - camera.y;
+
+    // 대시 푸른 잔상 렌더링
+    this.ghostTrails.forEach(g => {
+      const gx = g.x - camera.x;
+      const gy = g.y - camera.y;
+      ctx.save();
+      ctx.translate(gx, gy);
+      if (g.facing === 'left') ctx.scale(-1, 1);
+      ctx.globalAlpha = Math.max(0, g.alpha * 0.5);
+      ctx.fillStyle = '#00f0ff';
+      ctx.beginPath();
+      ctx.roundRect(-8, -28, 16, 28, 4);
+      ctx.fill();
+      ctx.restore();
+    });
 
     ctx.save();
 
