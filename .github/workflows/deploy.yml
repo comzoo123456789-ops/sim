@@ -1,0 +1,19 @@
+name: Deploy to Cloudflare Pages
+
+# main에 push하면 Cloudflare Pages(office-escape-survivor) 빌드를 Deploy Hook으로 시작
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cloudflare Pages deploy hook
+        env:
+          CF_DEPLOY_HOOK: ${{ secrets.CF_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$CF_DEPLOY_HOOK" ]; then echo "CF_DEPLOY_HOOK secret is missing"; exit 1; fi
+          curl -fsS -X POST "$CF_DEPLOY_HOOK" -o /dev/null -w "Cloudflare deploy hook: HTTP %{http_code}\n"
