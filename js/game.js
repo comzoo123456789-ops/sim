@@ -7,6 +7,7 @@ class EffectEngine {
     this.shockwaves = [];
     this.shakeMag = 0;
     this.shakeDuration = 0;
+    this.eventBanner = null;
   }
 
   reset() {
@@ -15,6 +16,7 @@ class EffectEngine {
     this.shockwaves = [];
     this.shakeMag = 0;
     this.shakeDuration = 0;
+    this.eventBanner = null;
   }
 
   screenShake(mag = 6, duration = 0.2) {
@@ -219,7 +221,7 @@ class GameEngine {
     };
 
     this.levelUpQueue = 0;
-    this.gameTime = 60; // 기본 1분 (스테이지별 duration으로 덮어씌워짐)
+    this.gameTime = 60; // 초
     this.lastTime = performance.now();
 
     this.init();
@@ -327,11 +329,15 @@ class GameEngine {
         startX = touch.clientX;
         startY = touch.clientY;
 
-        joyBase.style.left = `${startX}px`;
-        joyBase.style.top = `${startY}px`;
-        joyBase.classList.add('active');
+        if (joyBase) {
+          joyBase.style.left = `${startX}px`;
+          joyBase.style.top = `${startY}px`;
+          joyBase.classList.add('active');
+        }
 
-        joyStick.style.transform = 'translate(-50%, -50%)';
+        if (joyStick) {
+          joyStick.style.transform = 'translate(-50%, -50%)';
+        }
         this.input.joyX = 0;
         this.input.joyY = 0;
       }
@@ -353,7 +359,9 @@ class GameEngine {
           const stickX = Math.cos(ang) * clampedDist;
           const stickY = Math.sin(ang) * clampedDist;
 
-          joyStick.style.transform = `translate(calc(-50% + ${stickX}px), calc(-50% + ${stickY}px))`;
+          if (joyStick) {
+            joyStick.style.transform = `translate(calc(-50% + ${stickX}px), calc(-50% + ${stickY}px))`;
+          }
 
           this.input.joyX = (dx / maxDist);
           this.input.joyY = (dy / maxDist);
@@ -368,7 +376,7 @@ class GameEngine {
       for (let i = 0; i < e.changedTouches.length; i++) {
         if (e.changedTouches[i].identifier === touchId) {
           touchId = null;
-          joyBase.classList.remove('active');
+          if (joyBase) joyBase.classList.remove('active');
           this.input.joyX = 0;
           this.input.joyY = 0;
           break;
@@ -413,7 +421,8 @@ class GameEngine {
     // 2. 스테이지 시작 버튼
     const btnStartSelectedStage = document.getElementById('btnStartSelectedStage');
     if (btnStartSelectedStage) {
-      btnStartSelectedStage.onclick = () => {
+      btnStartSelectedStage.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         this.startGame(this.selectedCharId, this.selectedStageId, this.selectedMode);
       };
     }
@@ -421,7 +430,8 @@ class GameEngine {
     // 3. 사원 출근 시작 버튼
     const btnStartGame = document.getElementById('btnStartGame');
     if (btnStartGame) {
-      btnStartGame.onclick = () => {
+      btnStartGame.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         this.startGame(this.selectedCharId, this.selectedStageId, this.selectedMode);
       };
     }
@@ -429,7 +439,8 @@ class GameEngine {
     // 4. 재도전 버튼
     const btnRestartGame = document.getElementById('btnRestartGame');
     if (btnRestartGame) {
-      btnRestartGame.onclick = () => {
+      btnRestartGame.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         this.startGame(this.selectedCharId, this.currentStageId, this.selectedMode);
       };
     }
@@ -437,7 +448,8 @@ class GameEngine {
     // 5. 로비로 돌아가기 버튼
     const btnReturnLobby = document.getElementById('btnReturnLobby');
     if (btnReturnLobby) {
-      btnReturnLobby.onclick = () => {
+      btnReturnLobby.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         document.getElementById('endGameModal').classList.remove('active');
         document.getElementById('stageClearModal').classList.remove('active');
         document.getElementById('charSelectModal').classList.add('active');
@@ -453,9 +465,10 @@ class GameEngine {
     // 6. 다음 스테이지 출근 버튼
     const btnNextStage = document.getElementById('btnNextStage');
     if (btnNextStage) {
-      btnNextStage.onclick = () => {
+      btnNextStage.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         document.getElementById('stageClearModal').classList.remove('active');
-        const curStageNum = parseInt(this.currentStageId.split('-')[1], 10);
+        const curStageNum = parseInt(this.currentStageId.split('-')[1], 10) || 1;
         const nextStageId = `1-${Math.min(10, curStageNum + 1)}`;
         this.selectedStageId = nextStageId;
         this.startGame(this.selectedCharId, nextStageId, 'stage');
@@ -465,7 +478,8 @@ class GameEngine {
     // 7. 클리어 모달에서 스테이지 목록으로 귀환
     const btnClearToLobby = document.getElementById('btnClearToLobby');
     if (btnClearToLobby) {
-      btnClearToLobby.onclick = () => {
+      btnClearToLobby.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         document.getElementById('stageClearModal').classList.remove('active');
         document.getElementById('charSelectModal').classList.add('active');
         this.state = 'char_select';
@@ -507,7 +521,7 @@ class GameEngine {
         if (window.soundEngine) {
           window.soundEngine.isMuted = !window.soundEngine.isMuted;
           soundBtn.innerText = window.soundEngine.isMuted ? '🔇 사운드 OFF' : '🔊 사운드 ON';
-          if (!window.soundEngine) window.soundEngine.playClick();
+          if (!window.soundEngine.isMuted) window.soundEngine.playClick();
         }
       };
     }
@@ -566,23 +580,28 @@ class GameEngine {
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
 
         if (targetTab === 'stage') {
-          document.getElementById('tabPanelStage').classList.add('active');
+          const panel = document.getElementById('tabPanelStage');
+          if (panel) panel.classList.add('active');
           this.renderStageSelectGrid();
         }
         if (targetTab === 'char') {
-          document.getElementById('tabPanelChar').classList.add('active');
+          const panel = document.getElementById('tabPanelChar');
+          if (panel) panel.classList.add('active');
           this.renderCharSelectGrid();
         }
         if (targetTab === 'shop') {
-          document.getElementById('tabPanelShop').classList.add('active');
+          const panel = document.getElementById('tabPanelShop');
+          if (panel) panel.classList.add('active');
           this.renderShop();
         }
         if (targetTab === 'ach') {
-          document.getElementById('tabPanelAch').classList.add('active');
+          const panel = document.getElementById('tabPanelAch');
+          if (panel) panel.classList.add('active');
           this.renderAchievements();
         }
         if (targetTab === 'bestiary') {
-          document.getElementById('tabPanelBestiary').classList.add('active');
+          const panel = document.getElementById('tabPanelBestiary');
+          if (panel) panel.classList.add('active');
           this.renderBestiary();
         }
 
@@ -602,8 +621,8 @@ class GameEngine {
     if (!grid) return;
     grid.innerHTML = '';
 
-    const ch1 = window.GAME_DATA.CHAPTERS.ch1;
-    if (!ch1) return;
+    const ch1 = (window.GAME_DATA && window.GAME_DATA.CHAPTERS) ? (window.GAME_DATA.CHAPTERS.ch1 || (Array.isArray(window.GAME_DATA.CHAPTERS) ? window.GAME_DATA.CHAPTERS[0] : null)) : null;
+    if (!ch1 || !ch1.stages) return;
 
     ch1.stages.forEach(st => {
       const isUnlocked = window.saveMgr ? window.saveMgr.isStageUnlocked(st.id) : (st.id === '1-1');
@@ -620,6 +639,7 @@ class GameEngine {
 
       const durM = Math.floor(st.duration / 60);
       const durS = (st.duration % 60).toString().padStart(2, '0');
+      const goldReward = st.goldReward || st.reward || 200;
 
       card.innerHTML = `
         <div class="stage-card-header">
@@ -630,14 +650,15 @@ class GameEngine {
         <div class="stage-card-desc">${st.desc}</div>
         <div class="stage-card-meta">
           <span class="stage-meta-item">⏱️ ${durM}:${durS}</span>
-          <span class="stage-meta-item">🪙 +${st.goldReward}</span>
+          <span class="stage-meta-item">🪙 +${goldReward}</span>
           ${st.boss ? '<span class="stage-meta-boss">⚠️ 보스 출현</span>' : ''}
         </div>
         ${!isUnlocked ? '<div class="stage-lock-overlay">🔒 이전 결재선 승인 필요</div>' : ''}
       `;
 
       if (isUnlocked) {
-        card.onclick = () => {
+        card.onclick = (e) => {
+          if (e) { e.preventDefault(); e.stopPropagation(); }
           this.selectedStageId = st.id;
           document.querySelectorAll('.stage-card').forEach(c => c.classList.remove('selected'));
           card.classList.add('selected');
@@ -653,21 +674,23 @@ class GameEngine {
   }
 
   updateStageSelectedInfo() {
-    const ch1 = window.GAME_DATA.CHAPTERS.ch1;
-    if (!ch1) return;
+    const ch1 = (window.GAME_DATA && window.GAME_DATA.CHAPTERS) ? (window.GAME_DATA.CHAPTERS.ch1 || (Array.isArray(window.GAME_DATA.CHAPTERS) ? window.GAME_DATA.CHAPTERS[0] : null)) : null;
+    if (!ch1 || !ch1.stages) return;
 
     const st = ch1.stages.find(s => s.id === this.selectedStageId) || ch1.stages[0];
     const titleEl = document.getElementById('selectedStageTitle');
     const rewardEl = document.getElementById('selectedStageReward');
 
     if (this.selectedMode === 'stage' && st) {
+      const goldReward = st.goldReward || st.reward || 200;
       if (titleEl) titleEl.innerText = `선택된 결재선: [${st.id}] ${st.name} (${Math.floor(st.duration / 60)}분)`;
-      if (rewardEl) rewardEl.innerText = `클리어 보상: +${st.goldReward} 코인 | 3성 달성 시 추가 보너스`;
+      if (rewardEl) rewardEl.innerText = `클리어 보상: +${goldReward} 코인 | 3성 달성 시 추가 보너스`;
     }
   }
 
   renderCharSelectGrid() {
     const grid = document.getElementById('charCardGrid');
+    if (!grid) return;
     grid.innerHTML = '';
 
     Object.values(window.GAME_DATA.CHARACTERS).forEach(c => {
@@ -681,7 +704,8 @@ class GameEngine {
           <div class="char-card-bonus">✨ ${c.bonusText}</div>
         </div>
       `;
-      card.onclick = () => {
+      card.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         this.selectedCharId = c.id;
         document.querySelectorAll('.char-select-card').forEach(el => el.classList.remove('selected'));
         card.classList.add('selected');
@@ -695,8 +719,6 @@ class GameEngine {
     const grid = document.getElementById('shopGrid');
     if (!grid) return;
     grid.innerHTML = '';
-
-    const gold = window.saveMgr ? window.saveMgr.getGold() : 0;
 
     Object.values(window.GAME_DATA.SHOP_UPGRADES).forEach(up => {
       const curLv = window.saveMgr ? window.saveMgr.getUpgradeLevel(up.id) : 0;
@@ -727,8 +749,9 @@ class GameEngine {
       `;
 
       const buyBtn = card.querySelector('.shop-buy-btn');
-      if (!isMax) {
-        buyBtn.onclick = () => {
+      if (!isMax && buyBtn) {
+        buyBtn.onclick = (e) => {
+          if (e) { e.preventDefault(); e.stopPropagation(); }
           if (window.saveMgr && window.saveMgr.buyUpgrade(up.id)) {
             if (window.soundEngine) window.soundEngine.playBuy();
             this.updateLobbyGold();
@@ -808,9 +831,9 @@ class GameEngine {
     this.currentStageId = stageId || this.selectedStageId || '1-1';
 
     if (this.selectedMode === 'stage') {
-      const ch1 = window.GAME_DATA.CHAPTERS.ch1;
-      this.currentStage = ch1.stages.find(s => s.id === this.currentStageId) || ch1.stages[0];
-      this.gameTime = this.currentStage.duration;
+      const ch1 = (window.GAME_DATA && window.GAME_DATA.CHAPTERS) ? (window.GAME_DATA.CHAPTERS.ch1 || (Array.isArray(window.GAME_DATA.CHAPTERS) ? window.GAME_DATA.CHAPTERS[0] : null)) : null;
+      this.currentStage = (ch1 && ch1.stages) ? (ch1.stages.find(s => s.id === this.currentStageId) || ch1.stages[0]) : null;
+      this.gameTime = this.currentStage ? this.currentStage.duration : 60;
     } else {
       this.currentStage = null;
       this.gameTime = 600; // 10분
@@ -1063,7 +1086,7 @@ class GameEngine {
     if (hpPercent >= 80) stars = 3;
     else if (hpPercent >= 40) stars = 2;
 
-    const goldReward = this.currentStage ? this.currentStage.goldReward : 200;
+    const goldReward = this.currentStage ? (this.currentStage.goldReward || this.currentStage.reward || 200) : 200;
 
     // 영구 데이터 저장 및 다음 스테이지 자동 해금
     if (window.saveMgr) {
@@ -1213,56 +1236,60 @@ class GameEngine {
 
     // 무기 및 패시브 슬롯 렌더링
     const wSlots = document.getElementById('hudWeaponSlots');
-    wSlots.innerHTML = '';
-    for (let i = 0; i < 6; i++) {
-      const wIds = Object.keys(this.player.weapons);
-      const wId = wIds[i];
-      const box = document.createElement('div');
-      box.className = 'slot-box' + (wId ? ' active' : '');
+    if (wSlots) {
+      wSlots.innerHTML = '';
+      for (let i = 0; i < 6; i++) {
+        const wIds = Object.keys(this.player.weapons);
+        const wId = wIds[i];
+        const box = document.createElement('div');
+        box.className = 'slot-box' + (wId ? ' active' : '');
 
-      if (wId) {
-        const isSuper = this.player.superWeapons.includes(`super_${wId}`);
-        const wDef = window.GAME_DATA.WEAPONS[wId];
-        const curLv = isSuper ? 8 : (this.player.weapons[wId] || 1);
+        if (wId) {
+          const isSuper = this.player.superWeapons.includes(`super_${wId}`);
+          const wDef = window.GAME_DATA.WEAPONS[wId];
+          const curLv = isSuper ? 8 : (this.player.weapons[wId] || 1);
 
-        if (isSuper) box.classList.add('super');
+          if (isSuper) box.classList.add('super');
 
-        let dotsHtml = '';
-        for (let d = 0; d < 8; d++) {
-          dotsHtml += `<div class="level-dot ${d < curLv ? 'fill' : ''}"></div>`;
+          let dotsHtml = '';
+          for (let d = 0; d < 8; d++) {
+            dotsHtml += `<div class="level-dot ${d < curLv ? 'fill' : ''}"></div>`;
+          }
+
+          box.innerHTML = `
+            <span class="slot-icon">${isSuper ? '⚡' : (wDef ? wDef.icon : '⚔️')}</span>
+            <div class="slot-level-dots">${dotsHtml}</div>
+          `;
         }
-
-        box.innerHTML = `
-          <span class="slot-icon">${isSuper ? '⚡' : wDef.icon}</span>
-          <div class="slot-level-dots">${dotsHtml}</div>
-        `;
+        wSlots.appendChild(box);
       }
-      wSlots.appendChild(box);
     }
 
     const pSlots = document.getElementById('hudPassiveSlots');
-    pSlots.innerHTML = '';
-    for (let i = 0; i < 6; i++) {
-      const pIds = Object.keys(this.player.passives);
-      const pId = pIds[i];
-      const box = document.createElement('div');
-      box.className = 'slot-box' + (pId ? ' active' : '');
+    if (pSlots) {
+      pSlots.innerHTML = '';
+      for (let i = 0; i < 6; i++) {
+        const pIds = Object.keys(this.player.passives);
+        const pId = pIds[i];
+        const box = document.createElement('div');
+        box.className = 'slot-box' + (pId ? ' active' : '');
 
-      if (pId) {
-        const pDef = window.GAME_DATA.PASSIVES[pId];
-        const curLv = this.player.passives[pId] || 1;
+        if (pId) {
+          const pDef = window.GAME_DATA.PASSIVES[pId];
+          const curLv = this.player.passives[pId] || 1;
 
-        let dotsHtml = '';
-        for (let d = 0; d < 4; d++) {
-          dotsHtml += `<div class="level-dot ${d < curLv ? 'fill' : ''}"></div>`;
+          let dotsHtml = '';
+          for (let d = 0; d < 4; d++) {
+            dotsHtml += `<div class="level-dot ${d < curLv ? 'fill' : ''}"></div>`;
+          }
+
+          box.innerHTML = `
+            <span class="slot-icon">${pDef ? pDef.icon : '✨'}</span>
+            <div class="slot-level-dots">${dotsHtml}</div>
+          `;
         }
-
-        box.innerHTML = `
-          <span class="slot-icon">${pDef.icon}</span>
-          <div class="slot-level-dots">${dotsHtml}</div>
-        `;
+        pSlots.appendChild(box);
       }
-      pSlots.appendChild(box);
     }
   }
 
@@ -1282,13 +1309,6 @@ class GameEngine {
       for (let y = startY; y < endY; y += tileSize) {
         const sx = x - camera.x;
         const sy = y - camera.y;
-
-        // 구역 판별:
-        // NW (0..1200, 0..1200): 오픈 오피스 (차콜 직조 카펫 타일)
-        // NE (1200..2400, 0..1200): 탕비실 & 라운지 (내추럴 오크 마루바닥)
-        // SW (0..1200, 1200..2400): IDC 서버실 (천공 메탈 패널 & 하저드 라인)
-        // SE (1200..2400, 1200..2400): 임원실 & 대회의실 (월넛 헤링본 & 버건디 러그)
-        // Center (900..1500, 900..1500): 중앙 테라조 대리석 로비
 
         const inCenterLobby = (x >= 900 && x < 1500 && y >= 900 && y < 1500);
         const inPantry = (x >= 1200 && y < 1200);

@@ -782,8 +782,8 @@ window.GAME_DATA = {
   ],
 
   // 9. 챕터 및 스테이지 데이터 (1챕터: 판교 테크노밸리 스타트업 탈출 1-1 ~ 1-10)
-  CHAPTERS: [
-    {
+  CHAPTERS: {
+    ch1: {
       id: 'ch1',
       title: '제1장: 판교 테크노밸리 스타트업 본사',
       subtitle: '칼퇴를 가로막는 10단계의 결재선을 돌파하라!',
@@ -797,6 +797,7 @@ window.GAME_DATA = {
           boss: null,
           spawnRate: 1.0,
           reward: 200,
+          goldReward: 200,
           theme: 'pantry',
           targetKills: 30,
           icon: '☕'
@@ -809,6 +810,7 @@ window.GAME_DATA = {
           boss: null,
           spawnRate: 1.2,
           reward: 250,
+          goldReward: 250,
           theme: 'open_office',
           targetKills: 45,
           icon: '💬'
@@ -822,6 +824,7 @@ window.GAME_DATA = {
           bossTime: 50,
           spawnRate: 1.3,
           reward: 400,
+          goldReward: 400,
           theme: 'meeting_room',
           targetKills: 60,
           icon: '👔'
@@ -834,6 +837,7 @@ window.GAME_DATA = {
           boss: null,
           spawnRate: 1.4,
           reward: 350,
+          goldReward: 350,
           theme: 'open_office',
           targetKills: 75,
           icon: '📊'
@@ -846,6 +850,7 @@ window.GAME_DATA = {
           boss: null,
           spawnRate: 1.5,
           reward: 450,
+          goldReward: 450,
           theme: 'server_room',
           targetKills: 90,
           icon: '🖥️'
@@ -858,6 +863,7 @@ window.GAME_DATA = {
           boss: null,
           spawnRate: 1.6,
           reward: 500,
+          goldReward: 500,
           theme: 'open_office',
           targetKills: 110,
           icon: '🎨'
@@ -870,6 +876,7 @@ window.GAME_DATA = {
           boss: null,
           spawnRate: 1.7,
           reward: 600,
+          goldReward: 600,
           theme: 'pantry',
           targetKills: 130,
           icon: '🖨️'
@@ -883,6 +890,7 @@ window.GAME_DATA = {
           bossTime: 75,
           spawnRate: 1.8,
           reward: 750,
+          goldReward: 750,
           theme: 'meeting_room',
           targetKills: 150,
           icon: '💼'
@@ -895,6 +903,7 @@ window.GAME_DATA = {
           boss: null,
           spawnRate: 2.0,
           reward: 900,
+          goldReward: 900,
           theme: 'executive',
           targetKills: 170,
           icon: '🚪'
@@ -908,12 +917,13 @@ window.GAME_DATA = {
           bossTime: 90,
           spawnRate: 2.2,
           reward: 2000,
+          goldReward: 2000,
           theme: 'executive',
           targetKills: 200,
           icon: '👑'
         }
       ]
     }
-  ]
+  }
 };
 
