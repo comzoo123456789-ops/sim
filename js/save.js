@@ -33,10 +33,12 @@ class SaveManager {
     this.applyTestUnlock();
   }
 
-  // 테스트용: 주소에 ?unlock=all 을 붙여 접속하면 1-1 ~ 10-10 전 스테이지 해금 (저장됨)
+  // 테스트 기간: 1-1 ~ 10-10 전 스테이지 해금 (SaveManager.TEST_UNLOCK_ALL = false 로 바꾸면 정상 진행 방식)
+  // 주소에 ?unlock=all 을 붙여도 해금됨
   applyTestUnlock() {
     try {
-      if (new URLSearchParams(window.location.search).get('unlock') !== 'all') return;
+      const byUrl = new URLSearchParams(window.location.search).get('unlock') === 'all';
+      if (!SaveManager.TEST_UNLOCK_ALL && !byUrl) return;
       const all = [];
       for (let ch = 1; ch <= SaveManager.MAX_CHAPTER; ch++) {
         for (let st = 1; st <= 10; st++) all.push(`${ch}-${st}`);
@@ -198,6 +200,7 @@ class SaveManager {
 }
 
 SaveManager.MAX_CHAPTER = 10;
+SaveManager.TEST_UNLOCK_ALL = true; // 출시 전 테스트용 전체 해금
 
 window.SaveManager = SaveManager;
 window.saveMgr = new SaveManager();
