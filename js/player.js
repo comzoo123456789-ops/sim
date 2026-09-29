@@ -55,7 +55,7 @@ class Player {
     this.recalculateStats();
   }
 
-  // 패시브 습득에 따른 실시간 스탯 재계산
+  // 패시브 습득 및 영구 강화에 따른 실시간 스탯 재계산
   recalculateStats() {
     let atkMul = 1.0 + (this.charData.bonus.atkMul || 0);
     let speedMul = 1.0 + (this.charData.bonus.speedMul || 0);
@@ -67,6 +67,18 @@ class Player {
     let critRate = this.charData.bonus.critRate || 0.05;
     let xpMul = 1.0 + (this.charData.bonus.xpMul || 0);
     let maxHpBonus = 1.0 + (this.charData.bonus.hpMul || 0);
+    let goldMul = 1.0;
+
+    // 연봉 협상 영구 강화 스탯 적용
+    if (window.saveMgr) {
+      const up = window.saveMgr.data.upgrades;
+      if (up.hp) maxHpBonus += up.hp * 0.10;
+      if (up.speed) speedMul += up.speed * 0.05;
+      if (up.atk) atkMul += up.atk * 0.08;
+      if (up.cd) cdReduc += up.cd * 0.04;
+      if (up.magnet) magnetRange += up.magnet * 20;
+      if (up.gold) goldMul += up.gold * 0.15;
+    }
 
     // 사내 복지 패시브 적용
     Object.entries(this.passives).forEach(([pId, lv]) => {
@@ -92,7 +104,8 @@ class Player {
       dmgReduc,
       hpRegen,
       critRate,
-      xpMul
+      xpMul,
+      goldMul
     };
 
     const newMaxHp = Math.floor(this.charData.baseHp * maxHpBonus);
@@ -101,6 +114,10 @@ class Player {
       this.maxHp = newMaxHp;
       this.hp = Math.floor(this.maxHp * ratio);
     }
+  }
+
+  recalcStats() {
+    this.recalculateStats();
   }
 
   // 경험치 획득 및 레벨업

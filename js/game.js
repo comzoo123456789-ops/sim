@@ -172,8 +172,13 @@ class GameEngine {
     this.setupInputListeners();
     this.setupTouchControls();
     this.setupUIBindings();
+    this.setupLobbyTabs();
 
     this.renderCharSelectGrid();
+    this.renderShop();
+    this.renderAchievements();
+    this.renderBestiary();
+    this.updateLobbyGold();
 
     // 오디오 잠금 해제 리스너
     const unlockAudio = () => {
@@ -299,10 +304,53 @@ class GameEngine {
 
     // 재도전 버튼
     document.getElementById('btnRestartGame').onclick = () => {
+      this.startGame(this.selectedCharId);
+    };
+
+    // 로비로 돌아가기 버튼
+    document.getElementById('btnReturnLobby').onclick = () => {
       document.getElementById('endGameModal').classList.remove('active');
       document.getElementById('charSelectModal').classList.add('active');
       this.state = 'char_select';
+      this.updateLobbyGold();
+      this.renderShop();
+      this.renderAchievements();
     };
+  }
+
+  setupLobbyTabs() {
+    const tabs = document.querySelectorAll('.menu-tab-btn');
+    tabs.forEach(btn => {
+      btn.onclick = () => {
+        const targetTab = btn.getAttribute('data-tab');
+        tabs.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+        if (targetTab === 'char') document.getElementById('tabPanelChar').classList.add('active');
+        if (targetTab === 'shop') {
+          document.getElementById('tabPanelShop').classList.add('active');
+          this.renderShop();
+        }
+        if (targetTab === 'ach') {
+          document.getElementById('tabPanelAch').classList.add('active');
+          this.renderAchievements();
+        }
+        if (targetTab === 'bestiary') {
+          document.getElementById('tabPanelBestiary').classList.add('active');
+          this.renderBestiary();
+        }
+
+        if (window.soundEngine) window.soundEngine.playClick();
+      };
+    });
+  }
+
+  updateLobbyGold() {
+    const gold = window.saveMgr ? window.saveMgr.getGold() : 0;
+    const el = document.getElementById('lobbyGoldVal');
+    if (el) el.innerText = `${gold}`;
   }
 
   renderCharSelectGrid() {
@@ -327,6 +375,98 @@ class GameEngine {
         if (window.soundEngine) window.soundEngine.playXP();
       };
       grid.appendChild(card);
+    });
+  }
+
+  renderShop() {
+    const grid = document.getElementById('shopGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const gold = window.saveMgr ? window.saveMgr.getGold() : 0;
+
+    Object.values(window.GAME_DATA.SHOP_UPGRADES).forEach(up => {
+      const curLv = window.saveMgr ? window.saveMgr.getUpgradeLevel(up.id) : 0;
+      const isMax = curLv >= up.maxLv;
+      const cost = isMax ? 0 : Math.floor(up.baseCost * Math.pow(up.costMul, curLv));
+
+      let pipsHtml = '';
+      for (let i = 0; i < up.maxLv; i++) {
+        pipsHtml += `<div class="shop-pip ${i < curLv ? 'fill' : ''}"></div>`;
+      }
+
+      const card = document.createElement('div');
+      card.className = 'shop-card';
+      card.innerHTML = `
+        <div class="shop-card-left">
+          <div class="shop-card-icon">${up.icon}</div>
+          <div class="shop-card-info">
+            <div class="shop-card-name-row">
+              <span class="shop-card-name">${up.name}</span>
+              <div class="shop-pips-row">${pipsHtml}</div>
+            </div>
+            <div class="shop-card-desc">${up.desc} (현재: Lv.${curLv}/${up.maxLv})</div>
+          </div>
+        </div>
+        <button class="shop-buy-btn ${isMax ? 'maxed' : ''}" data-id="${up.id}">
+          ${isMax ? '최대 레벨' : `+ ${cost} 코인`}
+        </button>
+      `;
+
+      const buyBtn = card.querySelector('.shop-buy-btn');
+      if (!isMax) {
+        buyBtn.onclick = () => {
+          if (window.saveMgr && window.saveMgr.buyUpgrade(up.id)) {
+            if (window.soundEngine) window.soundEngine.playBuy();
+            this.updateLobbyGold();
+            this.renderShop();
+          } else {
+            if (window.soundEngine) window.soundEngine.playHit();
+          }
+        };
+      }
+
+      grid.appendChild(card);
+    });
+  }
+
+  renderAchievements() {
+    const list = document.getElementById('achList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    window.GAME_DATA.ACHIEVEMENTS.forEach(ach => {
+      const isDone = window.saveMgr ? !!window.saveMgr.data.achievements[ach.id] : false;
+
+      const card = document.createElement('div');
+      card.className = 'ach-card' + (isDone ? ' completed' : '');
+      card.innerHTML = `
+        <div class="ach-card-info">
+          <div class="ach-title">${ach.icon} ${ach.name}</div>
+          <div class="ach-desc">${ach.desc}</div>
+        </div>
+        <div class="ach-badge">${isDone ? '달성 완료 ✨' : `보상: ${ach.reward} 코인`}</div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  renderBestiary() {
+    const list = document.getElementById('bestiaryList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    window.GAME_DATA.BESTIARY.forEach(b => {
+      const card = document.createElement('div');
+      card.className = 'bestiary-card';
+      card.innerHTML = `
+        <div class="bestiary-card-info">
+          <div class="bestiary-title">${b.icon} ${b.name} <small style="color:#00f0ff;font-size:11px;">[${b.type}]</small></div>
+          <div class="bestiary-desc">${b.desc}</div>
+          <div class="bestiary-strategy">💡 공략법: ${b.strategy}</div>
+        </div>
+      `;
+      list.appendChild(card);
     });
   }
 
@@ -379,11 +519,10 @@ class GameEngine {
     modal.classList.add('active');
   }
 
-  // 레벨업 3택 1 카드 풀 생성 (무기 / 패시브 / 초월 진화)
   generateUpgradeChoices() {
     const choices = [];
 
-    // 1. 초월 진화 무기 각성 검사 (기본 무기 만렙 8 + 짝꿍 패시브 보유 시)
+    // 1. 초월 진화 무기 각성 검사
     Object.entries(this.player.weapons).forEach(([wId, lv]) => {
       const wDef = window.GAME_DATA.WEAPONS[wId];
       if (lv >= 8 && this.player.passives[wDef.partnerPassive] && !this.player.superWeapons.includes(wDef.evolution)) {
@@ -402,13 +541,13 @@ class GameEngine {
       }
     });
 
-    // 2. 일반 무기 업그레이드 후보군
+    // 2. 일반 무기 업그레이드
     const availableWeapons = Object.keys(window.GAME_DATA.WEAPONS).filter(wId => {
       const curLv = this.player.weapons[wId] || 0;
       return curLv < 8 && !this.player.superWeapons.includes(`super_${wId}`);
     });
 
-    // 3. 일반 패시브 업그레이드 후보군
+    // 3. 일반 패시브 업그레이드
     const availablePassives = Object.keys(window.GAME_DATA.PASSIVES).filter(pId => {
       const curLv = this.player.passives[pId] || 0;
       return curLv < 4;
@@ -416,7 +555,6 @@ class GameEngine {
 
     const pool = [...availableWeapons.map(id => ({ id, cat: 'weapon' })), ...availablePassives.map(id => ({ id, cat: 'passive' }))];
 
-    // 무작위 3개 선별
     while (choices.length < 3 && pool.length > 0) {
       const idx = Math.floor(Math.random() * pool.length);
       const item = pool.splice(idx, 1)[0];
@@ -452,7 +590,6 @@ class GameEngine {
       }
     }
 
-    // 기본 체력 회복권 (선택지 고갈 시)
     if (choices.length === 0) {
       choices.push({
         id: 'heal',
@@ -475,6 +612,7 @@ class GameEngine {
       this.effectEngine.screenShake(12, 0.4);
       this.effectEngine.spawnShockwave(this.player.x, this.player.y, 200, '#ffd700');
       this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 40, '⚡ 초월 무기 각성! ⚡', '#ffd700');
+      if (window.saveMgr) window.saveMgr.checkAchievement('ach_super_weapon', true);
     } else if (ch.category === 'weapon') {
       this.player.weapons[ch.id] = (this.player.weapons[ch.id] || 0) + 1;
     } else if (ch.category === 'passive') {
@@ -489,13 +627,11 @@ class GameEngine {
   }
 
   handleChestOpened() {
-    // 보스 상자 개봉 시 무작위 초월 진화 또는 최고 레벨 업그레이드 즉시 증정
     if (window.soundEngine) window.soundEngine.playLevelUp();
     this.effectEngine.screenShake(10, 0.35);
     this.effectEngine.spawnShockwave(this.player.x, this.player.y, 160, '#ffd700');
     this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 45, '🎁 보스 황금 상자 획득!!', '#ffd700');
 
-    // 가능한 초월 무기 즉시 각성 또는 골드 +300
     let evolved = false;
     Object.entries(this.player.weapons).forEach(([wId, lv]) => {
       if (evolved) return;
@@ -503,6 +639,7 @@ class GameEngine {
       if (lv >= 8 && !this.player.superWeapons.includes(wDef.evolution)) {
         this.player.superWeapons.push(wDef.evolution);
         evolved = true;
+        if (window.saveMgr) window.saveMgr.checkAchievement('ach_super_weapon', true);
       }
     });
 
@@ -526,10 +663,26 @@ class GameEngine {
       titleEl.style.color = '#00ffaa';
       subEl.innerText = '모든 업무 몬스터와 야근 지시 상사들을 물리치고 완벽하게 퇴근했습니다!';
       if (window.soundEngine) window.soundEngine.playVictory();
+      if (window.saveMgr) window.saveMgr.checkAchievement('ach_first_clear', true);
     } else {
       titleEl.innerText = '💀 야근에 쓰러졌습니다...';
       titleEl.style.color = '#ff3355';
       subEl.innerText = '끝없는 결재 반려와 엑셀 오류를 버티지 못했습니다.';
+      if (window.soundEngine) window.soundEngine.playGameOver();
+    }
+
+    // 영구 저장소에 골드 및 성과 동기화
+    if (window.saveMgr) {
+      window.saveMgr.addGold(this.player.gold);
+      window.saveMgr.data.totalRuns = (window.saveMgr.data.totalRuns || 0) + 1;
+      window.saveMgr.data.totalKills = (window.saveMgr.data.totalKills || 0) + this.player.kills;
+
+      if (window.saveMgr.data.totalKills >= 500) window.saveMgr.checkAchievement('ach_kills_500', true);
+      if (window.saveMgr.data.totalKills >= 2000) window.saveMgr.checkAchievement('ach_kills_2000', true);
+      if (window.saveMgr.getGold() >= 1000) window.saveMgr.checkAchievement('ach_gold_1000', true);
+      if (window.saveMgr.getGold() >= 5000) window.saveMgr.checkAchievement('ach_gold_5000', true);
+
+      window.saveMgr.save();
     }
 
     const elapsed = Math.max(0, 600 - this.gameTime);
@@ -539,7 +692,8 @@ class GameEngine {
     document.getElementById('endSurvivalTime').innerText = `${m}:${s}`;
     document.getElementById('endFinalLevel').innerText = `Lv.${this.player.level}`;
     document.getElementById('endTotalKills').innerText = `${this.player.kills} 마리`;
-    document.getElementById('endTotalGold').innerText = `${this.player.gold} 코인`;
+    document.getElementById('endTotalGold').innerText = `+${this.player.gold} 코인`;
+    document.getElementById('endBankGold').innerText = `${window.saveMgr ? window.saveMgr.getGold() : 0} 코인`;
 
     modal.classList.add('active');
   }
@@ -623,7 +777,7 @@ class GameEngine {
     }
   }
 
-  // 오피스 맵 배경 렌더링 (사무실 카펫 타일, 큐비클 책상, 푸른 모니터, 화분, 탈출구)
+  // 오피스 맵 배경 렌더링
   renderOfficeMap(ctx, camera) {
     const startTileX = Math.floor(camera.x / 80) * 80;
     const startTileY = Math.floor(camera.y / 80) * 80;
@@ -638,14 +792,13 @@ class GameEngine {
         ctx.fillStyle = isAlt ? '#111827' : '#1e293b';
         ctx.fillRect(x - camera.x, y - camera.y, 80, 80);
 
-        // 카펫 질감 미세 그리드 라인
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
         ctx.lineWidth = 1;
         ctx.strokeRect(x - camera.x, y - camera.y, 80, 80);
       }
     }
 
-    // 2. 중앙 탈출구 (비상구 엘리베이터) - 맵 중심 (1200, 1200)
+    // 2. 중앙 비상구 엘리베이터 (1200, 1200)
     const exitX = 1200 - camera.x;
     const exitY = 1200 - camera.y;
     ctx.save();
@@ -665,43 +818,7 @@ class GameEngine {
     ctx.fillText('🚨 비상구 엘리베이터', exitX, exitY + 15);
     ctx.restore();
 
-    // 3. 고정 오피스 프롭 배치 (책상, 듀얼 모니터, 복사기, 화분)
-    for (let rx = 300; rx <= 2100; rx += 400) {
-      for (let ry = 300; ry <= 2100; ry += 400) {
-        if (Math.abs(rx - 1200) < 150 && Math.abs(ry - 1200) < 150) continue;
-
-        const px = rx - camera.x;
-        const py = ry - camera.y;
-
-        if (px < -100 || px > this.canvas.width + 100 || py < -100 || py > this.canvas.height + 100) continue;
-
-        ctx.save();
-        // 원목 오피스 책상
-        ctx.fillStyle = '#334155';
-        ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.roundRect(px - 50, py - 30, 100, 60, 6);
-        ctx.fill();
-        ctx.stroke();
-
-        // 듀얼 모니터 (푸른 화면 발광)
-        ctx.fillStyle = '#38bdf8';
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 10;
-        ctx.fillRect(px - 35, py - 20, 30, 14);
-        ctx.fillRect(px + 5, py - 20, 30, 14);
-
-        // 키보드
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(px - 20, py + 2, 40, 12);
-
-        ctx.restore();
-      }
-    }
-
-    // 4. 캐릭터 주변 심야 조명 비네팅
+    // 3. 캐릭터 주변 심야 조명 비네팅
     const pScreenX = this.player ? this.player.x - camera.x : this.canvas.width / 2;
     const pScreenY = this.player ? this.player.y - camera.y : this.canvas.height / 2;
 
@@ -724,7 +841,7 @@ class GameEngine {
       this.gameTime -= dt;
       if (this.gameTime <= 0) {
         this.gameTime = 0;
-        this.handleGameOver(true); // 10분 생존 탈출 승리!
+        this.handleGameOver(true);
       }
 
       // 2. 엔티티 업데이트
@@ -742,7 +859,7 @@ class GameEngine {
       this.updateHUD();
     }
 
-    // 3. 카메라 추종 (화면 흔들림 효과 포함)
+    // 3. 카메라 추종
     if (this.player) {
       let shakeX = 0;
       let shakeY = 0;

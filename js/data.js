@@ -432,5 +432,218 @@ window.GAME_DATA = {
       radius: 52,
       exp: 2000
     }
-  }
+  },
+
+  // 6. 연봉 협상 영구 강화 상점 데이터 (Permanent Upgrades)
+  SHOP_UPGRADES: {
+    hp: {
+      id: 'hp',
+      name: '☕ 고카페인 체력 증진',
+      icon: '☕',
+      desc: '기본 최대 체력을 영구적으로 +10% 증가시킵니다.',
+      baseCost: 100,
+      costMul: 1.6,
+      maxLv: 5,
+      bonusPerLv: 0.10,
+      typeText: '최대 체력'
+    },
+    speed: {
+      id: 'speed',
+      name: '👟 에어 쿠션 슬리퍼',
+      icon: '👟',
+      desc: '기본 이동 속도를 영구적으로 +5% 증가시킵니다.',
+      baseCost: 120,
+      costMul: 1.6,
+      maxLv: 5,
+      bonusPerLv: 0.05,
+      typeText: '이동 속도'
+    },
+    atk: {
+      id: 'atk',
+      name: '💼 실무 타건 분노력',
+      icon: '💼',
+      desc: '모든 무기의 기본 공격력을 영구적으로 +8% 증가시킵니다.',
+      baseCost: 150,
+      costMul: 1.7,
+      maxLv: 5,
+      bonusPerLv: 0.08,
+      typeText: '공격력'
+    },
+    cd: {
+      id: 'cd',
+      name: '⚡ 초고속 칼퇴 집념',
+      icon: '⚡',
+      desc: '모든 무기의 발사 쿨타임을 영구적으로 4% 감소시킵니다.',
+      baseCost: 200,
+      costMul: 1.8,
+      maxLv: 5,
+      bonusPerLv: 0.04,
+      typeText: '쿨타임 감소'
+    },
+    magnet: {
+      id: 'magnet',
+      name: '🧲 법인카드 한도 증액',
+      icon: '🧲',
+      desc: '아이템 및 커피콩 기본 자석 흡입 범위를 +25% 확장합니다.',
+      baseCost: 100,
+      costMul: 1.5,
+      maxLv: 5,
+      bonusPerLv: 0.25,
+      typeText: '자석 범위'
+    },
+    gold: {
+      id: 'gold',
+      name: '💰 초과근무 성과급',
+      icon: '💰',
+      desc: '게임 내 획득하는 영수증(골드)을 영구적으로 +15% 증가시킵니다.',
+      baseCost: 180,
+      costMul: 1.7,
+      maxLv: 5,
+      bonusPerLv: 0.15,
+      typeText: '코인 보너스'
+    }
+  },
+
+  // 7. 사내 업적 10종 데이터 (Achievements)
+  ACHIEVEMENTS: [
+    {
+      id: 'ach_first_clear',
+      name: '🎉 11시 막차 탑승자',
+      icon: '🏆',
+      desc: '10분간 생존하여 야근 탈출을 1회 완수하세요.',
+      reward: 500
+    },
+    {
+      id: 'ach_kills_500',
+      name: '📑 서류 파쇄기',
+      icon: '⚔️',
+      desc: '누적 500마리의 업무 몬스터를 처치하세요.',
+      reward: 300
+    },
+    {
+      id: 'ach_kills_2000',
+      name: '💥 업무 분쇄 마스터',
+      icon: '💣',
+      desc: '누적 2,000마리의 업무 몬스터를 처치하세요.',
+      reward: 800
+    },
+    {
+      id: 'ach_gold_1000',
+      name: '💳 법카 VIP 회원',
+      icon: '💰',
+      desc: '누적 1,000 커피 코인을 획득하세요.',
+      reward: 300
+    },
+    {
+      id: 'ach_gold_5000',
+      name: '👑 법인카드 블랙 등급',
+      icon: '💎',
+      desc: '누적 5,000 커피 코인을 획득하세요.',
+      reward: 1000
+    },
+    {
+      id: 'ach_super_weapon',
+      name: '⚡ 야근 병기 각성',
+      icon: '🔥',
+      desc: '초월 진화 무기를 1회 이상 각성하세요.',
+      reward: 400
+    },
+    {
+      id: 'ach_props_20',
+      name: '🥤 탕비실 습격자',
+      icon: '🚰',
+      desc: '오피스 기물(정수기/자판기/복사기)을 20개 이상 파괴하세요.',
+      reward: 350
+    },
+    {
+      id: 'ach_boss_manager',
+      name: '👔 라떼는 거절합니다',
+      icon: '🛑',
+      desc: '03:00 중간보스 꼰대 과장을 처치하세요.',
+      reward: 300
+    },
+    {
+      id: 'ach_boss_director',
+      name: '💼 주말출근 결재 반려',
+      icon: '⚡',
+      desc: '07:00 엘리트보스 분노의 부장님을 처치하세요.',
+      reward: 500
+    },
+    {
+      id: 'ach_boss_ceo',
+      name: '🏢 사직서 제출 완료',
+      icon: '👑',
+      desc: '10:00 최종보스 대표이사를 쓰러뜨리고 완전한 자유를 얻으세요.',
+      reward: 1500
+    }
+  ],
+
+  // 8. 업무 몬스터 도감 (Bestiary)
+  BESTIARY: [
+    {
+      id: 'paper',
+      name: '날아다니는 결재 서류',
+      type: '일반 몬스터',
+      icon: '📄',
+      desc: '수시로 날아오는 A4 서류 뭉치. 빠르고 약하지만 떼지어 몰려듭니다.',
+      strategy: '스테이플러나 키보드로 빠르게 관통하여 길을 트세요.'
+    },
+    {
+      id: 'slime',
+      name: '엑셀 #REF! 오류 슬라임',
+      type: '분열형 몬스터',
+      icon: '📊',
+      desc: '수식이 꼬여 증식하는 젤리 괴물. 처치 시 2마리의 미니 슬라임으로 분열합니다.',
+      strategy: '핫식스 장판이나 문서 세단기로 분열체까지 일괄 소탕하세요.'
+    },
+    {
+      id: 'copier',
+      name: '용지 걸린 폭주 복사기',
+      type: '원거리 몬스터',
+      icon: '🖨️',
+      desc: '과열되어 먹통이 된 대형 복사기. 주기적으로 토너 탄막을 발사합니다.',
+      strategy: '발사 탄환을 무빙으로 피하면서 접근하여 집중 타격하세요.'
+    },
+    {
+      id: 'slack',
+      name: '미확인 슬랙 알림 괴물',
+      type: '부유 관통형 몬스터',
+      icon: '💬',
+      desc: '퇴근 직전 울리는 붉은 @Channel 알림 유령. 벽과 책상을 유유히 통과합니다.',
+      strategy: '지형 뒤에 숨어 있어도 벽을 넘어오니 회전 법인카드로 견제하세요.'
+    },
+    {
+      id: 'thief',
+      name: '탕비실 믹스커피 도둑',
+      type: '돌진형 엘리트',
+      icon: '☕',
+      desc: '회사 간식을 싹쓸이하는 월급 루팡. 튼튼한 맷집으로 정면 돌파해 옵니다.',
+      strategy: '결재 반려 도장으로 강하게 스턴 및 압살 데미지를 넣으세요.'
+    },
+    {
+      id: 'boss_manager',
+      name: '꼰대 과장 (03:00)',
+      type: '중간 보스',
+      icon: '👔',
+      desc: '"라떼는 말이야!" 음파 충격파와 3연속 반려 도장을 난사합니다.',
+      strategy: '충격파 붉은 범위 밖으로 이탈 후 초월 무기 화력으로 속전속결하세요.'
+    },
+    {
+      id: 'boss_director',
+      name: '분노의 부장님 (07:00)',
+      type: '엘리트 보스',
+      icon: '💼',
+      desc: '"주말에 다 나와!" 플레이어 발밑에 3개의 붉은 폭격 장판을 소환합니다.',
+      strategy: '발밑에 생기는 붉은 원에서 1초 이내에 빠르게 빠져나오세요.'
+    },
+    {
+      id: 'boss_ceo',
+      name: '철야 지시 대표이사 (10:00)',
+      type: '최종 보스',
+      icon: '👑',
+      desc: '"전사원 비상 야근 선포!" 16방향 초고속 레이저 탄막을 사방으로 난사합니다.',
+      strategy: '탄막 사이 틈을 정밀하게 파고들며 6종 풀업 무기로 총공격하세요.'
+    }
+  ]
 };
+

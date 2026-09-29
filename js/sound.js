@@ -166,6 +166,17 @@ class SoundEngine {
     setTimeout(() => this.playTone(220, 'sawtooth', 0.4, 0.3, 0.01), 300);
   }
 
+  // 상점 업그레이드 구매 성공음
+  playBuy() {
+    this.playTone(587.33, 'triangle', 0.1, 0.2, 0.01);
+    setTimeout(() => this.playTone(880.00, 'triangle', 0.18, 0.25, 0.01), 90);
+  }
+
+  // 탭 클릭음
+  playClick() {
+    this.playTone(600, 'sine', 0.05, 0.1, 0.01);
+  }
+
   // 탈출 승리 음악
   playVictory() {
     const notes = [523, 659, 783, 1046, 1318, 1567];

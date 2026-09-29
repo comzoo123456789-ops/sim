@@ -6,7 +6,7 @@
   --font-title: 'Rajdhani', 'Pretendard', sans-serif;
 
   --bg-dark: #080c16;
-  --panel-bg: rgba(15, 23, 42, 0.88);
+  --panel-bg: rgba(15, 23, 42, 0.90);
   --panel-border: rgba(99, 140, 255, 0.28);
   --panel-glow: rgba(0, 240, 255, 0.2);
 
@@ -28,7 +28,7 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
-  word-break: keep-all; /* 단어 중간 강제 줄바꿈 방지 */
+  word-break: keep-all;
 }
 
 html, body {
@@ -381,8 +381,6 @@ html, body {
 .slot-icon {
   font-size: 15px;
 }
-  font-size: 16px;
-}
 
 .slot-level-dots {
   position: absolute;
@@ -420,7 +418,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 14px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
@@ -432,18 +430,28 @@ html, body {
 }
 
 .modal-window {
-  background: linear-gradient(145deg, rgba(22, 30, 48, 0.96), rgba(12, 18, 32, 0.98));
+  background: linear-gradient(145deg, rgba(22, 30, 48, 0.97), rgba(12, 18, 32, 0.99));
   border: 1px solid var(--panel-border);
   border-radius: 20px;
-  padding: 22px;
-  max-width: 540px;
+  padding: 20px;
+  max-width: 560px;
   width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 30px var(--panel-glow);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   transform: scale(0.92);
   transition: transform 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.modal-window::-webkit-scrollbar {
+  width: 5px;
+}
+.modal-window::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 3px;
 }
 
 .modal-overlay.active .modal-window {
@@ -454,45 +462,102 @@ html, body {
   text-align: center;
 }
 
-.modal-title {
-  font-family: var(--font-title);
-  font-size: 22px;
-  font-weight: 800;
-  color: #fff;
+.lobby-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 4px;
 }
 
-.modal-subtitle {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.45;
+.lobby-gold-badge {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 3px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-.level-up-tag {
-  display: inline-block;
-  background: linear-gradient(90deg, #ff8800, #ff2255);
-  color: #fff;
+.gold-text {
   font-family: var(--font-title);
-  font-weight: 900;
-  font-size: 13px;
-  padding: 3px 12px;
-  border-radius: 20px;
-  box-shadow: 0 0 15px rgba(255, 60, 80, 0.6);
-  margin-bottom: 6px;
+  font-weight: 800;
+  color: var(--accent-gold);
+  font-size: 14px;
+}
+
+.modal-title {
+  font-family: var(--font-title);
+  font-size: 21px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.modal-subtitle {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+/* 4대 메인 탭 바 */
+.menu-tabs-bar {
+  display: flex;
+  background: rgba(10, 16, 28, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 3px;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.menu-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-main);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.menu-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(0, 136, 255, 0.3));
+  color: #fff;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+/* 탭 패널 */
+.tab-panel {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tab-panel.active {
+  display: flex;
 }
 
 /* 캐릭터 선택 카드 그리드 */
 .char-card-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
 }
 
 .char-select-card {
-  background: rgba(15, 23, 42, 0.88);
+  background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -508,9 +573,9 @@ html, body {
 }
 
 .char-card-avatar {
-  font-size: 28px;
-  width: 48px;
-  height: 48px;
+  font-size: 26px;
+  width: 44px;
+  height: 44px;
   background: rgba(30, 41, 59, 0.9);
   border-radius: 10px;
   display: flex;
@@ -526,15 +591,185 @@ html, body {
 
 .char-card-name {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14.5px;
   color: #fff;
   margin-bottom: 2px;
 }
 
 .char-card-bonus {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--accent-gold);
   font-weight: 600;
+}
+
+/* 상점 그리드 */
+.shop-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shop-card {
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.shop-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.shop-card-icon {
+  font-size: 24px;
+  width: 38px;
+  height: 38px;
+  background: rgba(30, 41, 59, 0.9);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shop-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shop-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shop-card-name {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #fff;
+}
+
+.shop-pips-row {
+  display: flex;
+  gap: 2.5px;
+}
+
+.shop-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.shop-pip.fill {
+  background: var(--accent-gold);
+  box-shadow: 0 0 6px var(--accent-gold);
+}
+
+.shop-card-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.shop-buy-btn {
+  background: linear-gradient(135deg, #ffd700, #ff8800);
+  border: none;
+  border-radius: 8px;
+  color: #0b0f19;
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: 12.5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.shop-buy-btn:active {
+  transform: scale(0.95);
+}
+
+.shop-buy-btn.maxed {
+  background: #334155;
+  color: #94a3b8;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* 업적 리스트 */
+.ach-list, .bestiary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ach-card, .bestiary-card {
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ach-card.completed {
+  border-color: rgba(0, 255, 170, 0.4);
+  background: rgba(0, 255, 170, 0.06);
+}
+
+.ach-card-info, .bestiary-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.ach-title, .bestiary-title {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #fff;
+}
+
+.ach-desc, .bestiary-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.bestiary-strategy {
+  font-size: 11px;
+  color: var(--accent-cyan);
+  margin-top: 2px;
+}
+
+.ach-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+}
+
+.ach-card.completed .ach-badge {
+  background: rgba(0, 255, 170, 0.2);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 255, 170, 0.4);
 }
 
 .btn-primary {
@@ -543,17 +778,38 @@ html, body {
   color: #080c16;
   font-family: var(--font-title);
   font-weight: 800;
-  font-size: 16px;
-  padding: 13px;
+  font-size: 15px;
+  padding: 12px;
   border: none;
   border-radius: 12px;
   cursor: pointer;
   box-shadow: 0 6px 20px rgba(0, 240, 255, 0.4);
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .btn-primary:active {
   transform: scale(0.98);
+}
+
+.btn-secondary {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.9);
+  color: #cbd5e1;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.modal-footer-row {
+  display: flex;
+  gap: 8px;
 }
 
 /* 레벨업 3택 1 카드 덱 */
@@ -645,22 +901,35 @@ html, body {
   word-break: keep-all;
 }
 
+.level-up-tag {
+  display: inline-block;
+  background: linear-gradient(90deg, #ff8800, #ff2255);
+  color: #fff;
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 13px;
+  padding: 3px 12px;
+  border-radius: 20px;
+  box-shadow: 0 0 15px rgba(255, 60, 80, 0.6);
+  margin-bottom: 6px;
+}
+
 /* 엔드 게임 통계 카드 */
 .end-stats-card {
   background: rgba(15, 23, 42, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
-  padding: 16px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .stat-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
 .stat-row span {
@@ -670,7 +939,13 @@ html, body {
 .stat-row b {
   font-family: var(--font-title);
   color: var(--accent-gold);
-  font-size: 16px;
+  font-size: 15px;
+}
+
+.stat-row.total-gold-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
+  margin-top: 2px;
 }
 
 /* 4. 모바일 가상 조이스틱 */
@@ -734,7 +1009,13 @@ html, body {
     padding: 3px 6px;
   }
   .modal-window {
-    padding: 16px;
+    padding: 14px;
+  }
+
+  /* 탭 버튼 모바일 최적화 */
+  .menu-tab-btn {
+    font-size: 10.5px;
+    padding: 6px 2px;
   }
 
   /* 하단 슬롯 바 모바일 최적화 */

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>야근 탈출: 오피스 서바이벌 (Office Escape Survivor)</title>
   <meta name="description" content="쏟아지는 업무와 상사들을 물리치고 10분 만에 정시 퇴근하라! 2D 로그라이크 탄막 서바이벌">
-  <link rel="stylesheet" href="css/style.css?v=20260929_102">
+  <link rel="stylesheet" href="css/style.css?v=20260929_103">
 </head>
 <body>
   <div id="app">
@@ -78,16 +78,49 @@
       </div>
     </div>
 
-    <!-- 캐릭터 선택 모달 (게임 시작 전) -->
+    <!-- 메인 로비 모달 (캐릭터 선택 / 연봉 협상 / 업적 / 도감) -->
     <div id="charSelectModal" class="modal-overlay active">
-      <div class="modal-window">
-        <div class="modal-header">
-          <h2 class="modal-title">야근 탈출: 오피스 서바이벌</h2>
-          <p class="modal-subtitle">출근할 직급을 선택하세요. 10분간 생존하여 밤 11시 막차를 타야 합니다!</p>
+      <div class="modal-window lobby-window">
+        <div class="modal-header lobby-header">
+          <div class="lobby-title-row">
+            <h2 class="modal-title">야근 탈출: 오피스 서바이벌</h2>
+            <div class="lobby-gold-badge">
+              <span class="gold-icon">💰</span>
+              <span id="lobbyGoldVal" class="gold-text">0</span>
+            </div>
+          </div>
+          <p class="modal-subtitle">10분간 쏟아지는 야근 폭격을 버텨내고 밤 11시 막차를 타세요!</p>
+
+          <!-- 4대 메인 탭 네비게이션 -->
+          <div class="menu-tabs-bar">
+            <button class="menu-tab-btn active" data-tab="char">🧑‍💼 사원 출근</button>
+            <button class="menu-tab-btn" data-tab="shop">💰 연봉 협상</button>
+            <button class="menu-tab-btn" data-tab="ach">🏆 사내 업적</button>
+            <button class="menu-tab-btn" data-tab="bestiary">📖 업무 도감</button>
+          </div>
         </div>
-        <div class="char-card-grid" id="charCardGrid"></div>
-        <div class="modal-footer">
-          <button id="btnStartGame" class="btn-primary">야근 탈출 시작 ➔</button>
+
+        <!-- 탭 1: 사원 출근 패널 -->
+        <div id="tabPanelChar" class="tab-panel active">
+          <div class="char-card-grid" id="charCardGrid"></div>
+          <div class="modal-footer">
+            <button id="btnStartGame" class="btn-primary">야근 탈출 출근하기 ➔</button>
+          </div>
+        </div>
+
+        <!-- 탭 2: 연봉 협상 (영구 강화 상점) 패널 -->
+        <div id="tabPanelShop" class="tab-panel">
+          <div class="shop-grid" id="shopGrid"></div>
+        </div>
+
+        <!-- 탭 3: 사내 업적실 패널 -->
+        <div id="tabPanelAch" class="tab-panel">
+          <div class="ach-list" id="achList"></div>
+        </div>
+
+        <!-- 탭 4: 업무 도감 패널 -->
+        <div id="tabPanelBestiary" class="tab-panel">
+          <div class="bestiary-list" id="bestiaryList"></div>
         </div>
       </div>
     </div>
@@ -125,12 +158,17 @@
             <b id="endTotalKills">0 마리</b>
           </div>
           <div class="stat-row">
-            <span>획득 커피 코인</span>
-            <b id="endTotalGold">0</b>
+            <span>이번 판 획득 코인</span>
+            <b id="endTotalGold">+0 코인</b>
+          </div>
+          <div class="stat-row total-gold-row">
+            <span>누적 보유 코인</span>
+            <b id="endBankGold">0 코인</b>
           </div>
         </div>
-        <div class="modal-footer">
-          <button id="btnRestartGame" class="btn-primary">다시 도전하기 ↺</button>
+        <div class="modal-footer-row">
+          <button id="btnRestartGame" class="btn-primary">다시 출근하기 ↺</button>
+          <button id="btnReturnLobby" class="btn-secondary">로비 (상점/도감) 🏢</button>
         </div>
       </div>
     </div>
@@ -143,14 +181,15 @@
     </div>
   </div>
 
-  <!-- 스크립트 로드 -->
-  <script src="js/sound.js?v=20260929_102"></script>
-  <script src="js/data.js?v=20260929_102"></script>
-  <script src="js/props.js?v=20260929_102"></script>
-  <script src="js/drops.js?v=20260929_102"></script>
-  <script src="js/weapons.js?v=20260929_102"></script>
-  <script src="js/monsters.js?v=20260929_102"></script>
-  <script src="js/player.js?v=20260929_102"></script>
-  <script src="js/game.js?v=20260929_102"></script>
+  <!-- 스크립트 로드 순서 엄수 -->
+  <script src="js/sound.js?v=20260929_103"></script>
+  <script src="js/data.js?v=20260929_103"></script>
+  <script src="js/save.js?v=20260929_103"></script>
+  <script src="js/props.js?v=20260929_103"></script>
+  <script src="js/drops.js?v=20260929_103"></script>
+  <script src="js/weapons.js?v=20260929_103"></script>
+  <script src="js/monsters.js?v=20260929_103"></script>
+  <script src="js/player.js?v=20260929_103"></script>
+  <script src="js/game.js?v=20260929_103"></script>
 </body>
 </html>

@@ -51,9 +51,10 @@ class DropManager {
         } else if (d.type === 'super_coffee') {
           player.addExp(d.value * 5);
         } else if (d.type === 'receipt') {
-          player.gold += d.value;
+          const actualGold = Math.floor(d.value * (player.stats.goldMul || 1.0));
+          player.gold += actualGold;
           if (window.soundEngine) window.soundEngine.playXP();
-          if (effectEngine) effectEngine.spawnFloatingText(player.x, player.y - 20, `+${d.value} 코인`, '#ffd700');
+          if (effectEngine) effectEngine.spawnFloatingText(player.x, player.y - 20, `+${actualGold} 코인`, '#ffd700');
         } else if (d.type === 'aid_kit') {
           const heal = Math.floor(player.maxHp * 0.35);
           player.hp = Math.min(player.maxHp, player.hp + heal);
