@@ -159,6 +159,7 @@ class GameEngine {
       joyX: 0, joyY: 0
     };
 
+    this.levelUpQueue = 0;
     this.gameTime = 600; // 10분(600초) 카운트다운
     this.lastTime = performance.now();
 
@@ -481,6 +482,7 @@ class GameEngine {
     this.dropMgr.reset();
     this.effectEngine.reset();
 
+    this.levelUpQueue = 0;
     this.gameTime = 600; // 10분
     this.state = 'playing';
 
@@ -488,13 +490,37 @@ class GameEngine {
     this.updateHUD();
   }
 
-  triggerLevelUp() {
-    this.state = 'level_up';
+  queueLevelUp() {
+    this.levelUpQueue = (this.levelUpQueue || 0) + 1;
+    if (this.state === 'playing') {
+      this.processNextLevelUp();
+    }
+  }
+
+  processNextLevelUp() {
     const modal = document.getElementById('levelUpModal');
+    if (!modal) return;
+
+    if (this.levelUpQueue <= 0) {
+      this.levelUpQueue = 0;
+      modal.classList.remove('active');
+      if (this.state === 'level_up') {
+        this.state = 'playing';
+      }
+      return;
+    }
+
+    this.levelUpQueue--;
+    this.state = 'level_up';
+
     const deck = document.getElementById('upgradeCardDeck');
+    if (!deck) return;
     deck.innerHTML = '';
 
     const choices = this.generateUpgradeChoices();
+
+    let hasSelected = false;
+
     choices.forEach(ch => {
       const card = document.createElement('div');
       card.className = 'upgrade-card' + (ch.isSuper ? ' super' : '');
@@ -508,11 +534,25 @@ class GameEngine {
           <div class="upgrade-card-desc">${ch.desc}</div>
         </div>
       `;
-      card.onclick = () => {
+
+      const selectAction = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (hasSelected) return;
+        hasSelected = true;
+
         this.applyUpgrade(ch);
-        modal.classList.remove('active');
-        this.state = 'playing';
+
+        setTimeout(() => {
+          this.processNextLevelUp();
+        }, 50);
       };
+
+      card.addEventListener('pointerup', selectAction);
+      card.addEventListener('click', selectAction);
+
       deck.appendChild(card);
     });
 
@@ -521,11 +561,15 @@ class GameEngine {
 
   generateUpgradeChoices() {
     const choices = [];
+    if (!this.player) return choices;
+
+    const ownedWeaponKeys = Object.keys(this.player.weapons);
+    const ownedPassiveKeys = Object.keys(this.player.passives);
 
     // 1. 초월 진화 무기 각성 검사
     Object.entries(this.player.weapons).forEach(([wId, lv]) => {
       const wDef = window.GAME_DATA.WEAPONS[wId];
-      if (lv >= 8 && this.player.passives[wDef.partnerPassive] && !this.player.superWeapons.includes(wDef.evolution)) {
+      if (wDef && lv >= 8 && this.player.passives[wDef.partnerPassive] && !this.player.superWeapons.includes(wDef.evolution)) {
         const sDef = window.GAME_DATA.SUPER_WEAPONS[wDef.evolution];
         if (sDef) {
           choices.push({
@@ -541,19 +585,29 @@ class GameEngine {
       }
     });
 
-    // 2. 일반 무기 업그레이드
+    // 2. 일반 무기 업그레이드 (최대 6개 슬롯 제한)
     const availableWeapons = Object.keys(window.GAME_DATA.WEAPONS).filter(wId => {
       const curLv = this.player.weapons[wId] || 0;
-      return curLv < 8 && !this.player.superWeapons.includes(`super_${wId}`);
+      if (this.player.superWeapons.includes(`super_${wId}`)) return false;
+      if (curLv === 0) {
+        return ownedWeaponKeys.length < 6;
+      }
+      return curLv < 8;
     });
 
-    // 3. 일반 패시브 업그레이드
+    // 3. 일반 패시브 업그레이드 (최대 6개 슬롯 제한)
     const availablePassives = Object.keys(window.GAME_DATA.PASSIVES).filter(pId => {
       const curLv = this.player.passives[pId] || 0;
+      if (curLv === 0) {
+        return ownedPassiveKeys.length < 6;
+      }
       return curLv < 4;
     });
 
-    const pool = [...availableWeapons.map(id => ({ id, cat: 'weapon' })), ...availablePassives.map(id => ({ id, cat: 'passive' }))];
+    const pool = [
+      ...availableWeapons.map(id => ({ id, cat: 'weapon' })),
+      ...availablePassives.map(id => ({ id, cat: 'passive' }))
+    ];
 
     while (choices.length < 3 && pool.length > 0) {
       const idx = Math.floor(Math.random() * pool.length);
@@ -571,7 +625,7 @@ class GameEngine {
           icon: wDef.icon,
           title: curLv === 0 ? `[신규 무기] ${wDef.name}` : `${wDef.name} (Lv.${nextLv})`,
           typeText: curLv === 0 ? '신규 무기' : '무기 강화',
-          desc: lvData.desc
+          desc: lvData ? lvData.desc : '공격 성능이 대폭 강화됩니다.'
         });
       } else {
         const pDef = window.GAME_DATA.PASSIVES[item.id];
@@ -585,14 +639,15 @@ class GameEngine {
           icon: pDef.icon,
           title: curLv === 0 ? `[사내 복지] ${pDef.name}` : `${pDef.name} (Lv.${nextLv})`,
           typeText: curLv === 0 ? '신규 패시브' : '패시브 강화',
-          desc: lvData.desc
+          desc: lvData ? lvData.desc : '업무 역량이 강화됩니다.'
         });
       }
     }
 
-    if (choices.length === 0) {
+    // 선택지가 부족할 경우 체력 회복 카드로 대체
+    while (choices.length < 3) {
       choices.push({
-        id: 'heal',
+        id: 'heal_' + choices.length,
         category: 'heal',
         icon: '🍖',
         title: '야근 영양제 섭취',
@@ -608,7 +663,9 @@ class GameEngine {
     if (window.soundEngine) window.soundEngine.playLevelUp();
 
     if (ch.category === 'super_weapon') {
-      this.player.superWeapons.push(ch.id);
+      if (!this.player.superWeapons.includes(ch.id)) {
+        this.player.superWeapons.push(ch.id);
+      }
       this.effectEngine.screenShake(12, 0.4);
       this.effectEngine.spawnShockwave(this.player.x, this.player.y, 200, '#ffd700');
       this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 40, '⚡ 초월 무기 각성! ⚡', '#ffd700');
@@ -621,6 +678,7 @@ class GameEngine {
     } else if (ch.category === 'heal') {
       this.player.hp = Math.min(this.player.maxHp, this.player.hp + this.player.maxHp * 0.4);
       this.player.gold += 100;
+      this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 30, '+40% 체력 & +100 코인', '#00ffaa');
     }
 
     this.updateHUD();
@@ -887,6 +945,8 @@ class GameEngine {
     requestAnimationFrame(t => this.gameLoop(t));
   }
 }
+
+window.GameEngine = GameEngine;
 
 // 게임 인스턴스 초기화
 window.addEventListener('DOMContentLoaded', () => {

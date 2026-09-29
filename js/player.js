@@ -128,17 +128,18 @@ class Player {
 
     if (window.soundEngine) window.soundEngine.playXP();
 
-    let didLevelUp = false;
+    let levelUpsGained = 0;
     while (this.exp >= this.nextExp) {
       this.exp -= this.nextExp;
       this.level++;
       this.nextExp = Math.floor(this.nextExp * 1.35 + 15);
-      didLevelUp = true;
+      levelUpsGained++;
     }
 
-    if (didLevelUp && window.game) {
-      if (window.soundEngine) window.soundEngine.playLevelUp();
-      window.game.triggerLevelUp();
+    if (levelUpsGained > 0 && window.game) {
+      for (let i = 0; i < levelUpsGained; i++) {
+        window.game.queueLevelUp();
+      }
     }
   }
 
