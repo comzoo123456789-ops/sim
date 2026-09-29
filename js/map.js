@@ -34,6 +34,23 @@ class OfficeMap {
     return ((h >>> 0) % 10000) / 10000;
   }
 
+  // 스테이지 평면도 설정 (바닥 / 방 이름 / 조명 / 출구 위치가 평면도 기준으로 그려짐)
+  setPlan(plan) {
+    if (plan !== this.plan) {
+      this.plan = plan;
+      this.chunks.clear();
+    }
+  }
+
+  // 방 용도 → 테마 바닥 종류
+  floorFor(x, y) {
+    const floors = this.activeTheme.floors;
+    if (!this.plan) return floors[OfficeMap.zoneAt(x, y)];
+    const type = this.plan.roomAt(x, y).type;
+    if (type === 'meeting') return 'meeting';
+    return floors[type] || floors.office;
+  }
+
   // 챕터 테마 변경 시 캐시된 바닥 청크를 다시 그림
   setTheme(theme) {
     if (theme !== this.theme) {
@@ -115,7 +132,8 @@ class OfficeMap {
     for (let x = tx0; x < rx + rw; x += T) {
       for (let y = ty0; y < ry + rh; y += T) {
         if (x < 0 || y < 0 || x >= this.size || y >= this.size) continue;
-        switch (this.activeTheme.floors[OfficeMap.zoneAt(x, y)]) {
+        switch (this.floorFor(x + T / 2, y + T / 2)) {
+          case 'meeting': this.paintMeetingTile(ctx, x, y, T); break;
           case 'marble': this.paintMarble(ctx, x, y, T); break;
           case 'wood': this.paintWood(ctx, x, y, T); break;
           case 'raised': this.paintRaisedFloor(ctx, x, y, T); break;
@@ -128,12 +146,17 @@ class OfficeMap {
       }
     }
 
-    this.paintMeetingRoomFloors(ctx);
-    this.paintExecRug(ctx);
-    this.paintLobbyInlay(ctx);
-    this.paintZoneDividers(ctx);
+    if (this.plan) {
+      this.paintPlanDecor(ctx);
+    } else {
+      this.paintMeetingRoomFloors(ctx);
+      this.paintExecRug(ctx);
+      this.paintLobbyInlay(ctx);
+      this.paintZoneDividers(ctx);
+    }
     this.paintCeilingLights(ctx, rx, ry, rw, rh);
-    this.paintFloorSigns(ctx);
+    if (this.plan) this.paintRoomSigns(ctx);
+    else this.paintFloorSigns(ctx);
     this.paintWalls(ctx);
   }
 
@@ -160,6 +183,74 @@ class OfficeMap {
 
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
+  }
+
+  // 회의실 바닥 (줄무늬 카펫)
+  paintMeetingTile(ctx, x, y, T) {
+    ctx.fillStyle = '#2a3243';
+    ctx.fillRect(x, y, T, T);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 5; i < T; i += 10) { ctx.moveTo(x + i, y); ctx.lineTo(x + i, y + T); }
+    ctx.stroke();
+  }
+
+  // 평면도 장식: 로비 인레이, 임원실 러그, 문턱 몰딩
+  paintPlanDecor(ctx) {
+    this.plan.rooms.forEach(room => {
+      if (room.type === 'lobby') {
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.3)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(room.x + 24, room.y + 24, room.w - 48, room.h - 48);
+      } else if (room.type === 'exec' && room.w > 420 && room.h > 360) {
+        const w = Math.min(460, room.w - 140), h = Math.min(260, room.h - 160);
+        const x = room.x + (room.w - w) / 2, y = room.y + (room.h - h) / 2 + 20;
+        ctx.fillStyle = '#3a1c2b';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 12, y + 12, w - 24, h - 24);
+      }
+    });
+    // 문턱: 금속 몰딩
+    this.plan.doors.forEach(d => {
+      ctx.fillStyle = '#4b5563';
+      const vertical = this.plan.walls.some(w => w.w < w.h && Math.abs(w.x + w.w / 2 - d.x) < 2);
+      if (vertical) ctx.fillRect(d.x - 4, d.y - 75, 8, 150);
+      else ctx.fillRect(d.x - 75, d.y - 4, 150, 8);
+    });
+  }
+
+  // 방마다 바닥 안내 사인 (테마 구역명 사용)
+  paintRoomSigns(ctx) {
+    const t = this.activeTheme.signs;
+    const names = { office: t[0], pantry: t[1], server: t[2], exec: t[3], lobby: ['ELEVATOR HALL', '엘리베이터 홀'], meeting: ['MEETING', '회의실'] };
+    const colors = { office: '56, 189, 248', pantry: '251, 191, 36', server: '34, 211, 238', exec: '244, 114, 182', lobby: '52, 211, 153', meeting: '167, 139, 250' };
+    const count = {};
+    this.plan.rooms.forEach(room => {
+      if (room.w < 300 || room.h < 240) return;
+      const [en, ko] = names[room.type] || names.office;
+      count[room.type] = (count[room.type] || 0) + 1;
+      const suffix = room.type === 'meeting' ? ' ' + String.fromCharCode(64 + count[room.type]) : '';
+      const x = room.x + 150, y = room.y + 60;
+      ctx.save();
+      ctx.fillStyle = `rgba(${colors[room.type]}, 0.08)`;
+      ctx.strokeStyle = `rgba(${colors[room.type]}, 0.35)`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x - 110, y - 22, 220, 46, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `rgba(${colors[room.type]}, 0.8)`;
+      ctx.font = '800 15px "Rajdhani", "Pretendard", sans-serif';
+      ctx.fillText(en + suffix, x, y - 2);
+      ctx.fillStyle = 'rgba(226, 232, 240, 0.55)';
+      ctx.font = '700 11px "Pretendard", sans-serif';
+      ctx.fillText(ko + suffix, x, y + 15);
+      ctx.restore();
+    });
   }
 
   // 물류센터: 콘크리트 바닥 + 황색 통로 라인
@@ -393,7 +484,7 @@ class OfficeMap {
     for (let lx = 150; lx < this.size; lx += step) {
       for (let ly = 150; ly < this.size; ly += step) {
         if (lx + R < rx || lx - R > rx + rw || ly + R < ry || ly - R > ry + rh) continue;
-        const zone = OfficeMap.zoneAt(lx, ly);
+        const zone = this.plan ? this.plan.roomAt(lx, ly).type : OfficeMap.zoneAt(lx, ly);
         const color = zone === 'server' ? '125, 211, 252' : (zone === 'pantry' ? '255, 214, 160' : '255, 244, 220');
         const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, R);
         g.addColorStop(0, `rgba(${color}, 0.075)`);
@@ -508,8 +599,9 @@ class OfficeMap {
 
   // ───────────────────────── 동적 레이어 (매 프레임) ─────────────────────────
   renderElevator(ctx, camera) {
-    const cx = 1200 - camera.x;
-    const cy = 1200 - camera.y;
+    const spawn = this.plan ? this.plan.spawn : { x: 1200, y: 1200 };
+    const cx = spawn.x - camera.x;
+    const cy = spawn.y - camera.y;
     const t = performance.now() / 1000;
     const pulse = (Math.sin(t * 2.4) + 1) / 2;
 

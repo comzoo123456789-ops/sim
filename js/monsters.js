@@ -123,7 +123,14 @@ class Monster {
     // 플레이어를 향해 추적 이동 (슬랙 유령은 벽을 통과하는 부유형, 나머지 모든 몬스터는 벽과 기물에 걸림)
     const dist = Math.hypot(player.x - this.x, player.y - this.y);
     if (dist > 5) {
-      const ang = Math.atan2(player.y - this.y, player.x - this.x);
+      // 벽이 있는 평면도: 길찾기 격자를 따라 문으로 돌아옴 (슬랙 유령은 벽 통과)
+      let tx = player.x, ty = player.y;
+      const nav = window.game && window.game.monsterMgr.nav;
+      if (nav && this.typeKey !== 'slack' && dist > 70) {
+        const step = nav.nextStep(this.x, this.y);
+        if (step) { tx = step.x; ty = step.y; }
+      }
+      const ang = Math.atan2(ty - this.y, tx - this.x);
       if (Math.abs(player.x - this.x) > 4) this.facing = player.x < this.x ? -1 : 1;
       // 일반 몬스터는 캐릭터 기본 속도의 82%를 넘지 않음 (항상 도망칠 여지 확보)
       const spd = this.isBoss ? this.speed : Math.min(this.speed, player.charData.speed * Monster.SPEED_CAP);
@@ -314,6 +321,16 @@ class Monster {
       const scale = (this.radius * 4.4) / 230;
       this.spriteTall = true;
       return a.drawSprite(ctx, `boss_${short}_${attacking ? 'attack' : 'walk' + cycle}`, 0, this.radius * 0.85, scale, { flip: this.facing < 0, flash });
+    }
+
+    // 일반 몬스터 4종: Kenney Monster Builder 합성 스프라이트 (3프레임)
+    if (a.hasSprite(`mon_${this.typeKey}_walk0`)) {
+      const cycle = [0, 1, 0, 2][Math.floor(this.animTimer * 0.8) % 4];
+      const float = this.typeKey === 'slack' ? Math.sin(this.animTimer * 0.6) * 4 - 6 : 0;
+      const scale = (this.radius * 3.4) / 145;
+      return a.drawSprite(ctx, `mon_${this.typeKey}_walk${cycle}`, 0, this.radius * 0.85 + float, scale, {
+        flip: this.facing < 0, flash, alpha: this.typeKey === 'slack' ? 0.92 : 1
+      });
     }
 
     if (this.sprite) {
@@ -982,6 +999,12 @@ class MonsterManager {
   }
 
   update(dt, player, gameTime, effectEngine) {
+    // 0. 길찾기 거리장 갱신 (0.35초마다)
+    if (this.nav) {
+      this.navTimer = (this.navTimer || 0) - dt;
+      if (this.navTimer <= 0) { this.navTimer = 0.35; this.nav.update(player.x, player.y); }
+    }
+
     // 1. 타임라인에 따른 몬스터 주기적 스폰
     this.spawnTimer += dt;
 

@@ -1245,9 +1245,18 @@ class GameEngine {
     const theme = OfficeMap.themeFor(chapterNo);
     this.officeMap.setTheme(theme);
     this.propMgr.theme = theme;
+    // 스테이지별 평면도 (같은 스테이지는 항상 같은 구조)
+    const plan = new FloorPlan(this.selectedMode === 'stage' ? 'stage-' + this.currentStageId : 'survival', this.currentStage, theme);
+    this.floorPlan = plan;
+    this.officeMap.setPlan(plan);
+    this.propMgr.plan = plan;
+    this.player.x = plan.spawn.x;
+    this.player.y = plan.spawn.y;
     this.weaponMgr.reset();
     this.monsterMgr.reset();
     this.propMgr.reset();
+    this.monsterMgr.nav = new NavGrid(this.propMgr.obstacles.concat(this.propMgr.props.map(p => ({ x: p.x - p.width / 2, y: p.y - p.height / 2, width: p.width, height: p.height }))));
+    this.monsterMgr.navTimer = 0;
     this.dropMgr.reset();
     this.effectEngine.reset();
 

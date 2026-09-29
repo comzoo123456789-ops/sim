@@ -484,7 +484,7 @@ window.GAME_DATA = {
   MONSTERS: {
     paper: {
       name: '날아다니는 결재 서류',
-      icon: window.getGameIcon('paper'),
+      icon: window.assets.spriteHtml('mon_paper_walk0', 30) || window.getGameIcon('paper'),
       color: '#f8f9fa',
       baseHp: 20,
       baseAtk: 8,
@@ -494,7 +494,7 @@ window.GAME_DATA = {
     },
     slime: {
       name: '엑셀 #REF! 오류 슬라임',
-      icon: window.getGameIcon('slime'),
+      icon: window.assets.spriteHtml('mon_slime_walk0', 30) || window.getGameIcon('slime'),
       color: '#2eb85c',
       baseHp: 45,
       baseAtk: 12,
@@ -516,7 +516,7 @@ window.GAME_DATA = {
     },
     slack: {
       name: '미확인 슬랙 알림 괴물',
-      icon: window.getGameIcon('slack'),
+      icon: window.assets.spriteHtml('mon_slack_walk0', 30) || window.getGameIcon('slack'),
       color: '#e01e5a',
       baseHp: 60,
       baseAtk: 18,
@@ -526,7 +526,7 @@ window.GAME_DATA = {
     },
     thief: {
       name: '탕비실 믹스커피 도둑',
-      icon: window.getGameIcon('thief'),
+      icon: window.assets.spriteHtml('mon_thief_walk0', 30) || window.getGameIcon('thief'),
       color: '#a0522d',
       baseHp: 120,
       baseAtk: 22,
@@ -758,7 +758,7 @@ window.GAME_DATA = {
       id: 'paper',
       name: '날아다니는 결재 서류',
       type: '일반 몬스터',
-      icon: window.getGameIcon('paper'),
+      icon: window.assets.spriteHtml('mon_paper_walk0', 30) || window.getGameIcon('paper'),
       desc: '수시로 날아오는 A4 서류 뭉치. 빠르고 약하지만 떼지어 몰려듭니다.',
       strategy: '스테이플러나 키보드로 빠르게 관통하여 길을 트세요.'
     },
@@ -766,7 +766,7 @@ window.GAME_DATA = {
       id: 'slime',
       name: '엑셀 #REF! 오류 슬라임',
       type: '분열형 몬스터',
-      icon: window.getGameIcon('slime'),
+      icon: window.assets.spriteHtml('mon_slime_walk0', 30) || window.getGameIcon('slime'),
       desc: '수식이 꼬여 증식하는 젤리 괴물. 처치 시 2마리의 미니 슬라임으로 분열합니다.',
       strategy: '핫식스 장판이나 문서 세단기로 분열체까지 일괄 소탕하세요.'
     },
@@ -782,7 +782,7 @@ window.GAME_DATA = {
       id: 'slack',
       name: '미확인 슬랙 알림 괴물',
       type: '부유 관통형 몬스터',
-      icon: window.getGameIcon('slack'),
+      icon: window.assets.spriteHtml('mon_slack_walk0', 30) || window.getGameIcon('slack'),
       desc: '퇴근 직전 울리는 붉은 @Channel 알림 유령. 벽과 책상을 유유히 통과합니다.',
       strategy: '지형 뒤에 숨어 있어도 벽을 넘어오니 회전 법인카드로 견제하세요.'
     },
@@ -790,7 +790,7 @@ window.GAME_DATA = {
       id: 'thief',
       name: '탕비실 믹스커피 도둑',
       type: '돌진형 엘리트',
-      icon: window.getGameIcon('thief'),
+      icon: window.assets.spriteHtml('mon_thief_walk0', 30) || window.getGameIcon('thief'),
       desc: '회사 간식을 싹쓸이하는 월급 루팡. 튼튼한 맷집으로 정면 돌파해 옵니다.',
       strategy: '결재 반려 도장으로 강하게 스턴 및 압살 데미지를 넣으세요.'
     },

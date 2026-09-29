@@ -415,6 +415,7 @@ class OfficeObstacle {
     switch (this.type) {
       case 'partition': this.renderPartition(ctx, w, h); break;
       case 'meeting_wall': this.renderGlassWall(ctx, w, h); break;
+      case 'wall': this.renderWall(ctx, w, h); break;
       case 'server_rack': this.renderServerRack(ctx, w, h); break;
       case 'cafe_table': this.renderCafeTable(ctx, w, h); break;
       case 'exec_desk': this.renderExecDesk(ctx, w, h); break;
@@ -445,6 +446,32 @@ class OfficeObstacle {
     ctx.fillRect(0, 0, w, 2);
     ctx.fillStyle = '#64748b';
     ctx.fillRect(0, h - 2, w, 2);
+  }
+
+  // 사무실 내벽 (3/4 시점: 벽 윗면 + 앞면 + 걸레받이)
+  renderWall(ctx, w, h) {
+    const H = 46;
+    const colors = this.wallColors || { top: '#94a3b8', face: '#475569', base: '#1f2937' };
+    if (w >= h) {
+      ctx.fillStyle = colors.face;
+      ctx.fillRect(0, -H + h, w, H);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      for (let i = 30; i < w; i += 60) ctx.fillRect(i, -H + h + 6, 2, H - 12);
+      ctx.fillStyle = colors.base;
+      ctx.fillRect(0, h - 6, w, 6);
+      ctx.fillStyle = colors.top;
+      ctx.fillRect(0, -H, w, h);
+    } else {
+      ctx.fillStyle = colors.top;
+      ctx.fillRect(0, -H, w, h);
+      ctx.fillStyle = colors.face;
+      ctx.fillRect(0, h - H, w, H);
+      ctx.fillStyle = colors.base;
+      ctx.fillRect(0, h - 6, w, 6);
+    }
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, -H + 0.5, w - 1, h - 1);
   }
 
   // 회의실 유리벽 (반투명 + 프로스트 띠)
@@ -725,6 +752,7 @@ class OfficePropManager {
 
   // 회의실(출입구 앞 여백 포함)과 겹치는지 검사
   overlapsRoom(x, y, w, h, pad = 40) {
+    if (this.plan) return false;
     return OfficeMap.MEETING_ROOMS.some(r => x < r.x + r.w + pad && x + w + pad > r.x && y < r.y + r.h + pad && y + h + pad > r.y);
   }
 
@@ -795,13 +823,24 @@ class OfficePropManager {
     const y = by - t.h;
     if (x < 90 || y < 90 || x + t.w > OfficeMap.SIZE - 90 || y + t.h > OfficeMap.SIZE - 90) return false;
     if (this.overlapsRoom(x, y, t.w, t.h) || this.overlapsObstacle(x, y, t.w, t.h, pad)) return false;
-    if (x < 1520 && x + t.w > 880 && y < 1520 && y + t.h > 880 && name !== 'reception' && !OfficePropManager.LOBBY_DECOR.includes(name)) return false;
+    if (!this.plan && x < 1520 && x + t.w > 880 && y < 1520 && y + t.h > 880 && name !== 'reception' && !OfficePropManager.LOBBY_DECOR.includes(name)) return false;
+    // 평면도: 문 앞과 출발 지점 주변은 비워 둠
+    if (this.plan) {
+      const nearDoor = this.plan.doors.some(d => d.x > x - 110 && d.x < x + t.w + 110 && d.y > y - 110 && d.y < y + t.h + 110);
+      if (nearDoor) return false;
+      const sp = this.plan.spawn;
+      if (sp.x > x - 200 && sp.x < x + t.w + 200 && sp.y > y - 200 && sp.y < y + t.h + 200) return false;
+    }
     const toWorld = arr => (arr || []).map(([key, dx, dy, s, flip]) => ({ key, x: cx + dx, y: by + dy, s, flip: !!flip }));
     this.obstacles.push(new OfficeObstacle(x, y, t.w, t.h, 'composite', { back: toWorld(t.back), front: toWorld(t.front), vector: t.vector }));
     return true;
   }
 
   generateMapLayout() {
+    if (this.plan) {
+      this.generatePlanLayout();
+      return;
+    }
     const mapSize = OfficeMap.SIZE;
     const jitter = () => (Math.random() - 0.5) * 24;
 
@@ -864,6 +903,69 @@ class OfficePropManager {
       const py = 170 + Math.random() * (mapSize - 320);
       if (Math.hypot(px - 1200, py - 1200) < 200) continue;
       if (this.overlapsObstacle(px - 30, py - 36, 60, 72, 30)) continue;
+      if (this.props.some(p => Math.hypot(p.x - px, p.y - py) < 110)) continue;
+      this.props.push(new OfficeProp(type, px, py));
+      placed++;
+    }
+  }
+
+  // 평면도 기반 배치: 벽/문 → 방 용도별 가구 → 파괴 기물
+  generatePlanLayout() {
+    const plan = this.plan;
+    const theme = this.theme || OfficeMap.THEMES[1];
+    const jitter = () => (Math.random() - 0.5) * 18;
+    const wallColors = theme.wall || { top: '#94a3b8', face: '#475569', base: '#1f2937' };
+
+    // 1. 벽 (회의실 쪽은 유리벽)
+    plan.walls.forEach(w => {
+      const o = new OfficeObstacle(w.x, w.y, w.w, w.h, w.glass ? 'meeting_wall' : 'wall');
+      o.wallColors = wallColors;
+      this.obstacles.push(o);
+    });
+
+    // 2. 방 용도별 가구
+    const [stepX, stepY] = theme.step || [240, 210];
+    const plans = theme.plans;
+    plan.rooms.forEach(room => {
+      const cx0 = room.x + room.w / 2;
+      const cy0 = room.y + room.h / 2;
+      if (room.type === 'meeting') {
+        // 중앙 회의 테이블 + 의자
+        const tw = Math.min(200, room.w - 160), th = 46;
+        const tx = cx0 - tw / 2, ty = cy0 - th / 2;
+        const chairs = [];
+        for (let dx = -tw / 2 + 30; dx <= tw / 2 - 30; dx += 45) chairs.push({ key: 'chair_meeting', x: cx0 + dx, y: ty + 4, s: 0.42, flip: dx > 0 });
+        this.obstacles.push(new OfficeObstacle(tx, ty, tw, th, 'meeting_table', { back: chairs, front: [] }));
+        this.placeTemplate('plant_big', room.x + 70, room.y + room.h - 60, 10);
+        return;
+      }
+      if (room.type === 'lobby') {
+        this.placeTemplate('reception', cx0, room.y + room.h - 70, 20);
+        [[room.x + 70, room.y + 90], [room.x + room.w - 70, room.y + 90], [room.x + 70, room.y + room.h - 50], [room.x + room.w - 70, room.y + room.h - 50]]
+          .forEach(([x, y]) => this.placeTemplate('tree', x, y, 10));
+        return;
+      }
+      const list = plans[room.type] || plans.office;
+      let n = Math.floor(Math.random() * list.length);
+      for (let gy = room.y + 150; gy <= room.y + room.h - 60; gy += stepY) {
+        for (let gx = room.x + 150; gx <= room.x + room.w - 110; gx += stepX) {
+          this.placeTemplate(list[n++ % list.length], gx + jitter(), gy + jitter(), 40);
+        }
+      }
+      // 가장자리 화분
+      if (Math.random() < 0.6) this.placeTemplate(Math.random() < 0.5 ? 'plant_big' : 'plant_palm', room.x + room.w - 60, room.y + 90, 10);
+    });
+
+    // 3. 파괴 가능한 기물
+    const propTypes = ['water_purifier', 'vending_machine', 'copier', 'cabinet'];
+    let placed = 0;
+    for (let i = 0; i < 400 && placed < 34; i++) {
+      const type = propTypes[placed % propTypes.length];
+      const px = 150 + Math.random() * (OfficeMap.SIZE - 300);
+      const py = 170 + Math.random() * (OfficeMap.SIZE - 320);
+      if (Math.hypot(px - plan.spawn.x, py - plan.spawn.y) < 220) continue;
+      if (this.overlapsObstacle(px - 30, py - 36, 60, 72, 30)) continue;
+      if (plan.doors.some(d => Math.hypot(d.x - px, d.y - py) < 120)) continue;
       if (this.props.some(p => Math.hypot(p.x - px, p.y - py) < 110)) continue;
       this.props.push(new OfficeProp(type, px, py));
       placed++;
