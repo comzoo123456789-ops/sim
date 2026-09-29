@@ -80,15 +80,15 @@ class SaveManager {
     const curStars = this.data.stageStars[stageId] || 0;
     this.data.stageStars[stageId] = Math.max(curStars, stars);
 
-    // 다음 스테이지 자동 해금
-    const parts = stageId.split('-');
-    if (parts.length === 2) {
-      const nextNum = parseInt(parts[1], 10) + 1;
-      const nextId = `${parts[0]}-${nextNum}`;
-      if (!this.data.unlockedStages.includes(nextId) && nextNum <= 10) {
-        this.data.unlockedStages.push(nextId);
-      }
+    // 다음 스테이지 자동 해금 (x-10 클리어 시 다음 챕터 1스테이지)
+    const nextId = SaveManager.nextStageId(stageId);
+    if (nextId && !this.data.unlockedStages.includes(nextId)) {
+      this.data.unlockedStages.push(nextId);
     }
+
+    // 챕터 정복 업적
+    if (stageId === '5-10') this.checkAchievement('ach_chapter5', true);
+    if (stageId === '10-10') this.checkAchievement('ach_chapter10', true);
 
     if (goldReward > 0) {
       this.addGold(goldReward);
@@ -97,7 +97,20 @@ class SaveManager {
     this.save();
   }
 
-  getGold() {
+  // "3-10" → "4-1", "10-10" → null
+  static nextStageId(stageId) {
+    const [ch, st] = stageId.split('-').map(n => parseInt(n, 10));
+    if (!ch || !st) return null;
+    if (st < 10) return `${ch}-${st + 1}`;
+    if (ch < SaveManager.MAX_CHAPTER) return `${ch + 1}-1`;
+    return null;
+  }
+
+  isChapterUnlocked(ch) {
+    return this.isStageUnlocked(`${ch}-1`);
+  }
+
+    getGold() {
     return this.data.totalGold || 0;
   }
 
@@ -167,6 +180,8 @@ class SaveManager {
     }
   }
 }
+
+SaveManager.MAX_CHAPTER = 10;
 
 window.SaveManager = SaveManager;
 window.saveMgr = new SaveManager();

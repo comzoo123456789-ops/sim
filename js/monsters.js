@@ -20,6 +20,11 @@ class Monster {
     this.exp = proto.exp || 10;
     this.color = proto.color || '#fff';
 
+    this.sprite = proto.sprite || null;
+    this.ranged = !!proto.ranged;
+    this.facing = 1;
+    this.isElite = false;
+
     this.hitTimer = 0;
     this.animTimer = Math.random() * 10;
     this.attackTimer = 0;
@@ -90,6 +95,10 @@ class Monster {
         if (Math.random() < 0.05) {
           window.game.dropMgr.spawnDrop(this.x, this.y, 'aid_kit', 1);
         }
+        if (this.isElite) {
+          window.game.dropMgr.spawnDrop(this.x + 10, this.y, 'receipt', 40);
+          window.game.dropMgr.spawnDrop(this.x - 10, this.y, 'super_coffee', this.exp);
+        }
 
         // 엑셀 슬라임 분열 기믹
         if (this.typeKey === 'slime' && this.radius > 12) {
@@ -109,6 +118,7 @@ class Monster {
     const dist = Math.hypot(player.x - this.x, player.y - this.y);
     if (dist > 5) {
       const ang = Math.atan2(player.y - this.y, player.x - this.x);
+      if (Math.abs(player.x - this.x) > 4) this.facing = player.x < this.x ? -1 : 1;
       this.x += Math.cos(ang) * this.speed * 60 * dt;
       this.y += Math.sin(ang) * this.speed * 60 * dt;
 
@@ -123,14 +133,19 @@ class Monster {
       player.takeDamage(this.atk);
     }
 
-    // [복사기] 원거리 토너 탄막 발사
-    if (this.typeKey === 'copier') {
+    // [복사기 / AI 로봇] 원거리 탄막 발사
+    if (this.ranged && !this.isBoss) {
+      const isRobot = this.typeKey === 'robot';
       this.attackTimer += dt;
-      if (this.attackTimer >= 2.8) {
+      if (this.attackTimer >= (isRobot ? 2.4 : 2.8)) {
         this.attackTimer = 0;
         const ang = Math.atan2(player.y - this.y, player.x - this.x);
+        const spd = isRobot ? 5.5 : 4.5;
         if (window.game) {
-          window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(ang) * 4.5, Math.sin(ang) * 4.5, this.atk);
+          window.game.monsterMgr.spawnEnemyBullet(this.x, this.y - this.radius, Math.cos(ang) * spd, Math.sin(ang) * spd, this.atk, isRobot ? '#60a5fa' : '#38bdf8');
+          if (isRobot && window.game.effectEngine) {
+            window.game.effectEngine.spawnFlash(this.x, this.y - this.radius * 1.6, 'fx_spark', '#93c5fd', 26, 0.2);
+          }
         }
       }
     }
@@ -205,6 +220,23 @@ class Monster {
     ctx.ellipse(0, this.radius * 0.8, this.radius * 0.8, this.radius * 0.35, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // 엘리트 오라
+    if (this.isElite) {
+      const pulse = (Math.sin(this.animTimer * 0.8) + 1) / 2;
+      ctx.strokeStyle = `rgba(251, 191, 36, ${0.45 + pulse * 0.4})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(0, this.radius * 0.8, this.radius * 1.2, this.radius * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 스프라이트 몬스터 (좀비 / 로봇 / 복사기)
+    if (this.renderSprite(ctx)) {
+      this.renderBossBar(ctx);
+      ctx.restore();
+      return;
+    }
+
     // 피격 시 백색 플래시
     if (this.hitTimer > 0) {
       ctx.fillStyle = '#ffffff';
@@ -245,7 +277,42 @@ class Monster {
         break;
     }
 
-    // 보스 전용 HP바 표시
+    this.renderBossBar(ctx);
+    ctx.restore();
+  }
+
+  // 아틀라스 스프라이트 렌더 (없으면 false → 벡터 렌더로 폴백)
+  renderSprite(ctx) {
+    const a = window.assets;
+    if (!a || !a.atlasReady()) return false;
+    const flash = this.hitTimer > 0 ? 0.8 : 0;
+
+    if (this.sprite) {
+      const frame = Math.floor(this.animTimer * 1.1) % 8;
+      const scale = (this.radius * 3.6) / 128;
+      return a.drawSprite(ctx, `char_${this.sprite}_walk${frame}`, 0, this.radius * 0.85, scale, { flip: this.facing < 0, flash });
+    }
+
+    if (this.typeKey === 'copier') {
+      const bob = Math.abs(Math.sin(this.animTimer * 0.9)) * 3;
+      const scale = (this.radius * 3.2) / 155;
+      if (!a.drawSprite(ctx, 'prop_copier_multifunction', 0, this.radius * 0.9 - bob, scale, { flip: this.facing < 0, flash })) return false;
+      // 분노한 눈 + 경고등
+      const ey = -this.radius * 1.15 - bob;
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.ellipse(-6, ey, 3.2, 2.2, 0.35, 0, Math.PI * 2);
+      ctx.ellipse(6, ey, 3.2, 2.2, -0.35, 0, Math.PI * 2);
+      ctx.fill();
+      if (Math.sin(this.animTimer * 6) > 0) {
+        a.draw(ctx, 'fx_glow', this.radius * 0.6, -this.radius * 1.9 - bob, 26, 26, { color: '#ef4444', blend: 'lighter' });
+      }
+      return true;
+    }
+    return false;
+  }
+
+  renderBossBar(ctx) {
     if (this.isBoss) {
       const barW = this.radius * 2.2;
       const barH = 6;
@@ -264,8 +331,6 @@ class Monster {
       ctx.lineWidth = 1;
       ctx.strokeRect(-barW / 2, barY, barW, barH);
     }
-
-    ctx.restore();
   }
 
   // 1. 날아다니는 A4 서류 뭉치 (Flying Paper Monster)
@@ -835,9 +900,30 @@ class MonsterManager {
     this.reset();
   }
 
+  // 스테이지 난이도 배율 적용 (챕터가 오를수록 강해짐). allowElite: 일반 스폰만 엘리트 가능
+  applyDifficulty(m, allowElite = false) {
+    const st = this.currentStage;
+    if (!st) return m;
+    const hpMul = st.hpMul || 1;
+    m.maxHp = Math.floor(m.maxHp * hpMul * (m.isBoss ? 1.15 : 1));
+    m.hp = m.maxHp;
+    m.atk = Math.floor(m.atk * (st.atkMul || 1));
+    m.exp = Math.floor(m.exp * (st.expMul || 1));
+
+    if (allowElite && !m.isBoss && Math.random() < (st.eliteChance || 0)) {
+      m.isElite = true;
+      m.radius *= 1.25;
+      m.maxHp = Math.floor(m.maxHp * 2.5);
+      m.hp = m.maxHp;
+      m.atk = Math.floor(m.atk * 1.3);
+      m.exp *= 3;
+    }
+    return m;
+  }
+
   spawnChildSlimes(x, y) {
     for (let i = 0; i < 2; i++) {
-      const child = new Monster('slime', x + (i === 0 ? -15 : 15), y, 0.6);
+      const child = this.applyDifficulty(new Monster('slime', x + (i === 0 ? -15 : 15), y, 0.6));
       child.hp = Math.floor(child.maxHp * 0.4);
       this.monsters.push(child);
     }
@@ -965,7 +1051,7 @@ class MonsterManager {
       if (window.soundEngine) window.soundEngine.playBossAlert();
 
       const ang = Math.random() * Math.PI * 2;
-      const boss = new Monster(bKey, player.x + Math.cos(ang) * 260, player.y + Math.sin(ang) * 260);
+      const boss = this.applyDifficulty(new Monster(bKey, player.x + Math.cos(ang) * 260, player.y + Math.sin(ang) * 260));
       this.monsters.push(boss);
       if (effectEngine) effectEngine.spawnEmote(boss.x, boss.y, 'exclamation', boss);
     }
@@ -1090,12 +1176,27 @@ class MonsterManager {
       const mx = player.x + Math.cos(ang) * dist;
       const my = player.y + Math.sin(ang) * dist;
 
-      this.monsters.push(new Monster(typeKey, mx, my));
+      this.monsters.push(this.applyDifficulty(new Monster(typeKey, mx, my), true));
     }
   }
 
   render(ctx, camera) {
-    // 1. 바닥 경고 장판 렌더링
+    this.renderGround(ctx, camera);
+    this.monsters.forEach(m => m.render(ctx, camera));
+    this.renderBullets(ctx, camera);
+  }
+
+  // 깊이 정렬용 목록 (발 위치 기준)
+  collectRenderables(ctx, camera, out) {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    this.monsters.forEach(m => {
+      if (m.x < camera.x - 120 || m.x > camera.x + vw + 120 || m.y < camera.y - 160 || m.y > camera.y + vh + 120) return;
+      out.push({ y: m.y + m.radius * 0.85, draw: () => m.render(ctx, camera) });
+    });
+  }
+
+  // 1. 바닥 경고 장판 렌더링
+  renderGround(ctx, camera) {
     this.warningZones.forEach(wz => {
       const sx = wz.x - camera.x;
       const sy = wz.y - camera.y;
@@ -1123,10 +1224,10 @@ class MonsterManager {
       ctx.restore();
     });
 
-    // 2. 몬스터 렌더링
-    this.monsters.forEach(m => m.render(ctx, camera));
+  }
 
-    // 3. 적 탄환 렌더링
+  // 3. 적 탄환 렌더링
+  renderBullets(ctx, camera) {
     this.enemyBullets.forEach(b => {
       const sx = b.x - camera.x;
       const sy = b.y - camera.y;

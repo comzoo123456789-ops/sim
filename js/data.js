@@ -7,7 +7,8 @@ window.GAME_DATA = {
       id: 'intern',
       name: '신입사원 이민우',
       title: '풋풋한 신입 (남)',
-      avatar: window.getGameIcon('char_intern'),
+      sprite: 'maleAdventurer',
+      avatar: window.assets.spriteHtml('char_maleAdventurer_idle', 34, 'head') || window.getGameIcon('char_intern'),
       desc: '빠른 발과 불타는 열정으로 야근 지옥을 탈출하는 새내기 사원입니다.',
       baseHp: 100,
       speed: 3.8,
@@ -19,7 +20,8 @@ window.GAME_DATA = {
       id: 'planner',
       name: '기획팀 대리 한소희',
       title: '스마트 기획자 (여)',
-      avatar: window.getGameIcon('char_planner'),
+      sprite: 'femaleAdventurer',
+      avatar: window.assets.spriteHtml('char_femaleAdventurer_idle', 34, 'head') || window.getGameIcon('char_planner'),
       desc: '완벽한 PT와 분석력으로 난관을 돌파하는 에이스 기획 대리입니다.',
       baseHp: 110,
       speed: 3.6,
@@ -31,7 +33,8 @@ window.GAME_DATA = {
       id: 'deputy',
       name: '만년 대리 김철수',
       title: '야근의 전설 (남)',
-      avatar: window.getGameIcon('char_deputy'),
+      sprite: 'malePerson',
+      avatar: window.assets.spriteHtml('char_malePerson_idle', 34, 'head') || window.getGameIcon('char_deputy'),
       desc: '쌓인 짬바와 분노의 폭풍 타건력으로 결재 서류를 부수는 베테랑입니다.',
       baseHp: 125,
       speed: 3.3,
@@ -43,7 +46,8 @@ window.GAME_DATA = {
       id: 'manager',
       name: '마케팅 팀장 박영희',
       title: '철벽의 리더 (여)',
-      avatar: window.getGameIcon('char_manager'),
+      sprite: 'femalePerson',
+      avatar: window.assets.spriteHtml('char_femalePerson_idle', 34, 'head') || window.getGameIcon('char_manager'),
       desc: '어떤 폭풍 지시와 잔소리도 튕겨내는 카리스마 마케팅 팀장입니다.',
       baseHp: 160,
       speed: 3.1,
@@ -530,6 +534,27 @@ window.GAME_DATA = {
       radius: 20,
       exp: 55
     },
+    zombie: {
+      name: '야근 좀비 동료',
+      sprite: 'zombie',
+      color: '#34d399',
+      baseHp: 95,
+      baseAtk: 16,
+      speed: 1.9,
+      radius: 18,
+      exp: 32
+    },
+    robot: {
+      name: 'AI 자동화 로봇',
+      sprite: 'robot',
+      color: '#60a5fa',
+      baseHp: 115,
+      baseAtk: 18,
+      speed: 2.2,
+      radius: 18,
+      exp: 45,
+      ranged: true
+    },
     // 보스 3종
     boss_manager: {
       isBoss: true,
@@ -705,6 +730,20 @@ window.GAME_DATA = {
       reward: 500
     },
     {
+      id: 'ach_chapter5',
+      name: '중간 관리자 승진',
+      icon: window.getGameIcon('ach_boss_director'),
+      desc: '5장 을지로 공기업 본사를 정복하세요.',
+      reward: 3000
+    },
+    {
+      id: 'ach_chapter10',
+      name: '영원한 칼퇴',
+      icon: window.getGameIcon('ach_boss_ceo'),
+      desc: '10장 그룹 본관 최상층 회장실을 정복하세요.',
+      reward: 10000
+    },
+    {
       id: 'ach_boss_ceo',
       name: '사직서 제출 완료',
       icon: window.getGameIcon('ach_boss_ceo'),
@@ -754,6 +793,22 @@ window.GAME_DATA = {
       icon: window.getGameIcon('thief'),
       desc: '회사 간식을 싹쓸이하는 월급 루팡. 튼튼한 맷집으로 정면 돌파해 옵니다.',
       strategy: '결재 반려 도장으로 강하게 스턴 및 압살 데미지를 넣으세요.'
+    },
+    {
+      id: 'zombie',
+      name: '야근 좀비 동료',
+      type: '탱커형 몬스터',
+      icon: window.assets.spriteHtml('char_zombie_idle', 30, 'head'),
+      desc: '30일 연속 야근 끝에 좀비가 된 동료. 느리지만 맷집이 단단합니다. (2장부터 출현)',
+      strategy: '장판과 폭탄으로 무리를 한 번에 녹이세요.'
+    },
+    {
+      id: 'robot',
+      name: 'AI 자동화 로봇',
+      type: '원거리 몬스터',
+      icon: window.assets.spriteHtml('char_robot_idle', 30, 'head'),
+      desc: '업무 자동화를 위해 도입된 로봇. 주기적으로 레이저를 발사합니다. (4장부터 출현)',
+      strategy: '레이저 발사 직후 대시로 파고들어 근접 처치하세요.'
     },
     {
       id: 'boss_manager',
@@ -936,3 +991,190 @@ window.GAME_DATA = {
     }
   }
 };
+
+// 10. 챕터 2~10 자동 생성 (챕터가 오를수록 체력/공격력/물량/보상 증가)
+(function buildChapters() {
+  const D = window.GAME_DATA;
+  const icon = k => window.getGameIcon(k);
+  const BASE_DURATION = [60, 75, 90, 90, 100, 110, 120, 130, 140, 180];
+  const BASE_REWARD = [200, 250, 400, 350, 450, 500, 600, 750, 900, 2000];
+  const BOSS_AT = { 3: 'boss_manager', 8: 'boss_director', 10: 'boss_ceo' };
+  const THEME_ICON = ['stage_pantry', 'stage_open_office', 'stage_meeting_room', 'stage_open_office', 'stage_server_room', 'stage_open_office', 'stage_pantry', 'stage_meeting_room', 'stage_executive', 'stage_executive'];
+
+  const CHAPTER_DEFS = [
+    {
+      title: '여의도 금융타워', subtitle: '숫자와 호가가 폭주하는 증권가 한복판', pool: ['paper', 'slack', 'zombie', 'thief'],
+      stages: [
+        ['객장 시세판 폭주', '장 시작과 동시에 쏟아지는 체결 알림을 뚫고 자리를 지키세요.'],
+        ['트레이딩룸 호가 전쟁', '1초에 수백 번 바뀌는 호가창 괴물들을 정리하세요.'],
+        ['리서치센터 보고서 마감', '장 마감 전 보고서를 막아서는 꼰대 과장을 설득하세요.'],
+        ['준법감시팀 감사 대비', '감사 서류 더미 사이로 야근 좀비 동료들이 몰려옵니다.'],
+        ['백오피스 결제 마감', '결제 마감 직전, 오류 알림 폭탄을 해제하세요.'],
+        ['IB본부 딜 클로징', '밤샘 딜 클로징에 지친 동료들이 좀비가 되었습니다.'],
+        ['PB센터 VIP 응대', 'VIP 고객 간식을 노리는 탕비실 도둑단을 막으세요.'],
+        ['리스크관리실 긴급 회의', '손실 보고에 분노한 부장님이 회의실을 봉쇄했습니다.'],
+        ['임원 회의실 실적 보고', '실적 보고 자료를 지키며 임원층 복도를 돌파하세요.'],
+        ['대표 집무실 결산 브리핑', '연말 결산을 앞둔 대표이사를 넘어 퇴근하세요.']
+      ]
+    },
+    {
+      title: '강남 광고대행사', subtitle: '수정의 수정의 수정본이 끝없이 나오는 곳', pool: ['paper', 'slime', 'slack', 'zombie'],
+      stages: [
+        ['아이데이션 회의실', '아이디어 회의가 끝나지 않습니다. 탈출구를 찾으세요.'],
+        ['카피라이터 룸 야근', '한 줄 카피를 위해 밤을 새우는 좀비 카피라이터들.'],
+        ['AE본부 광고주 미팅', '광고주의 “느낌 있게”를 해석하는 꼰대 과장이 등장합니다.'],
+        ['디자인팀 시안 폭탄', '시안_최종_진짜최종 파일들이 슬라임으로 변했습니다.'],
+        ['영상 편집실 렌더링', '렌더링 대기 중 튀어나오는 오류들을 처리하세요.'],
+        ['미디어플래닝 엑셀', '미디어 믹스 엑셀 수식이 전부 #REF!로 깨졌습니다.'],
+        ['PT 리허설룸', '경쟁 PT 전날, 슬랙 알림이 쉴 새 없이 울립니다.'],
+        ['CD실 최종 컨펌', '크리에이티브 디렉터 부장님이 모든 시안을 반려합니다.'],
+        ['광고주 본사 방문', '광고주 본사 로비에서 마지막 수정 요청을 막아내세요.'],
+        ['대표실 수주 결정', '대행사 대표를 넘어 수주를 확정하고 퇴근하세요.']
+      ]
+    },
+    {
+      title: '구로 디지털단지 SI', subtitle: '오픈 전날은 언제나 장애가 난다', pool: ['slime', 'copier', 'robot', 'zombie'],
+      stages: [
+        ['개발자 휴게실', '에너지 드링크를 사수하며 첫 야근을 버티세요.'],
+        ['QA팀 버그 리포트', '끝없이 등록되는 버그 티켓 괴물들을 처리하세요.'],
+        ['PM실 일정 회의', '“이번 주까지 가능하죠?” 꼰대 과장의 일정 압박.'],
+        ['DB 서버실 장애', '쿼리가 폭주한 서버실에 AI 자동화 로봇이 오작동합니다.'],
+        ['인프라팀 배포 대기', '배포 버튼을 누르기 전, 로봇들이 경로를 막아섭니다.'],
+        ['고객사 파견 사무실', '파견지 복사기가 과열되어 토너를 난사합니다.'],
+        ['통합 테스트 룸', '테스트 케이스가 좀비처럼 되살아납니다.'],
+        ['오픈 D-1 워룸', '오픈 연기를 막으려는 부장님과 워룸 결전.'],
+        ['장애 대응 상황실', '새벽 3시 장애 호출. 모든 알림을 끄고 전진하세요.'],
+        ['대표실 오픈 승인', '대표이사의 오픈 승인을 받고 드디어 퇴근하세요.']
+      ]
+    },
+    {
+      title: '을지로 공기업 본사', subtitle: '결재 도장 7개가 필요한 세계', pool: ['paper', 'copier', 'zombie', 'thief'],
+      stages: [
+        ['민원실 대기번호', '끝없는 대기번호 호출 사이로 서류가 날아듭니다.'],
+        ['총무팀 비품 창고', '비품을 몰래 빼가는 도둑단을 소탕하세요.'],
+        ['기획예산처 결재', '예산안 결재를 붙잡는 꼰대 과장과 담판.'],
+        ['문서고 기록물 정리', '10년 치 문서가 좀비처럼 되살아났습니다.'],
+        ['감사실 자료 제출', '감사 자료를 복사하던 복사기가 폭주합니다.'],
+        ['인사팀 평가 시즌', '평가 시즌, 동료들이 모두 좀비가 되었습니다.'],
+        ['대강당 행사 준비', '행사 전날 밤, 준비물을 노리는 도둑들을 막으세요.'],
+        ['이사회 회의실', '보고서 양식을 트집 잡는 부장님이 등장합니다.'],
+        ['부사장실 복도', '결재판을 든 수행비서들을 돌파하세요.'],
+        ['사장실 최종 결재', '마지막 결재 도장을 받고 정시 퇴근하세요.']
+      ]
+    },
+    {
+      title: '광화문 대기업 본사', subtitle: '보고를 위한 보고의 보고', pool: ['slack', 'robot', 'zombie', 'thief'],
+      stages: [
+        ['사내 카페 줄서기', '출근 전 커피 전쟁에서 살아남으세요.'],
+        ['전략기획실 보고서', '보고서 양식 3종을 동시에 채우는 지옥.'],
+        ['해외사업부 화상회의', '시차 회의를 잡는 꼰대 과장을 설득하세요.'],
+        ['DT추진팀 AI 도입', 'AI 자동화 로봇이 업무를 대신하겠다며 폭주합니다.'],
+        ['홍보실 위기 대응', '실시간으로 쏟아지는 메신저 알림을 차단하세요.'],
+        ['구매팀 협력사 미팅', '협력사 선물을 노리는 도둑단이 나타났습니다.'],
+        ['법무팀 계약 검토', '계약서를 검토하다 지친 동료들이 좀비가 되었습니다.'],
+        ['그룹 전략회의', '분기 실적에 분노한 부장님이 전략회의를 소집합니다.'],
+        ['비서실 일정 조율', '회장님 일정을 사수하는 로봇 비서들을 돌파하세요.'],
+        ['CEO 집무실', '대기업 CEO의 “하나만 더”를 이겨내고 퇴근하세요.']
+      ]
+    },
+    {
+      title: '세종 정부청사', subtitle: '국정감사 시즌, 불이 꺼지지 않는 청사', pool: ['paper', 'copier', 'robot', 'slime'],
+      stages: [
+        ['통근버스 정류장', '막차 통근버스를 놓치지 않도록 서두르세요.'],
+        ['정책실 자료 준비', '국감 자료 요구가 서류 폭풍으로 몰려옵니다.'],
+        ['예산실 심의', '예산 심의를 붙잡는 꼰대 과장이 등장합니다.'],
+        ['전산정보실 시스템', '행정 시스템 로봇이 오작동하기 시작했습니다.'],
+        ['국감 대비 복사실', '복사기 20대가 동시에 과열되었습니다.'],
+        ['통계 담당관실', '통계 엑셀이 슬라임처럼 증식합니다.'],
+        ['대변인실 브리핑', '브리핑 자료를 지키며 기자실을 통과하세요.'],
+        ['장관 보고 대기실', '보고 순서를 뒤집는 부장님과의 결전.'],
+        ['차관실 복도', '결재 로봇 경비를 뚫고 장관실로 향하세요.'],
+        ['장관실 최종 보고', '장관 보고를 무사히 마치고 청사를 탈출하세요.']
+      ]
+    },
+    {
+      title: '해운대 물류센터', subtitle: '택배는 멈추지 않는다, 야근도 멈추지 않는다', pool: ['zombie', 'thief', 'robot', 'slack'],
+      stages: [
+        ['출고장 컨베이어', '끝없이 밀려오는 상자 사이를 헤쳐 나가세요.'],
+        ['분류 로봇 구역', '분류 로봇이 사람까지 분류하려 합니다.'],
+        ['재고관리실 실사', '재고 실사를 지휘하는 꼰대 과장이 등장합니다.'],
+        ['야간 상하차장', '밤샘 상하차에 지친 좀비 동료들이 몰려옵니다.'],
+        ['반품 처리 센터', '반품 상자를 노리는 도둑단을 소탕하세요.'],
+        ['배차 관제실', '배차 알림이 1초에 수십 개씩 울립니다.'],
+        ['냉동 창고', '얼어붙은 창고에서 로봇들이 오작동합니다.'],
+        ['물류 본부 긴급 회의', '배송 지연에 분노한 부장님이 등장합니다.'],
+        ['센터장 사무실 앞', '센터장 경호 로봇을 돌파하세요.'],
+        ['물류 대표 집무실', '성수기 대표이사를 넘어 퇴근하세요.']
+      ]
+    },
+    {
+      title: '송도 글로벌 R&D센터', subtitle: '실험은 끝나지 않고 로봇은 늘어난다', pool: ['robot', 'slime', 'copier', 'zombie'],
+      stages: [
+        ['연구동 로비', '보안 게이트 로봇들이 출입을 막습니다.'],
+        ['실험실 데이터 정리', '실험 데이터 엑셀이 슬라임으로 변했습니다.'],
+        ['특허팀 출원 마감', '특허 출원 마감을 쥔 꼰대 과장과 담판.'],
+        ['AI 연구소', '학습을 마친 AI 로봇들이 반란을 일으켰습니다.'],
+        ['시제품 조립실', '시제품 도면을 출력하던 복사기가 폭주합니다.'],
+        ['클린룸', '밤샘 실험에 지친 연구원들이 좀비가 되었습니다.'],
+        ['해외 연구진 화상회의', '시차 회의 알림을 차단하며 전진하세요.'],
+        ['연구소장 긴급 회의', '성과 압박에 분노한 부장님이 등장합니다.'],
+        ['CTO 집무실 복도', 'CTO 비서 로봇 군단을 돌파하세요.'],
+        ['CTO 최종 발표', '최종 발표를 통과하고 연구소를 탈출하세요.']
+      ]
+    },
+    {
+      title: '그룹 본관 최상층', subtitle: '모든 야근의 근원, 회장실을 향하여', pool: ['paper', 'slime', 'copier', 'slack', 'thief', 'zombie', 'robot'],
+      stages: [
+        ['본관 1층 로비', '그룹 본관의 모든 업무 괴물이 모였습니다.'],
+        ['계열사 합동 회의', '모든 계열사의 슬랙 알림이 동시에 울립니다.'],
+        ['그룹 감사실', '그룹 감사를 지휘하는 꼰대 과장이 등장합니다.'],
+        ['경영지원 총괄실', '경영지원 문서가 끝없이 복제됩니다.'],
+        ['그룹 IT 관제실', '그룹 전체 로봇이 한꺼번에 폭주합니다.'],
+        ['임원 전용 라운지', '임원 간식을 노리는 최정예 도둑단.'],
+        ['회장 비서실', '회장님 일정을 지키는 좀비 비서진을 돌파하세요.'],
+        ['그룹 전략 사령부', '그룹 전략을 쥔 부장님과의 최후의 회의.'],
+        ['회장실 대기 복도', '회장실로 향하는 마지막 복도를 돌파하세요.'],
+        ['회장실 최종 사직서', '회장님께 사직서를 내고 영원한 칼퇴를 쟁취하세요!']
+      ]
+    }
+  ];
+
+  CHAPTER_DEFS.forEach((def, i) => {
+    const ch = i + 2;
+    D.CHAPTERS['ch' + ch] = {
+      id: 'ch' + ch,
+      number: ch,
+      title: `제${ch}장: ${def.title}`,
+      name: def.title,
+      subtitle: def.subtitle,
+      stages: def.stages.map(([name, desc], k) => {
+        const s = k + 1;
+        const boss = BOSS_AT[s] || null;
+        // 스테이지별로 챕터 몬스터 중 하나를 주력으로 강조
+        const focus = def.pool[k % def.pool.length];
+        return {
+          id: `${ch}-${s}`,
+          name: `${ch}-${s} ${name}`,
+          desc,
+          duration: BASE_DURATION[k] + (ch - 1) * 8,
+          boss,
+          bossTime: boss ? Math.round((BASE_DURATION[k] + (ch - 1) * 8) * 0.5) : undefined,
+          spawnRate: +(1 + 0.1 * (s - 1) + 0.12 * (ch - 1)).toFixed(2),
+          reward: Math.round(BASE_REWARD[k] * (1 + 0.35 * (ch - 1)) / 10) * 10,
+          goldReward: Math.round(BASE_REWARD[k] * (1 + 0.35 * (ch - 1)) / 10) * 10,
+          monsters: [...def.pool, focus, focus],
+          hpMul: +(1 + 0.55 * (ch - 1) + 0.05 * (s - 1) * (1 + 0.3 * (ch - 1))).toFixed(2),
+          atkMul: +(1 + 0.18 * (ch - 1) + 0.02 * (s - 1)).toFixed(2),
+          expMul: +(1 + 0.12 * (ch - 1)).toFixed(2),
+          eliteChance: +(0.015 * (ch - 1)).toFixed(3),
+          icon: icon(THEME_ICON[k])
+        };
+      })
+    };
+  });
+
+  // 챕터 1 메타 정보 보강
+  D.CHAPTERS.ch1.number = 1;
+  D.CHAPTERS.ch1.name = '판교 스타트업 본사';
+  D.CHAPTERS.ch1.subtitle = '탕비실부터 대표이사실까지, 10단계 결재선을 돌파하고 퇴근하세요.';
+})();

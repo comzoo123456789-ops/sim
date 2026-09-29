@@ -29,6 +29,7 @@ class Player {
     this.hp = this.maxHp;
     this.isDead = false;
     this.invincibleTimer = 0;
+    this.hurtTimer = 0; // 피격 포즈 유지 시간
     this.reviveCount = 0;
     this.revivesGranted = 0; // 패시브로 지금까지 지급된 부활 횟수 (재계산 시 중복 지급 방지)
 
@@ -198,6 +199,7 @@ class Player {
     let actual = Math.max(1, Math.floor(amount * (1 - this.stats.dmgReduc)));
     this.hp -= actual;
     this.invincibleTimer = 0.45; // 0.45초 무적 시간
+    this.hurtTimer = 0.25;
 
     if (window.soundEngine) window.soundEngine.playHit();
     if (window.game && window.game.effectEngine) {
@@ -263,6 +265,7 @@ class Player {
     if (this.invincibleTimer > 0) {
       this.invincibleTimer -= dt;
     }
+    if (this.hurtTimer > 0) this.hurtTimer -= dt;
 
     // 초당 자연 체력 재생
     if (this.stats.hpRegen > 0 && this.hp < this.maxHp) {
@@ -349,9 +352,16 @@ class Player {
     const sy = this.y - camera.y;
 
     // 대시 푸른 잔상 렌더링
+    const spriteId = this.charData.sprite;
+    const useSprite = spriteId && window.assets && window.assets.atlasReady();
+
     this.ghostTrails.forEach(g => {
       const gx = g.x - camera.x;
       const gy = g.y - camera.y;
+      if (useSprite) {
+        window.assets.drawSprite(ctx, `char_${spriteId}_walk3`, gx, gy + 2, Player.SPRITE_SCALE, { flip: g.facing === 'left', alpha: Math.max(0, g.alpha * 0.35) });
+        return;
+      }
       ctx.save();
       ctx.translate(gx, gy);
       if (g.facing === 'left') ctx.scale(-1, 1);
@@ -374,6 +384,18 @@ class Player {
     // 2. 피격 무적 시 깜빡임
     if (this.invincibleTimer > 0 && Math.floor(Date.now() / 80) % 2 === 0) {
       ctx.globalAlpha = 0.4;
+    }
+
+    if (useSprite) {
+      const moving = this.vx !== 0 || this.vy !== 0;
+      let pose = 'idle';
+      if (this.hurtTimer > 0) pose = 'hurt';
+      else if (this.isDashing || moving) pose = 'walk' + (Math.floor(this.walkTimer * 0.9) % 8);
+      // 대기 중 숨쉬기
+      const breathe = pose === 'idle' ? 1 + Math.sin(performance.now() / 320) * 0.012 : 1;
+      window.assets.drawSprite(ctx, `char_${spriteId}_${pose}`, sx, sy + 2, Player.SPRITE_SCALE, { flip: this.facing === 'left', squash: breathe });
+      ctx.restore();
+      return;
     }
 
     ctx.save();
@@ -645,5 +667,7 @@ class Player {
     ctx.restore();
   }
 }
+
+Player.SPRITE_SCALE = 0.56; // 128px 프레임 → 약 72px
 
 window.Player = Player;

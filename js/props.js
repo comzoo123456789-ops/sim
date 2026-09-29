@@ -11,7 +11,7 @@ class OfficeProp {
 
     switch (type) {
       case 'water_purifier':
-        this.name = '얼음 냉정수기';
+        this.name = '탕비실 소형 냉장고';
         this.maxHp = 60;
         this.width = 36;
         this.height = 48;
@@ -27,7 +27,7 @@ class OfficeProp {
         this.color = '#f59e0b';
         break;
       case 'copier':
-        this.name = '과열된 복사기';
+        this.name = '과열된 문서 세단기';
         this.maxHp = 90;
         this.width = 44;
         this.height = 42;
@@ -146,6 +146,22 @@ class OfficeProp {
     ctx.save();
     ctx.translate(sx, sy);
 
+    // 오피스 스프라이트 (발 위치 = 충돌 박스 하단)
+    const spriteKey = OfficeProp.SPRITES[this.type];
+    const a = window.assets;
+    if (spriteKey && a && a.atlasReady()) {
+      const f = a.atlasMeta.frames[spriteKey.key];
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, this.height / 2, this.width * 0.7, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const shake = this.hitTimer > 0 ? (Math.random() - 0.5) * 4 : 0;
+      a.drawSprite(ctx, spriteKey.key, shake, this.height / 2 + 4, spriteKey.s, { flash: this.hitTimer > 0 ? 0.7 : 0 });
+      this.renderHpBar(ctx, -(f.ay * spriteKey.s) + this.height / 2 - 6);
+      ctx.restore();
+      return;
+    }
+
     if (this.hitTimer > 0) {
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = '#ffffff';
@@ -177,11 +193,15 @@ class OfficeProp {
         break;
     }
 
-    // 체력바 표시 (피격 시)
+    this.renderHpBar(ctx, -this.height / 2 - 8);
+    ctx.restore();
+  }
+
+  // 체력바 (피격 후에만 표시)
+  renderHpBar(ctx, barY) {
     if (this.hp < this.maxHp) {
       const barW = this.width;
       const barH = 4;
-      const barY = -this.height / 2 - 8;
 
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(-barW / 2, barY, barW, barH);
@@ -189,8 +209,6 @@ class OfficeProp {
       ctx.fillStyle = '#38bdf8';
       ctx.fillRect(-barW / 2, barY, barW * (this.hp / this.maxHp), barH);
     }
-
-    ctx.restore();
   }
 
   renderWaterPurifier(ctx) {
@@ -323,17 +341,50 @@ class OfficeProp {
 }
 
 class OfficeObstacle {
-  constructor(x, y, width, height, type = 'partition') {
+  constructor(x, y, width, height, type = 'partition', opts = {}) {
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
+    this.back = opts.back || [];   // 본체보다 먼저 그리는 스프라이트 (의자 등 뒤쪽)
+    this.front = opts.front || []; // 본체 위에 그리는 스프라이트
+    this.flat = type === 'meeting_wall';
     // partition, meeting_wall, desk_cluster, server_rack, cafe_table, exec_desk, meeting_table, counter, plant
     this.type = type;
     this.seed = Math.floor(x * 7 + y * 13);
   }
 
+  // 깊이 정렬 기준선 (발자국 하단)
+  get baseline() {
+    return this.y + this.height;
+  }
+
+  drawSprites(ctx, camera, list, alpha) {
+    const a = window.assets;
+    if (!a || !a.atlasReady()) return false;
+    list.forEach(p => a.drawSprite(ctx, 'prop_' + p.key, p.x - camera.x, p.y - camera.y, p.s, { flip: p.flip, alpha }));
+    return true;
+  }
+
+  // 플레이어가 가구 뒤에 있으면 반투명 처리 (가려져도 위치 파악 가능)
+  occlusionAlpha() {
+    const p = window.game && window.game.player;
+    if (!p || this.flat) return 1;
+    const behind = p.y < this.baseline && p.y > this.y - 90 && p.x > this.x - 20 && p.x < this.x + this.width + 20;
+    return behind ? 0.55 : 1;
+  }
+
   render(ctx, camera) {
+    const alpha = this.occlusionAlpha();
+    if (this.type === 'composite') {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      ctx.beginPath();
+      ctx.ellipse(this.x + this.width / 2 - camera.x, this.baseline - 4 - camera.y, this.width * 0.55, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (this.drawSprites(ctx, camera, this.back, alpha) && this.drawSprites(ctx, camera, this.front, alpha)) return;
+    }
+    if (this.back.length) this.drawSprites(ctx, camera, this.back, alpha);
+
     const sx = this.x - camera.x;
     const sy = this.y - camera.y;
     const w = this.width;
@@ -359,6 +410,12 @@ class OfficeObstacle {
       case 'meeting_table': this.renderMeetingTable(ctx, w, h); break;
       case 'counter': this.renderCounter(ctx, w, h); break;
       case 'plant': this.renderPlant(ctx, w, h); break;
+      case 'composite':
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.roundRect(0, 0, w, h, 6);
+        ctx.fill();
+        break;
       default: this.renderDesk(ctx, w, h); break;
     }
 
@@ -518,12 +575,10 @@ class OfficeObstacle {
 
   // 회의실 테이블 + 의자
   renderMeetingTable(ctx, w, h) {
-    ctx.fillStyle = '#111827';
-    for (let i = 0; i < 3; i++) {
-      const cx = w * (0.22 + i * 0.28);
-      ctx.beginPath(); ctx.roundRect(cx - 9, -12, 18, 12, 4); ctx.fill();
-      ctx.beginPath(); ctx.roundRect(cx - 9, h, 18, 12, 4); ctx.fill();
-    }
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.beginPath();
+    ctx.roundRect(4, 8, w, h, h / 2);
+    ctx.fill();
     ctx.fillStyle = '#e2e8f0';
     ctx.beginPath();
     ctx.roundRect(0, 0, w, h, h / 2);
@@ -629,66 +684,119 @@ class OfficePropManager {
     this.obstacles.push(new OfficeObstacle(x, y, w, h, type));
   }
 
+  // 가구 조합 템플릿: 발자국(충돌 영역) w×h 와 하단 중앙 기준 스프라이트 배치 [key, dx, dy, scale, flip]
+  static templates() {
+    return {
+      // 오픈 오피스
+      desk_pod: { w: 100, h: 34, back: [['chair_task', 0, -40, 0.5]], front: [['desk_straight', 0, 6, 0.8], ['monitor_single_off', -16, -42, 0.3], ['mug', 30, -38, 0.17]] },
+      desk_pod_b: { w: 100, h: 34, back: [['chair_task', 8, -40, 0.5, true]], front: [['desk_modesty_panel', 0, 6, 0.78], ['laptop_open_off', -12, -44, 0.28], ['pen_cup', 32, -40, 0.18]] },
+      desk_l: { w: 112, h: 40, back: [['chair_task', 12, -44, 0.5]], front: [['desk_corner_l', 0, 6, 0.8], ['monitor_single_off', -22, -46, 0.3], ['papers_stack', 30, -40, 0.2]] },
+      partition_row: { w: 176, h: 16, front: [['partition_fabric', -60, 4, 0.5], ['partition_fabric', 0, 4, 0.5], ['partition_fabric', 60, 4, 0.5]] },
+      cabinet_row: { w: 128, h: 28, front: [['cabinet_filing_tall', -40, 2, 0.55], ['cabinet_filing_tall', 6, 2, 0.55], ['plant_snake', 48, 2, 0.45]] },
+      printer_station: { w: 120, h: 30, front: [['credenza_low', -10, 4, 0.6], ['printer_small', -18, -38, 0.34], ['bin_waste', 52, 2, 0.38]] },
+      // 탕비실
+      fridge_row: { w: 128, h: 28, front: [['refrigerator_compact', -32, 2, 0.58], ['refrigerator_compact', 32, 2, 0.58]] },
+      bar_table: { w: 84, h: 28, back: [['stool_high', -26, -30, 0.42], ['stool_high', 26, -30, 0.42]], front: [['desk_standing', 0, 4, 0.62], ['mug', -10, -44, 0.16], ['water_bottle', 16, -44, 0.2]] },
+      lounge: { w: 150, h: 30, front: [['credenza_low', -14, 4, 0.7], ['mug', -30, -46, 0.17], ['succulent_small', 10, -48, 0.2], ['plant_palm', 58, 4, 0.55]] },
+      recycle: { w: 80, h: 22, front: [['bin_recycling', -18, 2, 0.45], ['bin_waste', 22, 2, 0.42]] },
+      // 전산실
+      server_row: { w: 190, h: 30, front: [['computer_tower', -66, 2, 0.6], ['computer_tower', -14, 2, 0.6], ['computer_tower', 38, 2, 0.6], ['ups', 80, 2, 0.45]] },
+      control_desk: { w: 100, h: 34, back: [['chair_task', 0, -40, 0.5]], front: [['desk_straight', 0, 6, 0.8], ['control_panel', -18, -42, 0.3], ['monitor_single_off', 18, -42, 0.3]] },
+      archive: { w: 110, h: 28, front: [['archive_box', -30, 2, 0.4], ['archive_box', 14, 2, 0.4], ['archive_box', -8, -26, 0.38], ['shredder', 46, 2, 0.4]] },
+      // 임원실
+      exec_desk: { w: 150, h: 38, back: [['chair_task', -8, -44, 0.55]], front: [['desk_modesty_panel', -8, 6, 0.9], ['laptop_open_off', -24, -52, 0.28], ['organizer_desk', 14, -50, 0.2], ['lamp_floor', 62, 4, 0.55]] },
+      visitor_set: { w: 130, h: 24, front: [['chair_visitor', -40, 2, 0.5], ['chair_visitor', 4, 2, 0.5, true], ['plant_snake', 50, 2, 0.45]] },
+      exec_shelf: { w: 130, h: 30, front: [['credenza_low', 0, 4, 0.76], ['folder_closed', -30, -50, 0.2], ['archive_box', 28, -48, 0.22]] },
+      // 공용
+      tree: { w: 40, h: 20, front: [['tree_indoor', 0, 4, 0.7]] },
+      plant_big: { w: 40, h: 20, front: [['plant_broadleaf', 0, 4, 0.58]] },
+      plant_palm: { w: 40, h: 20, front: [['plant_palm', 0, 4, 0.58]] },
+      umbrella: { w: 26, h: 16, front: [['stand_umbrella', 0, 4, 0.45]] },
+      reception: { w: 136, h: 34, back: [['chair_task', 0, -36, 0.48]], front: [['counter_reception_curved', 0, 6, 0.9], ['monitor_single_off', -20, -44, 0.28]] }
+    };
+  }
+
+  // 템플릿 가구 배치 (회의실/로비/기존 가구와 여유 간격 확보)
+  placeTemplate(name, cx, by, pad = 46) {
+    const t = OfficePropManager.templates()[name];
+    if (!t) return false;
+    const x = cx - t.w / 2;
+    const y = by - t.h;
+    if (x < 90 || y < 90 || x + t.w > OfficeMap.SIZE - 90 || y + t.h > OfficeMap.SIZE - 90) return false;
+    if (this.overlapsRoom(x, y, t.w, t.h) || this.overlapsObstacle(x, y, t.w, t.h, pad)) return false;
+    if (x < 1520 && x + t.w > 880 && y < 1520 && y + t.h > 880 && name !== 'reception' && !OfficePropManager.LOBBY_DECOR.includes(name)) return false;
+    const toWorld = arr => (arr || []).map(([key, dx, dy, s, flip]) => ({ key, x: cx + dx, y: by + dy, s, flip: !!flip }));
+    this.obstacles.push(new OfficeObstacle(x, y, t.w, t.h, 'composite', { back: toWorld(t.back), front: toWorld(t.front) }));
+    return true;
+  }
+
   generateMapLayout() {
     const mapSize = OfficeMap.SIZE;
+    const jitter = () => (Math.random() - 0.5) * 24;
 
-    // 1. 회의실 4개 (유리벽 + 회의 테이블)
+    // 1. 회의실 4개 (유리벽 + 회의 테이블 + 회의 의자)
     OfficeMap.MEETING_ROOMS.forEach(r => {
       const t = 'meeting_wall';
       this.obstacles.push(new OfficeObstacle(r.x, r.y, r.w, 16, t)); // 상단
       this.obstacles.push(new OfficeObstacle(r.x, r.y, 16, r.h, t)); // 좌측
       this.obstacles.push(new OfficeObstacle(r.x + r.w - 16, r.y, 16, r.h, t)); // 우측
       this.obstacles.push(new OfficeObstacle(r.x, r.y + r.h - 16, r.w * 0.6, 16, t)); // 하단 (출입구 개방)
-      this.obstacles.push(new OfficeObstacle(r.x + r.w / 2 - 70, r.y + r.h / 2 - 20, 140, 46, 'meeting_table'));
+      const tx = r.x + r.w / 2 - 70;
+      const ty = r.y + r.h / 2 - 20;
+      const chairs = [];
+      [-45, 0, 45].forEach(dx => chairs.push({ key: 'chair_meeting', x: r.x + r.w / 2 + dx, y: ty + 4, s: 0.42, flip: dx > 0 }));
+      this.obstacles.push(new OfficeObstacle(tx, ty, 140, 46, 'meeting_table', { back: chairs, front: [] }));
     });
 
-    // 2. 구역별 가구 (오픈오피스 책상 / 탕비실 테이블 / 전산실 랙 / 임원 책상)
-    const furnitureByZone = {
-      office: 'desk_cluster',
-      pantry: 'cafe_table',
-      server: 'server_rack',
-      exec: 'exec_desk'
+    // 2. 구역별 가구 조합 (격자 슬롯 + 약간의 흔들림으로 자연스럽게)
+    const zonePlans = {
+      office: ['desk_pod', 'desk_pod_b', 'desk_l', 'desk_pod', 'partition_row', 'cabinet_row', 'desk_pod_b', 'printer_station'],
+      pantry: ['bar_table', 'lounge', 'fridge_row', 'bar_table', 'recycle', 'plant_palm'],
+      server: ['server_row', 'control_desk', 'server_row', 'archive', 'server_row'],
+      exec: ['exec_desk', 'visitor_set', 'exec_shelf', 'plant_big', 'exec_desk']
     };
-    for (let rx = 300; rx <= 2100; rx += 400) {
-      for (let ry = 300; ry <= 2100; ry += 400) {
-        if (Math.abs(rx - 1200) < 150 && Math.abs(ry - 1200) < 150) continue;
-        const zone = OfficeMap.zoneAt(rx, ry);
-        if (zone === 'lobby') continue;
-        const type = furnitureByZone[zone];
-        if (type === 'cafe_table') this.addFurniture(rx - 36, ry - 28, 72, 56, type);
-        else if (type === 'server_rack') this.addFurniture(rx - 50, ry - 40, 100, 80, type);
-        else this.addFurniture(rx - 50, ry - 30, 100, 60, type);
+    let n = 0;
+    for (let gy = 260; gy <= 2200; gy += 210) {
+      for (let gx = 200; gx <= 2200; gx += 240) {
+        const cx = gx + ((gy / 210) % 2) * 90 + jitter();
+        const by = gy + jitter();
+        const zone = OfficeMap.zoneAt(cx, by);
+        const plan = zonePlans[zone];
+        if (!plan) continue;
+        if (Math.hypot(cx - 1200, by - 1200) < 260) continue;
+        this.placeTemplate(plan[n++ % plan.length], cx, by);
       }
     }
 
-    // 3. 중앙 파티션 (오픈오피스 / 임원실 구역만)
-    for (let x = 600; x <= 1800; x += 400) {
-      for (let y = 600; y <= 1800; y += 400) {
-        if (Math.hypot(x - 1200, y - 1200) <= 200) continue;
-        const zone = OfficeMap.zoneAt(x, y);
-        if (zone === 'office' || zone === 'exec') {
-          this.addFurniture(x - 40, y - 6, 80, 12, 'partition');
-        }
-      }
+    // 3. 벽면을 따라 캐비닛/화분 (공간 가장자리 채우기)
+    const nearSign = x => Math.abs(x - 600) < 170 || Math.abs(x - 1800) < 170;
+    for (let x = 180; x < mapSize - 180; x += 210) {
+      if (nearSign(x)) continue;
+      const topZone = OfficeMap.zoneAt(x, 140);
+      if (topZone === 'office') this.placeTemplate(x % 420 < 210 ? 'cabinet_row' : 'plant_big', x, 132, 30);
+      const bottomZone = OfficeMap.zoneAt(x, 2270);
+      if (bottomZone === 'exec') this.placeTemplate(x % 420 < 210 ? 'exec_shelf' : 'plant_palm', x, 2300, 30);
+      if (bottomZone === 'server') this.placeTemplate('archive', x, 2300, 30);
     }
 
     // 4. 탕비실 주방 카운터 (상단 벽면)
     this.obstacles.push(new OfficeObstacle(1300, 70, 700, 44, 'counter'));
 
-    // 5. 화분 (로비 네 모서리 + 구역 경계)
-    [[960, 960], [1440, 960], [960, 1440], [1440, 1440], [1150, 130], [1250, 2270], [130, 1150], [2270, 1250]]
-      .forEach(([x, y]) => this.obstacles.push(new OfficeObstacle(x - 18, y - 18, 36, 36, 'plant')));
+    // 5. 중앙 로비: 안내데스크, 대형 화분, 우산꽂이
+    this.placeTemplate('reception', 1200, 1440, 20);
+    [[950, 950], [1450, 950], [950, 1460], [1450, 1460]].forEach(([x, y]) => this.placeTemplate('tree', x, y, 10));
+    this.placeTemplate('umbrella', 1300, 1000, 10);
 
     // 6. 파괴 가능한 기물 (가구와 겹치지 않게 분산 배치)
     const propTypes = ['water_purifier', 'vending_machine', 'copier', 'cabinet'];
     let placed = 0;
-    for (let i = 0; i < 200 && placed < 44; i++) {
+    for (let i = 0; i < 300 && placed < 36; i++) {
       const type = propTypes[placed % propTypes.length];
       const px = 150 + Math.random() * (mapSize - 300);
       const py = 170 + Math.random() * (mapSize - 320);
-      if (Math.hypot(px - 1200, py - 1200) < 180) continue;
-      if (this.overlapsObstacle(px - 30, py - 36, 60, 72)) continue;
-      if (this.props.some(p => Math.hypot(p.x - px, p.y - py) < 90)) continue;
+      if (Math.hypot(px - 1200, py - 1200) < 200) continue;
+      if (this.overlapsObstacle(px - 30, py - 36, 60, 72, 30)) continue;
+      if (this.props.some(p => Math.hypot(p.x - px, p.y - py) < 110)) continue;
       this.props.push(new OfficeProp(type, px, py));
       placed++;
     }
@@ -739,26 +847,52 @@ class OfficePropManager {
     });
   }
 
-  render(ctx, camera) {
-    const viewL = camera.x - 120;
-    const viewR = camera.x + window.innerWidth + 120;
-    const viewT = camera.y - 120;
-    const viewB = camera.y + window.innerHeight + 120;
+  inView(x, y, w, h, camera, margin = 160) {
+    return x + w >= camera.x - margin && x <= camera.x + window.innerWidth + margin &&
+      y + h >= camera.y - margin && y <= camera.y + window.innerHeight + margin;
+  }
 
-    // 장애물 렌더링
+  // 바닥에 붙은 평면 장애물 (회의실 유리벽)
+  renderFlat(ctx, camera) {
     this.obstacles.forEach(obs => {
-      if (obs.x + obs.width >= viewL && obs.x <= viewR && obs.y + obs.height >= viewT && obs.y <= viewB) {
-        obs.render(ctx, camera);
+      if (obs.flat && this.inView(obs.x, obs.y, obs.width, obs.height, camera)) obs.render(ctx, camera);
+    });
+  }
+
+  // 깊이 정렬용 렌더 목록 (가구 + 파괴 기물)
+  collectRenderables(camera, out) {
+    this.obstacles.forEach(obs => {
+      if (!obs.flat && this.inView(obs.x, obs.y - 120, obs.width, obs.height + 140, camera)) {
+        out.push({ y: obs.baseline, draw: () => obs.render(ctx0(), camera) });
       }
     });
-
-    // 인터랙션 오브젝트 렌더링
     this.props.forEach(p => {
-      if (p.isAlive && p.x >= viewL && p.x <= viewR && p.y >= viewT && p.y <= viewB) {
-        p.render(ctx, camera);
+      if (p.isAlive && this.inView(p.x - 60, p.y - 120, 120, 160, camera)) {
+        out.push({ y: p.y + p.height / 2, draw: () => p.render(ctx0(), camera) });
       }
     });
   }
+
+  // (호환용) 전체 렌더
+  render(ctx, camera) {
+    this.renderFlat(ctx, camera);
+    const list = [];
+    this.collectRenderables(camera, list);
+    list.sort((a, b) => a.y - b.y).forEach(it => it.draw());
+  }
 }
+
+// 깊이 정렬 draw 콜백이 사용할 현재 캔버스 컨텍스트
+function ctx0() {
+  return window.game.ctx;
+}
+
+OfficePropManager.LOBBY_DECOR = ['tree', 'umbrella', 'plant_big', 'plant_palm'];
+
+OfficeProp.SPRITES = {
+  water_purifier: { key: 'prop_refrigerator_compact', s: 0.58 },
+  copier: { key: 'prop_shredder', s: 0.62 },
+  cabinet: { key: 'prop_cabinet_filing_tall', s: 0.6 }
+};
 
 window.OfficePropManager = OfficePropManager;

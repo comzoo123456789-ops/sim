@@ -673,8 +673,13 @@ class WeaponManager {
   }
 
   // 무기 & 투사체 & 장판 & 쉴드 렌더링 (순수 캔버스 2D 벡터 아트 - No Emojis!)
-  render(ctx, camera) {
-    // 1. 핫식스 탄산 웅덩이 장판 렌더링
+  render(ctx, camera, layer = 'all') {
+    if (layer !== 'air') this.renderPuddles(ctx, camera);
+    if (layer !== 'ground') this.renderAir(ctx, camera);
+  }
+
+  // 1. 핫식스 탄산 웅덩이 장판 렌더링
+  renderPuddles(ctx, camera) {
     this.puddles.forEach(pud => {
       const sx = pud.x - camera.x;
       const sy = pud.y - camera.y;
@@ -715,6 +720,9 @@ class WeaponManager {
       ctx.restore();
     });
 
+  }
+
+  renderAir(ctx, camera) {
     // 2. 투사체(스테이플러 침, 키캡, 톱니, 레이저, 텀블러 등) 렌더링
     this.projectiles.forEach(p => {
       const sx = p.x - camera.x;

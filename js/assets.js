@@ -18,6 +18,54 @@ class AssetManager {
       ...named('emote', ['anger', 'exclamation', 'exclamations', 'heart', 'star', 'stars', 'cash', 'faceAngry', 'swirl', 'drops', 'alert']),
       ...named('item', ['aid_kit', 'receipt', 'briefcase', 'tumbler', 'mug', 'keyboard', 'monitor', 'monitor_wide', 'pc_tower', 'document', 'memo', 'id_card', 'headphone', 'lanyard', 'wallet', 'pointer', 'cash', 'folder', 'pill'])
     ]);
+
+    // 오피스 소품 + 캐릭터 아틀라스 (assets/sprites/office_atlas.js 에서 프레임 정보 로드)
+    this.atlasMeta = window.OFFICE_ATLAS || { frames: {} };
+    this.atlasUrl = 'assets/sprites/office_atlas.png';
+    this.atlas = new Image();
+    this.atlas.src = this.atlasUrl;
+  }
+
+  atlasReady() {
+    return this.atlas.complete && this.atlas.naturalWidth > 0;
+  }
+
+  hasSprite(key) {
+    return !!this.atlasMeta.frames[key];
+  }
+
+  // 아틀라스 스프라이트를 앵커(발/바닥 접점) 기준으로 그림. 성공 시 true
+  drawSprite(ctx, key, x, y, scale = 1, opts = {}) {
+    const f = this.atlasMeta.frames[key];
+    if (!f || !this.atlasReady()) return false;
+    ctx.save();
+    if (opts.alpha !== undefined) ctx.globalAlpha *= opts.alpha;
+    ctx.translate(x, y);
+    if (opts.rot) ctx.rotate(opts.rot);
+    ctx.scale(opts.flip ? -scale : scale, scale * (opts.squash || 1));
+    ctx.drawImage(this.atlas, f.x, f.y, f.w, f.h, -f.ax, -f.ay, f.w, f.h);
+    if (opts.flash) {
+      // 피격 백색 플래시: 같은 스프라이트를 밝게 한 번 더
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha *= opts.flash;
+      ctx.drawImage(this.atlas, f.x, f.y, f.w, f.h, -f.ax, -f.ay, f.w, f.h);
+    }
+    ctx.restore();
+    return true;
+  }
+
+  // UI(HTML)용 스프라이트: CSS 배경으로 아틀라스 일부를 표시. crop: 'head'(상단) | 'full'
+  spriteHtml(key, box = 64, crop = 'full', extraClass = '') {
+    const f = this.atlasMeta.frames[key];
+    if (!f) return '';
+    const cropH = crop === 'head' ? f.h * 0.62 : f.h;
+    const s = box / Math.max(f.w, cropH);
+    const W = this.atlasMeta.width * s;
+    const H = this.atlasMeta.height * s;
+    const offY = crop === 'head' ? f.h * 0.02 : 0;
+    return `<span class="sprite-ui ${extraClass}" style="width:${(f.w * s).toFixed(1)}px;height:${(cropH * s).toFixed(1)}px;` +
+      `background-image:url(${this.atlasUrl});background-size:${W.toFixed(1)}px ${H.toFixed(1)}px;` +
+      `background-position:${(-f.x * s).toFixed(1)}px ${(-(f.y + offY) * s).toFixed(1)}px"></span>`;
   }
 
   load(entries) {

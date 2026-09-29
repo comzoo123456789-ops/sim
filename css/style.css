@@ -46,10 +46,20 @@ html, body {
 }
 
 #app {
-  position: relative;
-  width: 100vw;
+  position: fixed;
+  inset: 0;
+  width: 100%;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
+}
+
+/* 아틀라스 스프라이트 UI (캐릭터 초상화 등) */
+.sprite-ui {
+  display: inline-block;
+  background-repeat: no-repeat;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* 1. 메인 게임 렌더 캔버스 */
@@ -684,6 +694,225 @@ html, body {
 
 .upgrade-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
 
+/* 레벨업 3택 1 (모바일 게임 카드 스타일) */
+.modal-overlay.levelup-overlay {
+  background: radial-gradient(80% 60% at 50% 38%, rgba(30, 58, 138, 0.55), rgba(3, 6, 12, 0.92) 70%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 12px;
+}
+
+.levelup-stage {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.levelup-rays {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  width: 520px;
+  height: 520px;
+  margin-left: -260px;
+  background: repeating-conic-gradient(from 0deg, rgba(251, 191, 36, 0.12) 0deg 8deg, transparent 8deg 22deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  animation: luSpin 18s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes luSpin { to { transform: rotate(360deg); } }
+
+.levelup-header { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+.levelup-ribbon {
+  position: relative;
+  padding: 7px 34px 8px;
+  background: linear-gradient(180deg, #fbbf24, #f59e0b 55%, #d97706);
+  color: #3b1d00;
+  font-family: var(--font-title);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  clip-path: polygon(0 0, 100% 0, 94% 50%, 100% 100%, 0 100%, 6% 50%);
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45);
+  animation: luDrop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.levelup-ribbon span { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5); }
+
+.levelup-level {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-family: var(--font-title);
+  color: #fff;
+  text-shadow: 0 0 18px rgba(56, 189, 248, 0.8);
+  animation: luDrop 0.45s 0.08s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.levelup-level small { font-size: 18px; font-weight: 800; color: #93c5fd; }
+.levelup-level b { font-size: 44px; font-weight: 900; line-height: 1; }
+.levelup-hint { font-size: 12.5px; font-weight: 700; color: #cbd5e1; opacity: 0.85; }
+
+@keyframes luDrop {
+  from { transform: translateY(-18px) scale(0.8); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.lu-deck {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  perspective: 900px;
+}
+
+.lu-card {
+  --c1: #38bdf8;
+  --c2: #1e3a8a;
+  position: relative;
+  border-radius: 18px;
+  padding: 2px;
+  background: linear-gradient(160deg, var(--c1), var(--c2) 60%, var(--c1));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), 0 0 22px color-mix(in srgb, var(--c1) 35%, transparent);
+  cursor: pointer;
+  animation: luIn 0.5s calc(0.15s + var(--i) * 0.1s) cubic-bezier(0.2, 1.2, 0.35, 1) both;
+  transition: transform 0.25s ease, opacity 0.25s ease, filter 0.25s ease;
+}
+
+.lu-card.rarity-passive { --c1: #34d399; --c2: #065f46; }
+.lu-card.rarity-super_weapon { --c1: #fbbf24; --c2: #b91c1c; }
+.lu-card.rarity-heal { --c1: #f472b6; --c2: #831843; }
+
+.lu-card.rarity-super_weapon::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 20px;
+  background: conic-gradient(from 0deg, transparent 0 70%, #fde68a 80%, transparent 90%);
+  animation: luSpin 2.4s linear infinite;
+  z-index: -1;
+  filter: blur(2px);
+}
+
+@keyframes luIn {
+  from { transform: translateY(40px) rotateY(80deg) scale(0.9); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.lu-card:hover { transform: translateY(-4px); }
+.lu-card.picked { transform: translateY(-10px) scale(1.07); filter: brightness(1.15); box-shadow: 0 0 40px var(--c1); z-index: 2; }
+.lu-card.dismiss { transform: translateY(24px) scale(0.92); opacity: 0; }
+
+.lu-card-inner {
+  position: relative;
+  height: 100%;
+  min-height: 262px;
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--c1) 26%, transparent), transparent 60%),
+    linear-gradient(180deg, #111a2c, #0a101b);
+  padding: 14px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.lu-tag {
+  position: absolute;
+  top: 10px;
+  right: -26px;
+  transform: rotate(35deg);
+  width: 96px;
+  padding: 2px 0;
+  background: var(--c1);
+  color: #04121f;
+  font-family: var(--font-title);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.lu-tag.new { background: #f43f5e; color: #fff; }
+
+.lu-icon {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lu-icon-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c1) 45%, transparent), transparent 70%);
+  border: 1.5px solid color-mix(in srgb, var(--c1) 55%, transparent);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--c1) 35%, transparent);
+}
+
+.lu-icon .svg-icon { position: relative; width: 46px; height: 46px; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)); }
+
+.lu-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.25;
+  min-height: 2.5em;
+  display: flex;
+  align-items: center;
+  word-break: keep-all;
+}
+
+.lu-pips { display: flex; gap: 3px; min-height: 8px; }
+.lu-pips i { width: 9px; height: 5px; border-radius: 2px; background: rgba(148, 163, 184, 0.25); }
+.lu-pips i.on { background: var(--c1); }
+.lu-pips i.next { background: #fff; box-shadow: 0 0 8px var(--c1); animation: luBlink 0.9s ease-in-out infinite; }
+
+@keyframes luBlink { 50% { opacity: 0.35; } }
+
+.lu-desc {
+  flex: 1;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.lu-kind {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--c1);
+  letter-spacing: 1px;
+  padding-top: 8px;
+  width: 100%;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+@media (max-width: 380px) {
+  .lu-deck { gap: 7px; }
+  .lu-card-inner { min-height: 240px; padding: 12px 7px 10px; }
+  .lu-icon { width: 62px; height: 62px; }
+  .lu-icon .svg-icon { width: 38px; height: 38px; }
+  .lu-name { font-size: 12.5px; }
+  .lu-desc { font-size: 10.5px; }
+  .levelup-ribbon { font-size: 19px; }
+}
+
 /* 일시정지 스탯 */
 .pause-stats-grid {
   display: grid;
@@ -959,6 +1188,36 @@ html, body {
   white-space: nowrap;
 }
 
+/* 챕터 이동 버튼 & 점 인디케이터 */
+.chapter-nav {
+  position: absolute;
+  top: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(7, 11, 20, 0.55);
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+}
+
+.chapter-nav svg { width: 18px; height: 18px; }
+.chapter-nav.prev { right: 56px; }
+.chapter-nav.next { right: 14px; }
+.chapter-nav:disabled { opacity: 0.3; cursor: default; }
+.chapter-nav.locked { color: #64748b; }
+.chapter-nav:not(:disabled):active { transform: scale(0.92); }
+
+.chapter-dots { display: flex; justify-content: center; gap: 6px; margin-top: -2px; }
+.chapter-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(148, 163, 184, 0.35); transition: all 0.2s ease; }
+.chapter-dot.locked { background: rgba(148, 163, 184, 0.12); }
+.chapter-dot.active { width: 18px; border-radius: 3px; background: var(--brand); }
+
 /* 모드 세그먼트 */
 .mode-toggle-group {
   display: grid;
@@ -1163,7 +1422,7 @@ html, body {
   grid-template-columns: repeat(5, 1fr);
   background: #0a101c;
   border-top: 1px solid var(--line);
-  padding: 6px 4px max(env(safe-area-inset-bottom), 8px);
+  padding: 6px 4px calc(env(safe-area-inset-bottom) + 8px);
 }
 
 .menu-tab-btn {
@@ -1231,7 +1490,13 @@ html, body {
   border: 1px solid var(--line);
   flex-shrink: 0;
   padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
+
+.player-avatar-box { overflow: hidden; }
 
 .char-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .char-name-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }

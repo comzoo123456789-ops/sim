@@ -551,6 +551,26 @@ class GameEngine {
       };
     }
 
+    // 1-1. 챕터 이동 버튼
+    const btnChapterPrev = document.getElementById('btnChapterPrev');
+    const btnChapterNext = document.getElementById('btnChapterNext');
+    if (btnChapterPrev) btnChapterPrev.onclick = () => this.changeChapter(-1);
+    if (btnChapterNext) btnChapterNext.onclick = () => this.changeChapter(1);
+
+    // 로비 첫 진입: 가장 최근에 열린 스테이지를 선택
+    if (window.saveMgr) {
+      const unlocked = window.saveMgr.data.unlockedStages || ['1-1'];
+      const latest = unlocked.slice().sort((a, b) => {
+        const [ac, as] = a.split('-').map(Number);
+        const [bc, bs] = b.split('-').map(Number);
+        return ac * 100 + as - (bc * 100 + bs);
+      }).pop();
+      if (latest && this.getStageById(latest)) {
+        this.selectedStageId = latest;
+        this.selectedChapter = parseInt(latest.split('-')[0], 10);
+      }
+    }
+
     // 2. 스테이지 시작 버튼
     const btnStartSelectedStage = document.getElementById('btnStartSelectedStage');
     if (btnStartSelectedStage) {
@@ -601,17 +621,17 @@ class GameEngine {
       btnNextStage.onclick = (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         document.getElementById('stageClearModal').classList.remove('active');
-        // 마지막 스테이지(1-10) 클리어 시에는 로비로 귀환
-        if (this.currentStageId === '1-10') {
+        // 마지막 스테이지(10-10) 클리어 시에는 로비로 귀환
+        const nextStageId = SaveManager.nextStageId(this.currentStageId);
+        if (!nextStageId) {
           document.getElementById('charSelectModal').classList.add('active');
           this.state = 'char_select';
           this.updateLobbyGold();
           this.renderStageSelectGrid();
           return;
         }
-        const curStageNum = parseInt(this.currentStageId.split('-')[1], 10) || 1;
-        const nextStageId = `1-${Math.min(10, curStageNum + 1)}`;
         this.selectedStageId = nextStageId;
+        this.selectedChapter = parseInt(nextStageId.split('-')[0], 10);
         this.startGame(this.selectedCharId, nextStageId, 'stage');
       };
     }
@@ -756,10 +776,65 @@ class GameEngine {
     if (el) el.innerText = gold.toLocaleString();
   }
 
-  getChapter1() {
+  getChapter(n) {
     const chapters = window.GAME_DATA && window.GAME_DATA.CHAPTERS;
-    if (!chapters) return null;
-    return chapters.ch1 || (Array.isArray(chapters) ? chapters[0] : null);
+    return chapters ? chapters['ch' + n] || null : null;
+  }
+
+  getChapter1() {
+    return this.getChapter(this.selectedChapter || 1);
+  }
+
+  // "3-7" 같은 스테이지 ID로 스테이지 정의 조회
+  getStageById(id) {
+    const ch = this.getChapter(parseInt(String(id).split('-')[0], 10));
+    return ch && ch.stages ? ch.stages.find(s => s.id === id) || null : null;
+  }
+
+  // 챕터 선택 (잠긴 챕터는 이동 불가)
+  changeChapter(delta) {
+    const next = (this.selectedChapter || 1) + delta;
+    if (next < 1 || next > SaveManager.MAX_CHAPTER) return;
+    if (window.saveMgr && !window.saveMgr.isChapterUnlocked(next)) {
+      if (window.soundEngine) window.soundEngine.playHit();
+      return;
+    }
+    this.selectedChapter = next;
+    const ch = this.getChapter(next);
+    const unlocked = ch.stages.filter(st => !window.saveMgr || window.saveMgr.isStageUnlocked(st.id));
+    this.selectedStageId = (unlocked[unlocked.length - 1] || ch.stages[0]).id;
+    this.renderStageSelectGrid();
+    const body = document.querySelector('.lobby-body');
+    if (body) body.scrollTop = 0;
+    if (window.soundEngine) window.soundEngine.playClick();
+  }
+
+  renderChapterHeader() {
+    const n = this.selectedChapter || 1;
+    const ch = this.getChapter(n);
+    if (!ch) return;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+    set('chapterBadge', `CHAPTER ${n}`);
+    set('chapterTitle', ch.name || ch.title);
+    set('chapterSubtitle', ch.subtitle || '');
+
+    const prev = document.getElementById('btnChapterPrev');
+    const next = document.getElementById('btnChapterNext');
+    if (prev) prev.disabled = n <= 1;
+    if (next) {
+      next.disabled = n >= SaveManager.MAX_CHAPTER;
+      next.classList.toggle('locked', !!(window.saveMgr && n < SaveManager.MAX_CHAPTER && !window.saveMgr.isChapterUnlocked(n + 1)));
+    }
+
+    const dots = document.getElementById('chapterDots');
+    if (dots) {
+      let html = '';
+      for (let i = 1; i <= SaveManager.MAX_CHAPTER; i++) {
+        const open = !window.saveMgr || window.saveMgr.isChapterUnlocked(i);
+        html += `<span class="chapter-dot ${i === n ? 'active' : ''} ${open ? '' : 'locked'}"></span>`;
+      }
+      dots.innerHTML = html;
+    }
   }
 
   // 스테이지 이름에서 "1-1 " 접두어 제거 (번호는 카드 좌측 배지로 표시)
@@ -769,9 +844,11 @@ class GameEngine {
 
   renderStageSelectGrid() {
     const grid = document.getElementById('stageGridContainer');
+    if (!this.selectedChapter) this.selectedChapter = parseInt(String(this.selectedStageId).split('-')[0], 10) || 1;
     const ch1 = this.getChapter1();
     if (!grid || !ch1 || !ch1.stages) return;
     grid.innerHTML = '';
+    this.renderChapterHeader();
 
     const lockSvg = '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.8"/></svg>';
     let cleared = 0;
@@ -857,9 +934,7 @@ class GameEngine {
       return;
     }
 
-    const ch1 = this.getChapter1();
-    if (!ch1 || !ch1.stages) return;
-    const st = ch1.stages.find(s => s.id === this.selectedStageId) || ch1.stages[0];
+    const st = this.getStageById(this.selectedStageId) || this.getChapter(1).stages[0];
     const goldReward = st.goldReward || st.reward || 200;
     titleEl.innerText = `${st.id} ${this.stageDisplayName(st)}`;
     rewardEl.innerText = `${charName} · 클리어 +${goldReward} 코인`;
@@ -882,7 +957,7 @@ class GameEngine {
       const card = document.createElement('div');
       card.className = 'char-card' + (c.id === this.selectedCharId ? ' selected' : '');
       card.innerHTML = `
-        <div class="char-portrait">${c.avatar}</div>
+        <div class="char-portrait">${(c.sprite && window.assets.spriteHtml(`char_${c.sprite}_idle`, 60, 'full')) || c.avatar}</div>
         <div class="char-info">
           <div class="char-name-row">
             <span class="char-name">${c.name}</span>
@@ -1042,8 +1117,8 @@ class GameEngine {
     this.currentStageId = stageId || this.selectedStageId || '1-1';
 
     if (this.selectedMode === 'stage') {
-      const ch1 = (window.GAME_DATA && window.GAME_DATA.CHAPTERS) ? (window.GAME_DATA.CHAPTERS.ch1 || (Array.isArray(window.GAME_DATA.CHAPTERS) ? window.GAME_DATA.CHAPTERS[0] : null)) : null;
-      this.currentStage = (ch1 && ch1.stages) ? (ch1.stages.find(s => s.id === this.currentStageId) || ch1.stages[0]) : null;
+      this.currentStage = this.getStageById(this.currentStageId) || this.getChapter(1).stages[0];
+      this.currentStageId = this.currentStage.id;
       this.gameTime = this.currentStage ? this.currentStage.duration : 60;
     } else {
       this.currentStage = null;
@@ -1099,19 +1174,14 @@ class GameEngine {
     // 이전 카드 선택의 지연 click(고스트 클릭)이 새 카드를 자동 선택하는 것 방지
     const shownAt = performance.now();
 
-    choices.forEach(ch => {
+    const lvEl = document.getElementById('levelUpLevel');
+    if (lvEl) lvEl.innerText = this.player.level - this.levelUpQueue;
+
+    choices.forEach((ch, idx) => {
       const card = document.createElement('div');
-      card.className = 'upgrade-card' + (ch.isSuper ? ' super' : '');
-      card.innerHTML = `
-        <div class="upgrade-card-icon">${ch.icon}</div>
-        <div class="upgrade-card-details">
-          <div class="upgrade-card-header">
-            <span class="upgrade-card-title">${ch.title}</span>
-            <span class="upgrade-card-type">${ch.typeText}</span>
-          </div>
-          <div class="upgrade-card-desc">${ch.desc}</div>
-        </div>
-      `;
+      card.className = `lu-card rarity-${ch.category}`;
+      card.style.setProperty('--i', idx);
+      card.innerHTML = this.renderUpgradeCard(ch);
 
       const selectAction = (e) => {
         if (e) {
@@ -1119,14 +1189,17 @@ class GameEngine {
           e.stopPropagation();
         }
         if (hasSelected) return;
-        if (performance.now() - shownAt < 250) return;
+        if (performance.now() - shownAt < 350) return;
         hasSelected = true;
 
+        // 선택 연출: 고른 카드는 확대·발광, 나머지는 퇴장
+        card.classList.add('picked');
+        deck.querySelectorAll('.lu-card').forEach(c => { if (c !== card) c.classList.add('dismiss'); });
         this.applyUpgrade(ch);
 
         setTimeout(() => {
           this.processNextLevelUp();
-        }, 50);
+        }, 380);
       };
 
       card.addEventListener('pointerup', selectAction);
@@ -1136,6 +1209,54 @@ class GameEngine {
     });
 
     modal.classList.add('active');
+  }
+
+  // 레벨업 카드 1장 마크업 (아이콘 / 이름 / 레벨 칸 / 설명)
+  renderUpgradeCard(ch) {
+    const D = window.GAME_DATA;
+    let name = ch.title;
+    let tag = ch.typeText;
+    let cur = 0;
+    let max = 0;
+    let kind = '';
+
+    if (ch.category === 'weapon') {
+      name = D.WEAPONS[ch.id].name;
+      cur = this.player.weapons[ch.id] || 0;
+      max = D.WEAPONS[ch.id].levels.length;
+      kind = '무기';
+      tag = cur === 0 ? 'NEW' : `Lv.${cur + 1}`;
+    } else if (ch.category === 'passive') {
+      name = D.PASSIVES[ch.id].name;
+      cur = this.player.passives[ch.id] || 0;
+      max = D.PASSIVES[ch.id].levels.length;
+      kind = '복지';
+      tag = cur === 0 ? 'NEW' : `Lv.${cur + 1}`;
+    } else if (ch.category === 'super_weapon') {
+      name = D.SUPER_WEAPONS[ch.id].name.replace(/[🔥\[\]]/g, '').trim();
+      kind = '초월 각성';
+      tag = 'EVOLVE';
+    } else {
+      name = '야근 영양제';
+      kind = '회복';
+      tag = 'HEAL';
+    }
+
+    let pips = '';
+    for (let i = 0; i < max; i++) {
+      pips += `<i class="${i < cur ? 'on' : ''} ${i === cur ? 'next' : ''}"></i>`;
+    }
+
+    return `
+      <div class="lu-card-inner">
+        <span class="lu-tag ${tag === 'NEW' ? 'new' : ''}">${tag}</span>
+        <div class="lu-icon"><div class="lu-icon-halo"></div>${ch.icon}</div>
+        <div class="lu-name">${name}</div>
+        ${max ? `<div class="lu-pips">${pips}</div>` : '<div class="lu-pips empty"></div>'}
+        <div class="lu-desc">${ch.desc}</div>
+        <div class="lu-kind">${kind}</div>
+      </div>
+    `;
   }
 
   generateUpgradeChoices() {
@@ -1351,9 +1472,10 @@ class GameEngine {
     // (클릭 동작은 setupUIBindings에서 currentStageId로 분기)
     const nextBtn = document.getElementById('btnNextStage');
     if (nextBtn) {
-      nextBtn.innerText = this.currentStageId === '1-10'
-        ? '🏆 챕터 1 완전 정복! (로비로)'
-        : '다음 결재선(스테이지) 출근 ➔';
+      const [clearedCh, clearedSt] = this.currentStageId.split('-').map(Number);
+      if (this.currentStageId === '10-10') nextBtn.innerText = '🏆 전 챕터 정복! 로비로';
+      else if (clearedSt === 10) nextBtn.innerText = `🏆 ${clearedCh}장 정복! ${clearedCh + 1}장으로 ➔`;
+      else nextBtn.innerText = '다음 스테이지 출근 ➔';
     }
 
     modal.classList.add('active');
@@ -1573,14 +1695,30 @@ class GameEngine {
     this.ctx.clearRect(0, 0, this.viewW, this.viewH);
 
     if (this.player) {
-      this.renderOfficeMap(this.ctx, this.camera);
-      this.effectEngine.renderDecals(this.ctx, this.camera);
-      this.propMgr.render(this.ctx, this.camera);
-      this.dropMgr.render(this.ctx, this.camera);
-      this.weaponMgr.render(this.ctx, this.camera);
-      this.monsterMgr.render(this.ctx, this.camera);
-      this.player.render(this.ctx, this.camera);
-      this.effectEngine.render(this.ctx, this.camera, this.viewW);
+      const ctx = this.ctx;
+      const cam = this.camera;
+
+      // 1) 바닥 레이어
+      this.renderOfficeMap(ctx, cam);
+      this.effectEngine.renderDecals(ctx, cam);
+      this.propMgr.renderFlat(ctx, cam);
+      this.monsterMgr.renderGround(ctx, cam);
+      this.weaponMgr.render(ctx, cam, 'ground');
+      this.dropMgr.render(ctx, cam);
+
+      // 2) 깊이 정렬 레이어 (가구 · 기물 · 몬스터 · 플레이어를 발 위치 순으로)
+      const depth = this.depthList || (this.depthList = []);
+      depth.length = 0;
+      this.propMgr.collectRenderables(cam, depth);
+      this.monsterMgr.collectRenderables(ctx, cam, depth);
+      depth.push({ y: this.player.y, draw: () => this.player.render(ctx, cam) });
+      depth.sort((a, b) => a.y - b.y);
+      for (let i = 0; i < depth.length; i++) depth[i].draw();
+
+      // 3) 공중 레이어
+      this.weaponMgr.render(ctx, cam, 'air');
+      this.monsterMgr.renderBullets(ctx, cam);
+      this.effectEngine.render(ctx, cam, this.viewW);
     }
 
     requestAnimationFrame(t => this.gameLoop(t));

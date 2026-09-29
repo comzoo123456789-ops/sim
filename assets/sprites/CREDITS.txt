@@ -1,0 +1,6 @@
+office_atlas.png is a game-specific sprite atlas. The source images were resized and repacked for this game.
+
+- Office furniture and props: "Modern Office 2D Top-Down Props Pack" by nacl1234
+  https://nacl1234.itch.io/top-down-modern-office-2d-asset-pack
+  Commercial license. The assets may only be distributed embedded in this game, not as standalone files.
+- Characters: "Toon Characters 1" by Kenney (www.kenney.nl), CC0 1.0

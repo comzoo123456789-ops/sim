@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>야근 탈출: 오피스 서바이벌 (Office Escape Survivor)</title>
   <meta name="description" content="쏟아지는 업무와 상사들을 물리치고 10분 만에 정시 퇴근하라! 2D 로그라이크 탄막 서바이벌">
-  <link rel="stylesheet" href="css/style.css?v=20260929_141">
+  <link rel="stylesheet" href="css/style.css?v=20260929_160">
 </head>
 <body>
   <div id="app">
@@ -121,16 +121,20 @@
           <section id="tabPanelStage" class="tab-panel active">
             <div class="chapter-hero">
               <div class="chapter-hero-art" aria-hidden="true"></div>
+              <button id="btnChapterPrev" class="chapter-nav prev" aria-label="이전 챕터"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button id="btnChapterNext" class="chapter-nav next" aria-label="다음 챕터"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
               <div class="chapter-hero-info">
-                <span class="chapter-badge">CHAPTER 1</span>
-                <h2 class="chapter-title">판교 스타트업 본사</h2>
-                <p class="chapter-subtitle">탕비실부터 대표이사실까지, 10단계 결재선을 돌파하고 퇴근하세요.</p>
+                <span id="chapterBadge" class="chapter-badge">CHAPTER 1</span>
+                <h2 id="chapterTitle" class="chapter-title">판교 스타트업 본사</h2>
+                <p id="chapterSubtitle" class="chapter-subtitle">탕비실부터 대표이사실까지, 10단계 결재선을 돌파하고 퇴근하세요.</p>
                 <div class="chapter-progress">
                   <div class="chapter-progress-track"><div id="chapterProgressFill" class="chapter-progress-fill"></div></div>
                   <span id="chapterProgressText" class="chapter-progress-text">0 / 10</span>
                 </div>
               </div>
             </div>
+
+            <div id="chapterDots" class="chapter-dots"></div>
 
             <div class="mode-toggle-group">
               <button id="btnModeStage" class="mode-toggle-btn active">스테이지</button>
@@ -269,14 +273,15 @@
     </div>
 
     <!-- 레벨업 3택 1 카드 선택 모달 -->
-    <div id="levelUpModal" class="modal-overlay">
-      <div class="modal-window upgrade-window">
-        <div class="modal-header">
-          <div class="level-up-tag">LEVEL UP!</div>
-          <h2 class="modal-title">사내 역량 강화 (1개 선택)</h2>
-          <p class="modal-subtitle">원하는 무기나 복지 패시브 카드를 선택하여 스펙을 강화하세요.</p>
+    <div id="levelUpModal" class="modal-overlay levelup-overlay">
+      <div class="levelup-stage">
+        <div class="levelup-rays" aria-hidden="true"></div>
+        <div class="levelup-header">
+          <div class="levelup-ribbon"><span>LEVEL UP</span></div>
+          <div class="levelup-level"><small>Lv.</small><b id="levelUpLevel">2</b></div>
+          <p class="levelup-hint">카드 한 장을 골라 강화하세요</p>
         </div>
-        <div id="upgradeCardDeck" class="upgrade-card-deck"></div>
+        <div id="upgradeCardDeck" class="lu-deck"></div>
       </div>
     </div>
 
@@ -352,17 +357,18 @@
   </div>
 
   <!-- 스크립트 로드 순서 엄수 -->
-  <script src="js/sound.js?v=20260929_141"></script>
-  <script src="js/icons.js?v=20260929_141"></script>
-  <script src="js/assets.js?v=20260929_141"></script>
-  <script src="js/data.js?v=20260929_141"></script>
-  <script src="js/save.js?v=20260929_141"></script>
-  <script src="js/map.js?v=20260929_141"></script>
-  <script src="js/props.js?v=20260929_141"></script>
-  <script src="js/drops.js?v=20260929_141"></script>
-  <script src="js/weapons.js?v=20260929_141"></script>
-  <script src="js/monsters.js?v=20260929_141"></script>
-  <script src="js/player.js?v=20260929_141"></script>
-  <script src="js/game.js?v=20260929_141"></script>
+  <script src="js/sound.js?v=20260929_160"></script>
+  <script src="js/icons.js?v=20260929_160"></script>
+  <script src="assets/sprites/office_atlas.js?v=20260929_160"></script>
+  <script src="js/assets.js?v=20260929_160"></script>
+  <script src="js/data.js?v=20260929_160"></script>
+  <script src="js/save.js?v=20260929_160"></script>
+  <script src="js/map.js?v=20260929_160"></script>
+  <script src="js/props.js?v=20260929_160"></script>
+  <script src="js/drops.js?v=20260929_160"></script>
+  <script src="js/weapons.js?v=20260929_160"></script>
+  <script src="js/monsters.js?v=20260929_160"></script>
+  <script src="js/player.js?v=20260929_160"></script>
+  <script src="js/game.js?v=20260929_160"></script>
 </body>
 </html>
