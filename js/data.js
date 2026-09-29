@@ -108,7 +108,7 @@ window.GAME_DATA = {
     keyboard: {
       id: 'keyboard',
       name: '기계식 청축 키보드',
-      icon: window.getGameIcon('keyboard'),
+      icon: window.assets.iconHtml('keyboard'),
       desc: '청축 타건음과 함께 전방 부채꼴로 키캡 산탄을 발사합니다.',
       type: 'shotgun',
       baseDmg: 25,
@@ -232,7 +232,7 @@ window.GAME_DATA = {
     coffee_bomb: {
       id: 'coffee_bomb',
       name: '갓 내린 텀블러',
-      icon: window.getGameIcon('coffee_bomb'),
+      icon: window.assets.iconHtml('tumbler'),
       desc: '뜨거운 커피 텀블러를 던져 강력한 360도 스플래시 폭발을 일으킵니다.',
       type: 'bomb',
       baseDmg: 35,
@@ -393,7 +393,7 @@ window.GAME_DATA = {
     bankbook: {
       id: 'bankbook',
       name: '두둑한 월급 통장',
-      icon: window.getGameIcon('bankbook'),
+      icon: window.assets.iconHtml('wallet'),
       desc: '경험치(커피콩) 및 골드(영수증) 자석 흡입 반경을 늘립니다.',
       levels: [
         { magnetRange: 50, desc: '자석 흡입 반경 +50px' },
@@ -405,7 +405,7 @@ window.GAME_DATA = {
     headphone: {
       id: 'headphone',
       name: '노이즈캔슬링 헤드폰',
-      icon: window.getGameIcon('headphone'),
+      icon: window.assets.iconHtml('headphone'),
       desc: '상사의 잔소리를 차단하여 받는 모든 피해량을 감소시킵니다.',
       levels: [
         { dmgReduc: 0.10, desc: '받는 피해 10% 감소' },
@@ -465,7 +465,7 @@ window.GAME_DATA = {
     badge: {
       id: 'badge',
       name: '골드 마스터 사원증',
-      icon: window.getGameIcon('badge'),
+      icon: window.assets.iconHtml('lanyard'),
       desc: '경험치(커피콩) 및 골드(영수증) 획득량을 대폭 증가시킵니다.',
       levels: [
         { xpMul: 0.15, goldMul: 0.20, desc: '경험치 +15% / 골드 +20%' },
@@ -800,6 +800,7 @@ window.GAME_DATA = {
           goldReward: 200,
           theme: 'pantry',
           targetKills: 30,
+          monsters: ['paper', 'paper', 'paper', 'thief'],
           icon: window.getGameIcon('stage_pantry')
         },
         {
@@ -813,6 +814,7 @@ window.GAME_DATA = {
           goldReward: 250,
           theme: 'open_office',
           targetKills: 45,
+          monsters: ['paper', 'paper', 'slack'],
           icon: window.getGameIcon('stage_open_office')
         },
         {
@@ -827,6 +829,7 @@ window.GAME_DATA = {
           goldReward: 400,
           theme: 'meeting_room',
           targetKills: 60,
+          monsters: ['paper', 'slime', 'slack'],
           icon: window.getGameIcon('stage_meeting_room')
         },
         {
@@ -840,6 +843,7 @@ window.GAME_DATA = {
           goldReward: 350,
           theme: 'open_office',
           targetKills: 75,
+          monsters: ['slime', 'slime', 'paper'],
           icon: window.getGameIcon('stage_open_office')
         },
         {
@@ -853,6 +857,7 @@ window.GAME_DATA = {
           goldReward: 450,
           theme: 'server_room',
           targetKills: 90,
+          monsters: ['paper', 'slack', 'copier'],
           icon: window.getGameIcon('stage_server_room')
         },
         {
@@ -866,6 +871,7 @@ window.GAME_DATA = {
           goldReward: 500,
           theme: 'open_office',
           targetKills: 110,
+          monsters: ['paper', 'slime', 'slack', 'copier'],
           icon: window.getGameIcon('stage_open_office')
         },
         {
@@ -879,6 +885,7 @@ window.GAME_DATA = {
           goldReward: 600,
           theme: 'pantry',
           targetKills: 130,
+          monsters: ['copier', 'copier', 'paper', 'slime'],
           icon: window.getGameIcon('stage_pantry')
         },
         {
@@ -893,6 +900,7 @@ window.GAME_DATA = {
           goldReward: 750,
           theme: 'meeting_room',
           targetKills: 150,
+          monsters: ['paper', 'slime', 'slack', 'copier', 'thief'],
           icon: window.getGameIcon('stage_meeting_room')
         },
         {
@@ -906,6 +914,7 @@ window.GAME_DATA = {
           goldReward: 900,
           theme: 'executive',
           targetKills: 170,
+          monsters: ['slime', 'slack', 'copier', 'thief', 'thief'],
           icon: window.getGameIcon('stage_executive')
         },
         {
@@ -920,6 +929,7 @@ window.GAME_DATA = {
           goldReward: 2000,
           theme: 'executive',
           targetKills: 200,
+          monsters: ['paper', 'slime', 'copier', 'slack', 'thief'],
           icon: window.getGameIcon('stage_executive')
         }
       ]

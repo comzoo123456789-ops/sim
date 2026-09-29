@@ -55,7 +55,7 @@ class OfficeProp {
 
     if (window.game && window.game.effectEngine) {
       window.game.effectEngine.spawnHitSpark(this.x, this.y, this.color);
-      window.game.effectEngine.spawnFloatingText(this.x, this.y - 20, `${amount}`, '#e2e8f0');
+      window.game.effectEngine.spawnFloatingText(this.x, this.y - 20, `${Math.round(amount)}`, '#e2e8f0');
     }
 
     if (this.hp <= 0) {
@@ -73,10 +73,13 @@ class OfficeProp {
       window.game.effectEngine.screenShake(6, 0.25);
       window.game.effectEngine.spawnShockwave(this.x, this.y, 60, this.color);
 
-      // 잔해 파티클 생성
+      // 잔해 파티클 + 폭발 + 연기
       for (let i = 0; i < 12; i++) {
         window.game.effectEngine.spawnHitSpark(this.x, this.y, this.color);
       }
+      window.game.effectEngine.spawnExplosion(this.x, this.y, this.width * 2.6, 0.55);
+      window.game.effectEngine.spawnPuff(this.x, this.y - 10, this.width * 2, '#94a3b8', 0.8, 0.6);
+      window.game.effectEngine.spawnDecal(this.x, this.y, this.width * 1.8, '#111827', 'fx_scorch', 8);
     }
 
     if (window.saveMgr) {
@@ -382,17 +385,28 @@ class OfficeObstacle {
       ctx.fill();
       ctx.stroke();
 
-      // 듀얼 모니터 (푸른 화면 발광)
-      ctx.fillStyle = '#38bdf8';
-      ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 8;
-      ctx.fillRect(15, 8, 30, 14);
-      ctx.fillRect(55, 8, 30, 14);
+      const a = window.assets;
+      if (a && a.get('item_monitor')) {
+        // 듀얼 모니터 + 키보드 + 머그 + 서류 (Kenney 아이템)
+        a.draw(ctx, 'fx_glow', 50, 18, 110, 60, { color: '#38bdf8', alpha: 0.35, blend: 'lighter' });
+        a.draw(ctx, 'item_monitor', 30, 18, 34, 34);
+        a.draw(ctx, 'item_monitor_wide', 70, 18, 34, 34);
+        a.draw(ctx, 'item_keyboard', 50, 42, 38, 38);
+        a.draw(ctx, 'item_mug', 88, 44, 18, 18);
+        a.draw(ctx, 'item_memo', 12, 44, 18, 18, { rot: -0.3 });
+      } else {
+        // 듀얼 모니터 (푸른 화면 발광)
+        ctx.fillStyle = '#38bdf8';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(15, 8, 30, 14);
+        ctx.fillRect(55, 8, 30, 14);
 
-      // 키보드
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(30, 32, 40, 12);
+        // 키보드
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(30, 32, 40, 12);
+      }
     }
 
     ctx.restore();

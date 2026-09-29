@@ -30,6 +30,7 @@ class Player {
     this.isDead = false;
     this.invincibleTimer = 0;
     this.reviveCount = 0;
+    this.revivesGranted = 0; // 패시브로 지금까지 지급된 부활 횟수 (재계산 시 중복 지급 방지)
 
     // 보유 무기 및 패시브 레벨 맵
     this.weapons = {}; // { stapler: level, keyboard: level, ... }
@@ -44,6 +45,7 @@ class Player {
     this.dashTimer = 0;
     this.dashCooldown = 0;
     this.maxDashCooldown = 2.8;
+    this.lastDashCooldown = 2.8; // 마지막 대시에 실제 적용된 쿨타임 (HUD 게이지용)
     this.dashVx = 0;
     this.dashVy = 0;
     this.ghostTrails = [];
@@ -57,7 +59,7 @@ class Player {
       magnetRange: 65,
       dmgReduc: charData.bonus.dmgReduc || 0.0,
       hpRegen: charData.bonus.regenRate || 0,
-      critRate: charData.bonus.critRate || 0.05,
+      critRate: 0.05 + (charData.bonus.critRate || 0),
       critDmgMul: 1.0 + (charData.bonus.critDmgMul || 0),
       xpMul: 1.0 + (charData.bonus.xpMul || 0),
       goldMul: 1.0,
@@ -78,7 +80,7 @@ class Player {
     let magnetRange = 65;
     let dmgReduc = this.charData.bonus.dmgReduc || 0.0;
     let hpRegen = this.charData.bonus.regenRate || 0;
-    let critRate = this.charData.bonus.critRate || 0.05;
+    let critRate = 0.05 + (this.charData.bonus.critRate || 0);
     let critDmgMul = 1.0 + (this.charData.bonus.critDmgMul || 0);
     let xpMul = 1.0 + (this.charData.bonus.xpMul || 0);
     let maxHpBonus = 1.0 + (this.charData.bonus.hpMul || 0);
@@ -86,16 +88,18 @@ class Player {
     let dodgeRate = 0.0;
     let dashCdReduc = 0.0;
     let projectileSpeed = 1.0;
+    let revive = 0;
 
-    // 연봉 협상 영구 강화 스탯 적용
+    // 연봉 협상 영구 강화 스탯 적용 (수치는 data.js의 bonusPerLv와 일치)
     if (window.saveMgr) {
       const up = window.saveMgr.data.upgrades;
-      if (up.hp) maxHpBonus += up.hp * 0.10;
-      if (up.speed) speedMul += up.speed * 0.05;
-      if (up.atk) atkMul += up.atk * 0.08;
-      if (up.cd) cdReduc += up.cd * 0.04;
-      if (up.magnet) magnetRange += up.magnet * 20;
-      if (up.gold) goldMul += up.gold * 0.15;
+      const shop = window.GAME_DATA.SHOP_UPGRADES;
+      if (up.hp) maxHpBonus += up.hp * shop.hp.bonusPerLv;
+      if (up.speed) speedMul += up.speed * shop.speed.bonusPerLv;
+      if (up.atk) atkMul += up.atk * shop.atk.bonusPerLv;
+      if (up.cd) cdReduc += up.cd * shop.cd.bonusPerLv;
+      if (up.magnet) magnetRange *= 1 + up.magnet * shop.magnet.bonusPerLv;
+      if (up.gold) goldMul += up.gold * shop.gold.bonusPerLv;
     }
 
     // 사내 복지 패시브 적용 (10종)
@@ -110,7 +114,7 @@ class Player {
       if (cur.magnetRange) magnetRange += cur.magnetRange;
       if (cur.dmgReduc) dmgReduc = Math.min(0.70, dmgReduc + cur.dmgReduc);
       if (cur.hpRegen) hpRegen += cur.hpRegen;
-      if (cur.revive) this.reviveCount = cur.revive;
+      if (cur.revive) revive += cur.revive;
       if (cur.projectileSpeed) projectileSpeed += cur.projectileSpeed;
       if (cur.critRate) critRate += cur.critRate;
       if (cur.critDmgMul) critDmgMul += cur.critDmgMul;
@@ -119,6 +123,12 @@ class Player {
       if (cur.xpMul) xpMul += cur.xpMul;
       if (cur.goldMul) goldMul += cur.goldMul;
     });
+
+    // 새로 해금된 부활 횟수만 지급 (이미 사용한 부활이 다시 충전되지 않도록)
+    if (revive > this.revivesGranted) {
+      this.reviveCount += revive - this.revivesGranted;
+      this.revivesGranted = revive;
+    }
 
     this.stats = {
       atkMul,
@@ -180,6 +190,7 @@ class Player {
     if (this.stats.dodgeRate > 0 && Math.random() < this.stats.dodgeRate) {
       if (window.game && window.game.effectEngine) {
         window.game.effectEngine.spawnFloatingText(this.x, this.y - 25, '💨 회피!', '#00f0ff');
+        window.game.effectEngine.spawnPuff(this.x, this.y - 10, 40, '#e0f2fe', 0.3, 0.6);
       }
       return;
     }
@@ -202,6 +213,8 @@ class Player {
         if (window.game && window.game.effectEngine) {
           window.game.effectEngine.spawnFloatingText(this.x, this.y - 35, '🏖️ [연차 휴가] 부활 완료!', '#00ffaa');
           window.game.effectEngine.spawnShockwave(this.x, this.y, 100, '#00ffaa');
+          window.game.effectEngine.spawnFlash(this.x, this.y - 15, 'fx_glow', '#00ffaa', 200, 0.8, { follow: this });
+          window.game.effectEngine.spawnEmote(this.x, this.y, 'heart', this);
         }
       } else {
         this.die();
@@ -212,7 +225,7 @@ class Player {
   die() {
     this.isDead = true;
     this.hp = 0;
-    if (window.soundEngine) window.soundEngine.playGameOver();
+    // 게임오버 사운드는 handleGameOver에서 재생 (중복 재생 방지)
     if (window.game) {
       window.game.handleGameOver(false);
     }
@@ -225,6 +238,7 @@ class Player {
     this.dashTimer = 0.22;
     const cdFactor = Math.max(0.4, 1 - (this.stats.cdReduc * 0.3 + (this.stats.dashCdReduc || 0)));
     this.dashCooldown = this.maxDashCooldown * cdFactor;
+    this.lastDashCooldown = this.dashCooldown;
     this.invincibleTimer = 0.28;
 
     // 대시 방향 산출
@@ -238,6 +252,7 @@ class Player {
     if (window.soundEngine) window.soundEngine.playTone(680, 'triangle', 0.12, 0.25, 0.01);
     if (window.game && window.game.effectEngine) {
       window.game.effectEngine.spawnShockwave(this.x, this.y, 45, '#00f0ff');
+      window.game.effectEngine.spawnPuff(this.x, this.y - 8, 70, '#7dd3fc', 0.5, 0.8);
       window.game.effectEngine.spawnFloatingText(this.x, this.y - 25, '💨 대시!', '#00f0ff');
     }
   }
@@ -278,6 +293,10 @@ class Player {
         facing: this.facing,
         alpha: 0.6
       });
+      // 대시 궤적 연기
+      if (Math.random() < 0.5 && window.game && window.game.effectEngine) {
+        window.game.effectEngine.spawnPuff(this.x, this.y - 6, 34, '#bae6fd', 0.35, 0.5);
+      }
 
       if (this.dashTimer <= 0) {
         this.isDashing = false;

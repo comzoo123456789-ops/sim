@@ -2,18 +2,17 @@
 
 class EffectEngine {
   constructor() {
-    this.floatingTexts = [];
-    this.sparks = [];
-    this.shockwaves = [];
-    this.shakeMag = 0;
-    this.shakeDuration = 0;
-    this.eventBanner = null;
+    this.reset();
   }
 
   reset() {
     this.floatingTexts = [];
     this.sparks = [];
     this.shockwaves = [];
+    this.flashes = [];     // 스프라이트 섬광 (히트/치명타/마법진)
+    this.anims = [];       // 프레임 애니메이션 (폭발/연기)
+    this.emotes = [];      // 말풍선 이모트
+    this.decals = [];      // 바닥 얼룩 (스플랫/그을음)
     this.shakeMag = 0;
     this.shakeDuration = 0;
     this.eventBanner = null;
@@ -45,6 +44,24 @@ class EffectEngine {
         radius: 2 + Math.random() * 2
       });
     }
+    this.spawnFlash(x, y, 'fx_spark', color, 22, 0.14);
+  }
+
+  // 스프라이트 섬광: 커졌다가 사라짐 (가산 합성)
+  spawnFlash(x, y, key, color, size, life = 0.25, opts = {}) {
+    if (this.flashes.length > EffectEngine.MAX_FLASHES) this.flashes.shift();
+    this.flashes.push({
+      x, y, key, color, size, life, maxLife: life,
+      rot: opts.rot !== undefined ? opts.rot : Math.random() * Math.PI * 2,
+      spin: opts.spin || 0,
+      grow: opts.grow !== undefined ? opts.grow : 0.6,
+      follow: opts.follow || null
+    });
+  }
+
+  // 치명타 버스트
+  spawnCritBurst(x, y) {
+    this.spawnFlash(x, y, 'fx_burst', '#ffd700', 54, 0.22, { grow: 0.5 });
   }
 
   spawnShockwave(x, y, maxRadius = 80, color = '#00f0ff') {
@@ -55,6 +72,34 @@ class EffectEngine {
       color,
       life: 0.35,
       maxLife: 0.35
+    });
+  }
+
+  // 폭발 (Kenney Smoke Particles 9프레임)
+  spawnExplosion(x, y, size = 120, duration = 0.5) {
+    if (this.anims.length > EffectEngine.MAX_ANIMS) this.anims.shift();
+    this.anims.push({ x, y, size, prefix: 'explosion', frames: 9, t: 0, duration, rot: Math.random() * Math.PI * 2, color: null, alpha: 0.85 });
+  }
+
+  // 연기 퍼프 (대시 잔상, 기물 파괴 등)
+  spawnPuff(x, y, size = 50, color = null, duration = 0.45, alpha = 0.7) {
+    if (this.anims.length > EffectEngine.MAX_ANIMS) this.anims.shift();
+    this.anims.push({ x, y, size, prefix: 'puff', frames: 9, t: 0, duration, rot: Math.random() * Math.PI * 2, color, alpha });
+  }
+
+  // 말풍선 이모트 (보스 분노, 레벨업, 부활 등)
+  spawnEmote(x, y, key, follow = null) {
+    this.emotes = this.emotes.filter(e => !(follow && e.follow === follow)); // 대상당 1개
+    this.emotes.push({ x, y, key: 'emote_' + key, life: 1.2, maxLife: 1.2, follow });
+  }
+
+  // 바닥 얼룩 (슬라임 사체, 커피 자국, 도장 그을음)
+  spawnDecal(x, y, size, color, key = null, life = 6) {
+    if (this.decals.length > EffectEngine.MAX_DECALS) this.decals.shift();
+    this.decals.push({
+      x, y, size, color, life, maxLife: life,
+      key: key || ('splat' + Math.floor(Math.random() * 8)),
+      rot: Math.random() * Math.PI * 2
     });
   }
 
@@ -103,14 +148,51 @@ class EffectEngine {
       w.radius += (w.maxRadius - w.radius) * 8 * dt;
       if (w.life <= 0) this.shockwaves.splice(i, 1);
     }
+
+    // 스프라이트 섬광 / 애니메이션 / 이모트 / 바닥 얼룩
+    for (let i = this.flashes.length - 1; i >= 0; i--) {
+      const f = this.flashes[i];
+      f.life -= dt;
+      f.rot += f.spin * dt;
+      if (f.life <= 0) this.flashes.splice(i, 1);
+    }
+    for (let i = this.anims.length - 1; i >= 0; i--) {
+      const a = this.anims[i];
+      a.t += dt;
+      if (a.t >= a.duration) this.anims.splice(i, 1);
+    }
+    for (let i = this.emotes.length - 1; i >= 0; i--) {
+      const e = this.emotes[i];
+      e.life -= dt;
+      if (e.life <= 0 || (e.follow && e.follow.isAlive === false)) this.emotes.splice(i, 1);
+    }
+    for (let i = this.decals.length - 1; i >= 0; i--) {
+      const d = this.decals[i];
+      d.life -= dt;
+      if (d.life <= 0) this.decals.splice(i, 1);
+    }
   }
 
-  render(ctx, camera) {
-    // 1. 충격파 렌더링
+  // 바닥 레이어 (맵 바로 위, 기물/캐릭터 아래)
+  renderDecals(ctx, camera) {
+    const a = window.assets;
+    if (!a) return;
+    this.decals.forEach(d => {
+      const alpha = Math.min(1, d.life / (d.maxLife * 0.35)) * 0.55;
+      a.draw(ctx, d.key, d.x - camera.x, d.y - camera.y, d.size, d.size, { color: d.color, alpha, rot: d.rot });
+    });
+  }
+
+  render(ctx, camera, viewW) {
+    const a = window.assets;
+
+    // 1. 충격파 렌더링 (링 스프라이트, 미로드 시 벡터 원)
     this.shockwaves.forEach(w => {
       const sx = w.x - camera.x;
       const sy = w.y - camera.y;
       const alpha = Math.max(0, w.life / w.maxLife);
+      const d = w.radius * 2.3;
+      if (a && a.draw(ctx, 'fx_ring', sx, sy, d, d, { color: w.color, alpha, blend: 'lighter' })) return;
 
       ctx.save();
       ctx.strokeStyle = w.color;
@@ -122,7 +204,17 @@ class EffectEngine {
       ctx.restore();
     });
 
-    // 2. 스파크 렌더링
+    // 2. 폭발 / 연기 프레임 애니메이션
+    if (a) {
+      this.anims.forEach(an => {
+        const p = an.t / an.duration;
+        const frame = Math.min(an.frames - 1, Math.floor(p * an.frames));
+        const alpha = an.alpha * (p > 0.7 ? (1 - p) / 0.3 : 1);
+        a.draw(ctx, an.prefix + frame, an.x - camera.x, an.y - camera.y, an.size, an.size, { color: an.color, alpha, rot: an.rot });
+      });
+    }
+
+    // 3. 스파크 렌더링
     this.sparks.forEach(s => {
       const sx = s.x - camera.x;
       const sy = s.y - camera.y;
@@ -137,7 +229,18 @@ class EffectEngine {
       ctx.restore();
     });
 
-    // 3. 플로팅 텍스트 렌더링
+    // 4. 스프라이트 섬광 (가산 합성으로 네온 발광)
+    if (a) {
+      this.flashes.forEach(f => {
+        const p = 1 - f.life / f.maxLife;
+        const size = f.size * (1 - f.grow + f.grow * Math.min(1, p * 2.5));
+        const fx = f.follow ? f.follow.x : f.x;
+        const fy = f.follow ? f.follow.y : f.y;
+        a.draw(ctx, f.key, fx - camera.x, fy - camera.y, size, size, { color: f.color, alpha: f.life / f.maxLife, rot: f.rot, blend: 'lighter' });
+      });
+    }
+
+    // 5. 플로팅 텍스트 렌더링
     this.floatingTexts.forEach(t => {
       const sx = t.x - camera.x;
       const sy = t.y - camera.y;
@@ -152,7 +255,19 @@ class EffectEngine {
       ctx.restore();
     });
 
-    // 4. 돌발 이벤트 배너 렌더링
+    // 6. 말풍선 이모트 (팝업 스케일 + 부유)
+    if (a) {
+      this.emotes.forEach(e => {
+        const p = 1 - e.life / e.maxLife;
+        const pop = p < 0.15 ? 0.6 + (p / 0.15) * 0.5 : (p < 0.25 ? 1.1 - ((p - 0.15) / 0.1) * 0.1 : 1);
+        const alpha = e.life < 0.25 ? e.life / 0.25 : 1;
+        const ex = e.follow ? e.follow.x : e.x;
+        const ey = (e.follow ? e.follow.y - (e.follow.radius || 20) - 34 : e.y) - p * 10;
+        a.draw(ctx, e.key, ex - camera.x, ey - camera.y, 34 * pop, 40 * pop, { alpha });
+      });
+    }
+
+    // 7. 돌발 이벤트 배너 렌더링
     if (this.eventBanner && this.eventBanner.timer > 0) {
       const b = this.eventBanner;
       let alpha = 1.0;
@@ -162,7 +277,7 @@ class EffectEngine {
         alpha = b.timer / 0.5;
       }
 
-      const cx = ctx.canvas.width / 2;
+      const cx = (viewW || ctx.canvas.width) / 2;
       const cy = 135;
 
       ctx.save();
@@ -194,10 +309,22 @@ class EffectEngine {
   }
 }
 
+// 이펙트 개수 상한 (대량 처치 시 프레임 드랍 방지)
+EffectEngine.MAX_FLASHES = 160;
+EffectEngine.MAX_ANIMS = 60;
+EffectEngine.MAX_DECALS = 80;
+
 class GameEngine {
   constructor() {
     this.canvas = document.getElementById('gameCanvas');
     this.ctx = this.canvas.getContext('2d');
+    // 논리 해상도 (CSS px). 실제 캔버스 픽셀은 DPR 배율 적용
+    this.viewW = window.innerWidth;
+    this.viewH = window.innerHeight;
+
+    // HUD DOM 캐시 (매 프레임 불필요한 DOM 재생성 방지)
+    this.hudEls = {};
+    this.hudCache = {};
 
     this.state = 'char_select'; // 'char_select', 'playing', 'level_up', 'game_over', 'victory', 'stage_clear'
     this.selectedCharId = 'intern';
@@ -256,8 +383,13 @@ class GameEngine {
   }
 
   resizeCanvas() {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    // 레티나/고해상도 모바일 선명도 확보 (성능을 위해 최대 2배)
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.viewW = window.innerWidth;
+    this.viewH = window.innerHeight;
+    this.canvas.width = Math.round(this.viewW * dpr);
+    this.canvas.height = Math.round(this.viewH * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   setupInputListeners() {
@@ -273,11 +405,9 @@ class GameEngine {
       if (e.key === 'ArrowRight') this.input.arrowRight = true;
 
       // 스페이스바 / 쉬프트 키로 칼퇴 대시 발동!
-      if (e.code === 'Space' || e.key === 'Shift' || e.key === ' ') {
+      if ((e.code === 'Space' || e.key === 'Shift' || e.key === ' ') && this.state === 'playing' && this.player) {
         e.preventDefault();
-        if (this.state === 'playing' && this.player) {
-          this.player.dash();
-        }
+        this.player.dash();
       }
     });
 
@@ -468,6 +598,14 @@ class GameEngine {
       btnNextStage.onclick = (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         document.getElementById('stageClearModal').classList.remove('active');
+        // 마지막 스테이지(1-10) 클리어 시에는 로비로 귀환
+        if (this.currentStageId === '1-10') {
+          document.getElementById('charSelectModal').classList.add('active');
+          this.state = 'char_select';
+          this.updateLobbyGold();
+          this.renderStageSelectGrid();
+          return;
+        }
         const curStageNum = parseInt(this.currentStageId.split('-')[1], 10) || 1;
         const nextStageId = `1-${Math.min(10, curStageNum + 1)}`;
         this.selectedStageId = nextStageId;
@@ -830,6 +968,8 @@ class GameEngine {
     document.getElementById('charSelectModal').classList.remove('active');
     document.getElementById('endGameModal').classList.remove('active');
     document.getElementById('stageClearModal').classList.remove('active');
+    document.getElementById('levelUpModal').classList.remove('active');
+    document.getElementById('pauseModal').classList.remove('active');
 
     this.selectedCharId = charId || 'intern';
     this.selectedMode = mode || 'stage';
@@ -890,6 +1030,8 @@ class GameEngine {
     const choices = this.generateUpgradeChoices();
 
     let hasSelected = false;
+    // 이전 카드 선택의 지연 click(고스트 클릭)이 새 카드를 자동 선택하는 것 방지
+    const shownAt = performance.now();
 
     choices.forEach(ch => {
       const card = document.createElement('div');
@@ -911,6 +1053,7 @@ class GameEngine {
           e.stopPropagation();
         }
         if (hasSelected) return;
+        if (performance.now() - shownAt < 250) return;
         hasSelected = true;
 
         this.applyUpgrade(ch);
@@ -1019,7 +1162,7 @@ class GameEngine {
       choices.push({
         id: 'heal_' + choices.length,
         category: 'heal',
-        icon: window.getGameIcon('heal'),
+        icon: window.assets.iconHtml('aid_kit'),
         title: '야근 영양제 섭취',
         typeText: '즉시 회복',
         desc: '즉시 체력을 40% 회복하고 코인 +100을 획득합니다.'
@@ -1031,6 +1174,9 @@ class GameEngine {
 
   applyUpgrade(ch) {
     if (window.soundEngine) window.soundEngine.playLevelUp();
+    // 레벨업 마법진 + 별 이모트
+    this.effectEngine.spawnFlash(this.player.x, this.player.y - 10, 'fx_magic', '#00f0ff', 130, 0.7, { spin: 3, grow: 0.4, follow: this.player });
+    this.effectEngine.spawnEmote(this.player.x, this.player.y, 'star', this.player);
 
     if (ch.category === 'super_weapon') {
       if (!this.player.superWeapons.includes(ch.id)) {
@@ -1038,6 +1184,9 @@ class GameEngine {
       }
       this.effectEngine.screenShake(12, 0.4);
       this.effectEngine.spawnShockwave(this.player.x, this.player.y, 200, '#ffd700');
+      this.effectEngine.spawnFlash(this.player.x, this.player.y - 20, 'fx_flare', '#ffd700', 240, 0.9, { spin: 2, grow: 0.8, follow: this.player });
+      this.effectEngine.spawnFlash(this.player.x, this.player.y - 20, 'fx_burst', '#ffffff', 160, 0.5);
+      this.effectEngine.spawnEmote(this.player.x, this.player.y, 'exclamations', this.player);
       this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 40, '⚡ 초월 무기 각성! ⚡', '#ffd700');
       if (window.saveMgr) window.saveMgr.checkAchievement('ach_super_weapon', true);
     } else if (ch.category === 'weapon') {
@@ -1058,13 +1207,16 @@ class GameEngine {
     if (window.soundEngine) window.soundEngine.playLevelUp();
     this.effectEngine.screenShake(10, 0.35);
     this.effectEngine.spawnShockwave(this.player.x, this.player.y, 160, '#ffd700');
+    this.effectEngine.spawnFlash(this.player.x, this.player.y, 'fx_glow', '#ffd700', 220, 0.7);
+    this.effectEngine.spawnEmote(this.player.x, this.player.y, 'cash', this.player);
     this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 45, '🎁 보스 황금 상자 획득!!', '#ffd700');
 
     let evolved = false;
     Object.entries(this.player.weapons).forEach(([wId, lv]) => {
       if (evolved) return;
       const wDef = window.GAME_DATA.WEAPONS[wId];
-      if (lv >= 8 && !this.player.superWeapons.includes(wDef.evolution)) {
+      // 레벨업 각성과 동일한 조건: 무기 Lv8 + 짝 패시브 보유
+      if (wDef && lv >= 8 && this.player.passives[wDef.partnerPassive] && !this.player.superWeapons.includes(wDef.evolution)) {
         this.player.superWeapons.push(wDef.evolution);
         evolved = true;
         if (window.saveMgr) window.saveMgr.checkAchievement('ach_super_weapon', true);
@@ -1099,6 +1251,7 @@ class GameEngine {
       window.saveMgr.addGold(this.player.gold);
       window.saveMgr.data.totalRuns = (window.saveMgr.data.totalRuns || 0) + 1;
       window.saveMgr.data.totalKills = (window.saveMgr.data.totalKills || 0) + this.player.kills;
+      window.saveMgr.checkProgressAchievements();
       window.saveMgr.save();
     }
 
@@ -1129,25 +1282,21 @@ class GameEngine {
     document.getElementById('clearGoldVal').innerText = `+${goldReward + this.player.gold} 코인`;
 
     // 마지막 1-10 스테이지 여부에 따른 다음 스테이지 버튼 텍스트 변경
+    // (클릭 동작은 setupUIBindings에서 currentStageId로 분기)
     const nextBtn = document.getElementById('btnNextStage');
     if (nextBtn) {
-      if (this.currentStageId === '1-10') {
-        nextBtn.innerText = '🏆 챕터 1 완전 정복! (로비로)';
-        nextBtn.onclick = () => {
-          modal.classList.remove('active');
-          document.getElementById('charSelectModal').classList.add('active');
-          this.state = 'char_select';
-          this.renderStageSelectGrid();
-        };
-      } else {
-        nextBtn.innerText = '다음 결재선(스테이지) 출근 ➔';
-      }
+      nextBtn.innerText = this.currentStageId === '1-10'
+        ? '🏆 챕터 1 완전 정복! (로비로)'
+        : '다음 결재선(스테이지) 출근 ➔';
     }
 
     modal.classList.add('active');
   }
 
   handleGameOver(isVictory = false) {
+    // 이미 판이 끝난 상태면 무시 (같은 프레임 승리+사망 시 보상 이중 지급 방지)
+    if (this.state === 'game_over' || this.state === 'victory' || this.state === 'stage_clear') return;
+
     // 스테이지 모드에서 생존 시간 만료로 클리어한 경우 -> 스테이지 클리어 모달 실행
     if (this.selectedMode === 'stage' && isVictory) {
       this.handleStageClear();
@@ -1178,10 +1327,7 @@ class GameEngine {
       window.saveMgr.data.totalRuns = (window.saveMgr.data.totalRuns || 0) + 1;
       window.saveMgr.data.totalKills = (window.saveMgr.data.totalKills || 0) + this.player.kills;
 
-      if (window.saveMgr.data.totalKills >= 500) window.saveMgr.checkAchievement('ach_kills_500', true);
-      if (window.saveMgr.data.totalKills >= 2000) window.saveMgr.checkAchievement('ach_kills_2000', true);
-      if (window.saveMgr.getGold() >= 1000) window.saveMgr.checkAchievement('ach_gold_1000', true);
-      if (window.saveMgr.getGold() >= 5000) window.saveMgr.checkAchievement('ach_gold_5000', true);
+      window.saveMgr.checkProgressAchievements();
 
       window.saveMgr.save();
     }
@@ -1200,101 +1346,114 @@ class GameEngine {
     modal.classList.add('active');
   }
 
+  // HUD 요소 참조 캐시
+  hudEl(id) {
+    if (!this.hudEls[id]) this.hudEls[id] = document.getElementById(id);
+    return this.hudEls[id];
+  }
+
+  // 값이 바뀐 경우에만 DOM 갱신 (매 프레임 레이아웃/GC 부담 제거)
+  setHud(id, key, value, apply) {
+    if (this.hudCache[key] === value) return;
+    this.hudCache[key] = value;
+    const el = this.hudEl(id);
+    if (el) apply(el, value);
+  }
+
   updateHUD() {
     if (!this.player) return;
+    const p = this.player;
+    const setText = (el, v) => { el.innerText = v; };
+    const setWidth = (el, v) => { el.style.width = v; };
 
-    document.getElementById('hudLevelBadge').innerText = `Lv.${this.player.level}`;
-    const xpRate = Math.min(100, (this.player.exp / this.player.nextExp) * 100);
-    document.getElementById('hudXpFill').style.width = `${xpRate}%`;
-    document.getElementById('hudXpText').innerText = `${this.player.exp} / ${this.player.nextExp} XP`;
+    this.setHud('hudLevelBadge', 'level', `Lv.${p.level}`, setText);
+    this.setHud('hudXpFill', 'xpW', `${Math.min(100, (p.exp / p.nextExp) * 100).toFixed(1)}%`, setWidth);
+    this.setHud('hudXpText', 'xpT', `${p.exp} / ${p.nextExp} XP`, setText);
 
-    document.getElementById('hudPlayerName').innerText = this.player.name;
-    document.getElementById('hudPlayerRank').innerText = this.player.title;
-    document.getElementById('hudPlayerAvatar').innerHTML = this.player.charData.avatar;
+    this.setHud('hudPlayerName', 'name', p.name, setText);
+    this.setHud('hudPlayerRank', 'rank', p.title, setText);
+    this.setHud('hudPlayerAvatar', 'avatar', p.charData.avatar, (el, v) => { el.innerHTML = v; });
 
-    const hpRate = Math.max(0, Math.min(100, (this.player.hp / this.player.maxHp) * 100));
-    document.getElementById('hudHpFill').style.width = `${hpRate}%`;
-    document.getElementById('hudHpText').innerText = `${Math.ceil(this.player.hp)} / ${this.player.maxHp}`;
+    const hpRate = Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100));
+    this.setHud('hudHpFill', 'hpW', `${hpRate.toFixed(1)}%`, setWidth);
+    this.setHud('hudHpText', 'hpT', `${Math.ceil(p.hp)} / ${p.maxHp}`, setText);
 
-    document.getElementById('hudKillCount').innerText = `${this.player.kills}`;
-    document.getElementById('hudGoldCount').innerText = `${this.player.gold}`;
+    this.setHud('hudKillCount', 'kills', `${p.kills}`, setText);
+    this.setHud('hudGoldCount', 'gold', `${p.gold}`, setText);
 
     // 타이머
     const m = Math.floor(this.gameTime / 60).toString().padStart(2, '0');
     const s = Math.floor(this.gameTime % 60).toString().padStart(2, '0');
-    document.getElementById('hudTimerText').innerText = `${m}:${s}`;
+    this.setHud('hudTimerText', 'timer', `${m}:${s}`, setText);
 
-    // 대시 버튼 쿨타임 UI 업데이트
-    const dashOverlay = document.getElementById('dashCooldownOverlay');
-    const dashBtn = document.getElementById('btnMobileDash');
-    if (dashOverlay && dashBtn) {
-      if (this.player.dashCooldown > 0) {
-        const maxCd = this.player.maxDashCooldown * (1 - this.player.stats.cdReduc * 0.4);
-        const rate = this.player.dashCooldown / maxCd;
-        dashOverlay.style.height = `${Math.min(100, Math.max(0, rate * 100))}%`;
-        dashBtn.classList.add('cooling');
-      } else {
-        dashOverlay.style.height = '0%';
-        dashBtn.classList.remove('cooling');
-      }
+    // 대시 버튼 쿨타임 UI (실제 적용된 쿨타임 기준)
+    const cdRate = p.dashCooldown > 0 ? Math.min(100, Math.max(0, (p.dashCooldown / p.lastDashCooldown) * 100)) : 0;
+    this.setHud('dashCooldownOverlay', 'dashH', `${cdRate.toFixed(0)}%`, (el, v) => { el.style.height = v; });
+    this.setHud('btnMobileDash', 'dashCool', cdRate > 0, (el, v) => { el.classList.toggle('cooling', v); });
+
+    // 무기 및 패시브 슬롯: 구성/레벨이 바뀐 경우에만 재생성
+    const slotSig = JSON.stringify([p.weapons, p.passives, p.superWeapons]);
+    if (this.hudCache.slots !== slotSig) {
+      this.hudCache.slots = slotSig;
+      this.renderHudSlots();
     }
+  }
 
-    // 무기 및 패시브 슬롯 렌더링
-    const wSlots = document.getElementById('hudWeaponSlots');
+  renderHudSlots() {
+    const p = this.player;
+
+    const wSlots = this.hudEl('hudWeaponSlots');
     if (wSlots) {
-      wSlots.innerHTML = '';
+      const wIds = Object.keys(p.weapons);
+      let html = '';
       for (let i = 0; i < 6; i++) {
-        const wIds = Object.keys(this.player.weapons);
         const wId = wIds[i];
-        const box = document.createElement('div');
-        box.className = 'slot-box' + (wId ? ' active' : '');
-
-        if (wId) {
-          const isSuper = this.player.superWeapons.includes(`super_${wId}`);
-          const wDef = window.GAME_DATA.WEAPONS[wId];
-          const curLv = isSuper ? 8 : (this.player.weapons[wId] || 1);
-
-          if (isSuper) box.classList.add('super');
-
-          let dotsHtml = '';
-          for (let d = 0; d < 8; d++) {
-            dotsHtml += `<div class="level-dot ${d < curLv ? 'fill' : ''}"></div>`;
-          }
-
-          box.innerHTML = `
-            <span class="slot-icon">${isSuper ? (window.GAME_DATA.SUPER_WEAPONS[`super_${wId}`]?.icon || wDef?.icon || '') : (wDef ? wDef.icon : '')}</span>
-            <div class="slot-level-dots">${dotsHtml}</div>
-          `;
+        if (!wId) {
+          html += '<div class="slot-box"></div>';
+          continue;
         }
-        wSlots.appendChild(box);
+        const isSuper = p.superWeapons.includes(`super_${wId}`);
+        const wDef = window.GAME_DATA.WEAPONS[wId];
+        const curLv = isSuper ? 8 : (p.weapons[wId] || 1);
+        const icon = isSuper
+          ? (window.GAME_DATA.SUPER_WEAPONS[`super_${wId}`]?.icon || wDef?.icon || '')
+          : (wDef ? wDef.icon : '');
+
+        let dotsHtml = '';
+        for (let d = 0; d < 8; d++) {
+          dotsHtml += `<div class="level-dot ${d < curLv ? 'fill' : ''}"></div>`;
+        }
+        html += `<div class="slot-box active${isSuper ? ' super' : ''}">
+            <span class="slot-icon">${icon}</span>
+            <div class="slot-level-dots">${dotsHtml}</div>
+          </div>`;
       }
+      wSlots.innerHTML = html;
     }
 
-    const pSlots = document.getElementById('hudPassiveSlots');
+    const pSlots = this.hudEl('hudPassiveSlots');
     if (pSlots) {
-      pSlots.innerHTML = '';
+      const pIds = Object.keys(p.passives);
+      let html = '';
       for (let i = 0; i < 6; i++) {
-        const pIds = Object.keys(this.player.passives);
         const pId = pIds[i];
-        const box = document.createElement('div');
-        box.className = 'slot-box' + (pId ? ' active' : '');
+        if (!pId) {
+          html += '<div class="slot-box"></div>';
+          continue;
+        }
+        const pDef = window.GAME_DATA.PASSIVES[pId];
+        const curLv = p.passives[pId] || 1;
 
-        if (pId) {
-          const pDef = window.GAME_DATA.PASSIVES[pId];
-          const curLv = this.player.passives[pId] || 1;
-
-          let dotsHtml = '';
-          for (let d = 0; d < 4; d++) {
-            dotsHtml += `<div class="level-dot ${d < curLv ? 'fill' : ''}"></div>`;
-          }
-
-          box.innerHTML = `
+        let dotsHtml = '';
+        for (let d = 0; d < 4; d++) {
+          dotsHtml += `<div class="level-dot ${d < curLv ? 'fill' : ''}"></div>`;
+        }
+        html += `<div class="slot-box active">
             <span class="slot-icon">${pDef ? pDef.icon : '✨'}</span>
             <div class="slot-level-dots">${dotsHtml}</div>
-          `;
-        }
-        pSlots.appendChild(box);
+          </div>`;
       }
+      pSlots.innerHTML = html;
     }
   }
 
@@ -1306,8 +1465,8 @@ class GameEngine {
 
     const startX = Math.max(0, Math.floor(camera.x / tileSize) * tileSize);
     const startY = Math.max(0, Math.floor(camera.y / tileSize) * tileSize);
-    const endX = Math.min(mapW, startX + this.canvas.width + tileSize * 2);
-    const endY = Math.min(mapH, startY + this.canvas.height + tileSize * 2);
+    const endX = Math.min(mapW, startX + this.viewW + tileSize * 2);
+    const endY = Math.min(mapH, startY + this.viewH + tileSize * 2);
 
     // 1. 구역별 바닥재 렌더링
     for (let x = startX; x < endX; x += tileSize) {
@@ -1419,8 +1578,8 @@ class GameEngine {
     this.renderMapBorders(ctx, camera, mapW, mapH);
 
     // 5. 캐릭터 주변 부드러운 야근 조명 비네팅 효과
-    const pScreenX = this.player ? this.player.x - camera.x : this.canvas.width / 2;
-    const pScreenY = this.player ? this.player.y - camera.y : this.canvas.height / 2;
+    const pScreenX = this.player ? this.player.x - camera.x : this.viewW / 2;
+    const pScreenY = this.player ? this.player.y - camera.y : this.viewH / 2;
 
     ctx.save();
     const vigGrad = ctx.createRadialGradient(pScreenX, pScreenY, 200, pScreenX, pScreenY, 700);
@@ -1428,14 +1587,14 @@ class GameEngine {
     vigGrad.addColorStop(0.65, 'rgba(3, 7, 18, 0.35)');
     vigGrad.addColorStop(1, 'rgba(2, 6, 23, 0.92)');
     ctx.fillStyle = vigGrad;
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.fillRect(0, 0, this.viewW, this.viewH);
     ctx.restore();
   }
 
   renderZoneSign(ctx, camera, x, y, text, color) {
     const sx = x - camera.x;
     const sy = y - camera.y;
-    if (sx < -200 || sx > this.canvas.width + 200 || sy < -100 || sy > this.canvas.height + 100) return;
+    if (sx < -200 || sx > this.viewW + 200 || sy < -100 || sy > this.viewH + 100) return;
 
     ctx.save();
     ctx.fillStyle = color;
@@ -1464,23 +1623,25 @@ class GameEngine {
       // 1. 타이머 업데이트
       this.gameTime -= dt;
       if (this.gameTime <= 0) {
+        // 탈출 성공: 이 프레임의 전투 업데이트는 건너뜀 (클리어 직후 사망 처리 방지)
         this.gameTime = 0;
+        this.updateHUD();
         this.handleGameOver(true);
+      } else {
+        // 2. 엔티티 업데이트
+        this.player.update(dt, this.input);
+        this.propMgr.resolveCollisions(this.player);
+
+        this.weaponMgr.update(dt, this.player, this.monsterMgr.monsters, this.effectEngine);
+        // 몬스터 벽 충돌은 Monster.update 내부에서 처리 (슬랙 유령은 벽 통과)
+        this.monsterMgr.update(dt, this.player, this.gameTime, this.effectEngine);
+
+        this.propMgr.update(dt);
+        this.dropMgr.update(dt, this.player, this.effectEngine);
+        this.effectEngine.update(dt);
+
+        this.updateHUD();
       }
-
-      // 2. 엔티티 업데이트
-      this.player.update(dt, this.input);
-      this.propMgr.resolveCollisions(this.player);
-
-      this.weaponMgr.update(dt, this.player, this.monsterMgr.monsters, this.effectEngine);
-      this.monsterMgr.update(dt, this.player, this.gameTime, this.effectEngine);
-      this.monsterMgr.monsters.forEach(m => this.propMgr.resolveCollisions(m));
-
-      this.propMgr.update(dt);
-      this.dropMgr.update(dt, this.player, this.effectEngine);
-      this.effectEngine.update(dt);
-
-      this.updateHUD();
     }
 
     // 3. 카메라 추종
@@ -1491,21 +1652,22 @@ class GameEngine {
         shakeX = (Math.random() - 0.5) * this.effectEngine.shakeMag;
         shakeY = (Math.random() - 0.5) * this.effectEngine.shakeMag;
       }
-      this.camera.x = this.player.x - this.canvas.width / 2 + shakeX;
-      this.camera.y = this.player.y - this.canvas.height / 2 + shakeY;
+      this.camera.x = this.player.x - this.viewW / 2 + shakeX;
+      this.camera.y = this.player.y - this.viewH / 2 + shakeY;
     }
 
     // 4. 렌더링
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.clearRect(0, 0, this.viewW, this.viewH);
 
     if (this.player) {
       this.renderOfficeMap(this.ctx, this.camera);
+      this.effectEngine.renderDecals(this.ctx, this.camera);
       this.propMgr.render(this.ctx, this.camera);
       this.dropMgr.render(this.ctx, this.camera);
       this.weaponMgr.render(this.ctx, this.camera);
       this.monsterMgr.render(this.ctx, this.camera);
       this.player.render(this.ctx, this.camera);
-      this.effectEngine.render(this.ctx, this.camera);
+      this.effectEngine.render(this.ctx, this.camera, this.viewW);
     }
 
     requestAnimationFrame(t => this.gameLoop(t));

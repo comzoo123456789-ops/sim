@@ -55,6 +55,7 @@ class DropManager {
           player.gold += actualGold;
           if (window.soundEngine) window.soundEngine.playXP();
           if (effectEngine) effectEngine.spawnFloatingText(player.x, player.y - 20, `+${actualGold} 코인`, '#ffd700');
+          if (effectEngine) effectEngine.spawnFlash(player.x, player.y - 10, 'fx_spark', '#ffd700', 34, 0.2);
         } else if (d.type === 'aid_kit') {
           const heal = Math.floor(player.maxHp * 0.35);
           player.hp = Math.min(player.maxHp, player.hp + heal);
@@ -62,6 +63,7 @@ class DropManager {
           if (effectEngine) {
             effectEngine.spawnFloatingText(player.x, player.y - 25, `+${heal} HP 회복`, '#00ffaa');
             effectEngine.spawnShockwave(player.x, player.y, 45, '#00ffaa');
+            effectEngine.spawnFlash(player.x, player.y - 12, 'fx_glow', '#00ffaa', 110, 0.45, { follow: player });
           }
         } else if (d.type === 'caffeine_bomb') {
           // 카페인 폭탄: 화면 내 모든 일반 몬스터 일괄 처치!
@@ -102,6 +104,18 @@ class DropManager {
 
       ctx.save();
       ctx.translate(sx, sy);
+
+      // Kenney 아이템 스프라이트 (구급상자 / 영수증 / 보스 황금 서류가방)
+      const spriteKey = DropManager.SPRITES[d.type];
+      if (spriteKey && window.assets && window.assets.get(spriteKey.key)) {
+        const bob = Math.sin(performance.now() * 0.005 + d.rot) * 2;
+        if (spriteKey.glow) {
+          window.assets.draw(ctx, 'fx_glow', 0, bob, spriteKey.size * 2.2, spriteKey.size * 2.2, { color: spriteKey.glow, alpha: 0.55 + Math.sin(performance.now() * 0.006) * 0.2, blend: 'lighter' });
+        }
+        window.assets.draw(ctx, spriteKey.key, 0, bob, spriteKey.size, spriteKey.size, { rot: spriteKey.tilt ? Math.sin(d.rot) * 0.3 : 0 });
+        ctx.restore();
+        return;
+      }
 
       if (d.type === 'coffee_bean') {
         // 원두 콩 (짙은 에스프레소 브라운 타원 + 중앙 홈)
@@ -211,5 +225,11 @@ class DropManager {
     });
   }
 }
+
+DropManager.SPRITES = {
+  aid_kit: { key: 'item_aid_kit', size: 24, glow: '#00ffaa' },
+  receipt: { key: 'item_receipt', size: 20, tilt: true },
+  chest: { key: 'item_briefcase', size: 40, glow: '#ffd700' }
+};
 
 window.DropManager = DropManager;

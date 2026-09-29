@@ -33,6 +33,7 @@ class Monster {
     if (window.game && window.game.effectEngine) {
       window.game.effectEngine.spawnFloatingText(this.x, this.y - 15, `${amount}`, isCrit ? '#ffd700' : '#ffffff');
       window.game.effectEngine.spawnHitSpark(this.x, this.y, this.color);
+      if (isCrit) window.game.effectEngine.spawnCritBurst(this.x, this.y);
     }
 
     if (this.hp <= 0) {
@@ -54,6 +55,23 @@ class Monster {
         if (this.typeKey === 'boss_manager') window.saveMgr.checkAchievement('ach_boss_manager', true);
         if (this.typeKey === 'boss_director') window.saveMgr.checkAchievement('ach_boss_director', true);
         if (this.typeKey === 'boss_ceo') window.saveMgr.checkAchievement('ach_boss_ceo', true);
+      }
+
+      // 처치 이펙트
+      const fx = window.game.effectEngine;
+      if (fx) {
+        if (this.isBoss) {
+          fx.spawnExplosion(this.x, this.y, this.radius * 5, 0.8);
+          fx.spawnFlash(this.x, this.y, 'fx_burst', '#ffd700', this.radius * 6, 0.6);
+          fx.spawnDecal(this.x, this.y, this.radius * 4, '#1f2937', 'fx_scorch', 10);
+          fx.screenShake(14, 0.5);
+        } else if (this.typeKey === 'slime') {
+          fx.spawnDecal(this.x, this.y, this.radius * 3, '#10b981');
+        } else if (this.typeKey === 'copier') {
+          fx.spawnExplosion(this.x, this.y, this.radius * 3.5, 0.45);
+        } else {
+          fx.spawnPuff(this.x, this.y, this.radius * 2.6, this.color, 0.35, 0.55);
+        }
       }
 
       // 경험치 커피콩 & 골드 영수증 드랍
@@ -126,14 +144,15 @@ class Monster {
         if (window.game && window.game.effectEngine) {
           window.game.effectEngine.spawnShockwave(this.x, this.y, 140, '#ff9900');
           window.game.effectEngine.spawnFloatingText(this.x, this.y - 35, '"라떼는 밤새웠어!"', '#ff9900');
+          window.game.effectEngine.spawnEmote(this.x, this.y, 'swirl', this);
         }
         if (dist <= 140) player.takeDamage(this.atk * 1.5);
 
-        // 부채꼴 3방향 반려 탄환
+        // 부채꼴 3방향 반려 서류 탄환
         const baseAng = Math.atan2(player.y - this.y, player.x - this.x);
         [-0.3, 0, 0.3].forEach(offset => {
           const a = baseAng + offset;
-          window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(a) * 5, Math.sin(a) * 5, this.atk, '#ff5500');
+          window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(a) * 5, Math.sin(a) * 5, this.atk, '#ff5500', 'item_document');
         });
       } else if (this.typeKey === 'boss_director' && this.attackTimer >= 4.0) {
         // 결재판 투척 & 주말출근 긴급 소집 폭격 장판 3개 생성
@@ -142,6 +161,7 @@ class Monster {
           window.game.effectEngine.screenShake(10, 0.35);
           window.game.effectEngine.spawnShockwave(this.x, this.y, 180, '#e63946');
           window.game.effectEngine.spawnFloatingText(this.x, this.y - 45, '"주말에 다 나와!"', '#e63946');
+          window.game.effectEngine.spawnEmote(this.x, this.y, 'anger', this);
         }
         if (dist <= 180) player.takeDamage(this.atk * 1.8);
 
@@ -162,6 +182,8 @@ class Monster {
         }
         if (window.game && window.game.effectEngine) {
           window.game.effectEngine.spawnFloatingText(this.x, this.y - 50, '"전사원 비상 야근 선포!"', '#9d4edd');
+          window.game.effectEngine.spawnEmote(this.x, this.y, 'faceAngry', this);
+          window.game.effectEngine.spawnFlash(this.x, this.y, 'fx_twirl', '#a855f7', this.radius * 5, 0.6, { spin: 6 });
         }
       }
     }
@@ -821,10 +843,11 @@ class MonsterManager {
     }
   }
 
-  spawnEnemyBullet(x, y, vx, vy, atk, color = '#38bdf8') {
+  spawnEnemyBullet(x, y, vx, vy, atk, color = '#38bdf8', sprite = null) {
     this.enemyBullets.push({
-      x, y, vx, vy, atk, color,
-      radius: 6,
+      x, y, vx, vy, atk, color, sprite,
+      radius: sprite ? 9 : 6,
+      rot: Math.random() * Math.PI * 2,
       life: 5.0
     });
   }
@@ -851,7 +874,7 @@ class MonsterManager {
     if (this.currentStage) {
       const elapsed = this.currentStage.duration - gameTime;
       const rateMul = this.currentStage.spawnRate || 1.0;
-      spawnInterval = Math.max(0.35, (1.6 / rateMul) - (elapsed / this.currentStage.duration) * 0.7);
+      spawnInterval = Math.max(0.5, (1.6 / rateMul) - (elapsed / this.currentStage.duration) * 0.6);
     } else {
       spawnInterval = Math.max(0.4, 1.8 - ((600 - gameTime) / 600) * 1.3);
     }
@@ -908,6 +931,8 @@ class MonsterManager {
         if (effectEngine) {
           effectEngine.screenShake(8, 0.3);
           effectEngine.spawnShockwave(wz.x, wz.y, wz.radius * 1.5, '#ef4444');
+          effectEngine.spawnExplosion(wz.x, wz.y, wz.radius * 2.6, 0.55);
+          effectEngine.spawnDecal(wz.x, wz.y, wz.radius * 2.2, '#1f2937', 'fx_scorch', 5);
           effectEngine.spawnFloatingText(wz.x, wz.y - 20, '💥 야근 폭격!', '#ef4444');
         }
         if (window.soundEngine) window.soundEngine.playHit();
@@ -942,6 +967,7 @@ class MonsterManager {
       const ang = Math.random() * Math.PI * 2;
       const boss = new Monster(bKey, player.x + Math.cos(ang) * 260, player.y + Math.sin(ang) * 260);
       this.monsters.push(boss);
+      if (effectEngine) effectEngine.spawnEmote(boss.x, boss.y, 'exclamation', boss);
     }
   }
 
@@ -1028,18 +1054,35 @@ class MonsterManager {
 
     const boss = new Monster(typeKey, bx, by, 1.4);
     this.monsters.push(boss);
+    if (window.game && window.game.effectEngine) window.game.effectEngine.spawnEmote(bx, by, 'exclamation', boss);
   }
 
   spawnWave(player, gameTime) {
-    const elapsed = 600 - gameTime;
-    let pool = ['paper'];
+    // 동시 존재 몬스터 상한 (프레임 드랍 방지)
+    const room = MonsterManager.MAX_MONSTERS - this.monsters.length;
+    if (room <= 0) return;
 
-    if (elapsed > 40) pool.push('slime');
-    if (elapsed > 90) pool.push('copier');
-    if (elapsed > 150) pool.push('slack');
-    if (elapsed > 240) pool.push('thief');
+    let pool;
+    let spawnCount;
 
-    const spawnCount = Math.min(18, 3 + Math.floor(elapsed / 30));
+    if (this.currentStage) {
+      // 스테이지 모드: 스테이지 고유 몬스터 구성 + 스테이지 진행률 기반 물량
+      const st = this.currentStage;
+      const progress = Math.min(1, (st.duration - gameTime) / st.duration);
+      pool = st.monsters || ['paper'];
+      spawnCount = Math.min(14, Math.round((2 + progress * 6) * (st.spawnRate || 1.0)));
+    } else {
+      // 10분 서바이벌 모드: 경과 시간에 따라 몬스터 종류 해금
+      const elapsed = 600 - gameTime;
+      pool = ['paper'];
+      if (elapsed > 40) pool.push('slime');
+      if (elapsed > 90) pool.push('copier');
+      if (elapsed > 150) pool.push('slack');
+      if (elapsed > 240) pool.push('thief');
+      spawnCount = Math.min(18, 3 + Math.floor(elapsed / 30));
+    }
+
+    spawnCount = Math.min(spawnCount, room);
     for (let i = 0; i < spawnCount; i++) {
       const typeKey = pool[Math.floor(Math.random() * pool.length)];
       const ang = Math.random() * Math.PI * 2;
@@ -1088,6 +1131,13 @@ class MonsterManager {
       const sx = b.x - camera.x;
       const sy = b.y - camera.y;
 
+      // 스프라이트 탄환 (반려 서류 등)
+      if (b.sprite && window.assets) {
+        b.rot += 0.15;
+        window.assets.draw(ctx, 'fx_glow', sx, sy, 44, 44, { color: b.color, alpha: 0.7, blend: 'lighter' });
+        if (window.assets.draw(ctx, b.sprite, sx, sy, 24, 24, { rot: b.rot })) return;
+      }
+
       ctx.save();
       ctx.translate(sx, sy);
       ctx.fillStyle = b.color;
@@ -1100,6 +1150,8 @@ class MonsterManager {
     });
   }
 }
+
+MonsterManager.MAX_MONSTERS = 160;
 
 window.Monster = Monster;
 window.MonsterManager = MonsterManager;

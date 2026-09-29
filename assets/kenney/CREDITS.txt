@@ -1,0 +1,10 @@
+Sprites in this folder are from Kenney (www.kenney.nl), licensed CC0 1.0 (public domain).
+Credit is not required. It is listed here as a courtesy.
+
+- Particle Pack      https://kenney.nl/assets/particle-pack    -> fx/
+- Smoke Particles    https://kenney.nl/assets/smoke-particles  -> explosion/, puff/
+- Splat Pack         https://kenney.nl/assets/splat-pack       -> splat/
+- Emotes Pack        https://kenney.nl/assets/emotes-pack      -> emote/
+- Generic Items      https://kenney.nl/assets/generic-items    -> item/
+
+The images were resized for the web (at most 160px).

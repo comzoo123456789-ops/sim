@@ -5,6 +5,7 @@ class SaveManager {
     this.STORAGE_KEY = 'office_survivor_save_v1';
     this.data = {
       totalGold: 0,
+      totalGoldEarned: 0, // 누적 획득 코인 (상점 소비와 무관, 업적 판정용)
       highScore: {
         survivedTime: 0,
         maxKills: 0,
@@ -46,6 +47,10 @@ class SaveManager {
           stageStars: parsed.stageStars || {},
           clearedStages: parsed.clearedStages || []
         };
+        // 구버전 세이브: 누적 획득량이 없으면 현재 잔액으로 시작
+        if (!parsed.totalGoldEarned) {
+          this.data.totalGoldEarned = this.data.totalGold || 0;
+        }
       }
     } catch (e) {
       console.warn('Save load failed, using defaults', e);
@@ -98,7 +103,20 @@ class SaveManager {
 
   addGold(amount) {
     this.data.totalGold = (this.data.totalGold || 0) + amount;
+    if (amount > 0) {
+      this.data.totalGoldEarned = (this.data.totalGoldEarned || 0) + amount;
+    }
     this.save();
+  }
+
+  // 누적 처치/코인 기반 업적 일괄 검사
+  checkProgressAchievements() {
+    const kills = this.data.totalKills || 0;
+    const earned = this.data.totalGoldEarned || 0;
+    if (kills >= 500) this.checkAchievement('ach_kills_500', true);
+    if (kills >= 2000) this.checkAchievement('ach_kills_2000', true);
+    if (earned >= 1000) this.checkAchievement('ach_gold_1000', true);
+    if (earned >= 5000) this.checkAchievement('ach_gold_5000', true);
   }
 
   getUpgradeLevel(key) {

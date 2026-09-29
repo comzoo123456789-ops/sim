@@ -17,6 +17,26 @@ class WeaponManager {
     this.timers = {};
   }
 
+  // 투사체 생성 (칼퇴 스톱워치 패시브의 탄속 보너스 적용)
+  addProjectile(player, p) {
+    const spdMul = player.stats.projectileSpeed || 1.0;
+    p.vx *= spdMul;
+    p.vy *= spdMul;
+    this.projectiles.push(p);
+  }
+
+  // 치명타 판정 (모든 무기 공통: 확률 critRate, 배율 1.8 x critDmgMul)
+  rollCrit(baseDmg, player) {
+    const isCrit = Math.random() < player.stats.critRate;
+    const dmg = isCrit ? Math.floor(baseDmg * 1.8 * (player.stats.critDmgMul || 1.0)) : baseDmg;
+    return { dmg, isCrit };
+  }
+
+  // 결재 반려 도장 낙하 예약 (게임 시간 기준 지연 → 일시정지/재시작에 안전)
+  queueStampStrike(x, y, radius, damage, delay, isSuper = false) {
+    this.stampStrikes.push({ x, y, radius, damage, delay, progress: 0, hasHit: false, isSuper });
+  }
+
   getWeaponStats(wId, level) {
     const wDef = window.GAME_DATA.WEAPONS[wId];
     if (!wDef) return null;
@@ -163,12 +183,15 @@ class WeaponManager {
           if (window.soundEngine) window.soundEngine.playDrink();
           if (effectEngine) {
             effectEngine.spawnShockwave(p.x, p.y, p.area, p.isSuper ? '#ea580c' : '#c2410c');
+            effectEngine.spawnExplosion(p.x, p.y, p.area * 1.1, 0.4);
+            effectEngine.spawnDecal(p.x, p.y, p.area * 1.3, '#78350f', null, 4);
             effectEngine.screenShake(5, 0.2);
           }
           monsters.forEach(m => {
             if (!m.isAlive) return;
             if (Math.hypot(m.x - p.x, m.y - p.y) <= p.area) {
-              m.takeDamage(p.damage, Math.random() < player.stats.critRate);
+              const hit = this.rollCrit(p.damage, player);
+              m.takeDamage(hit.dmg, hit.isCrit);
             }
           });
           this.projectiles.splice(i, 1);
@@ -182,10 +205,8 @@ class WeaponManager {
         const dist = Math.hypot(m.x - p.x, m.y - p.y);
         if (dist <= m.radius + p.radius) {
           p.hitMonsters.push(m.id);
-          const isCrit = Math.random() < player.stats.critRate;
-          const critMul = 1.8 * (player.stats.critDmgMul || 1.0);
-          const dmg = isCrit ? Math.floor(p.damage * critMul) : p.damage;
-          m.takeDamage(dmg, isCrit);
+          const hit = this.rollCrit(p.damage, player);
+          m.takeDamage(hit.dmg, hit.isCrit);
 
           if (effectEngine) {
             effectEngine.spawnHitSpark(p.x, p.y, p.color || '#fff');
@@ -259,7 +280,8 @@ class WeaponManager {
         if (Math.hypot(m.x - orb.x, m.y - orb.y) <= m.radius + orb.radius) {
           if (orb.hitTimer <= 0) {
             orb.hitTimer = 0.18;
-            m.takeDamage(orb.damage, Math.random() < player.stats.critRate);
+            const hit = this.rollCrit(orb.damage, player);
+            m.takeDamage(hit.dmg, hit.isCrit);
             m.x += Math.cos(orb.angle) * 15;
             m.y += Math.sin(orb.angle) * 15;
             if (window.soundEngine) window.soundEngine.playCard();
@@ -281,6 +303,10 @@ class WeaponManager {
     // 6. 결재 반려 도장 낙하 연출 업데이트
     for (let i = this.stampStrikes.length - 1; i >= 0; i--) {
       const st = this.stampStrikes[i];
+      if (st.delay > 0) {
+        st.delay -= dt;
+        continue;
+      }
       st.progress += dt * 3.5;
 
       if (st.progress >= 1.0 && !st.hasHit) {
@@ -288,12 +314,15 @@ class WeaponManager {
         if (window.soundEngine) window.soundEngine.playStamp();
         if (effectEngine) {
           effectEngine.spawnShockwave(st.x, st.y, st.radius, '#ff2255');
+          effectEngine.spawnFlash(st.x, st.y, 'fx_burst', '#ff2255', st.radius * 1.6, 0.25);
+          effectEngine.spawnDecal(st.x, st.y, st.radius * 1.1, '#dc2626', null, 3);
           effectEngine.screenShake(6, 0.2);
         }
         monsters.forEach(m => {
           if (!m.isAlive) return;
           if (Math.hypot(m.x - st.x, m.y - st.y) <= st.radius) {
-            m.takeDamage(st.damage, true);
+            const hit = this.rollCrit(st.damage, player);
+            m.takeDamage(hit.dmg, hit.isCrit);
           }
         });
 
@@ -347,13 +376,14 @@ class WeaponManager {
     if (wId === 'stapler') {
       // 📎 스테이플러 (전방 날카로운 침 연사)
       if (window.soundEngine) window.soundEngine.playStapler();
+      if (effectEngine) effectEngine.spawnFlash(player.x + Math.cos(targetAngle) * 16, player.y - 12 + Math.sin(targetAngle) * 16, 'fx_muzzle', '#7dd3fc', 30, 0.1, { rot: targetAngle + Math.PI / 2, grow: 0 });
       const count = stats.projectiles;
       const pierce = stats.pierce;
 
       for (let i = 0; i < count; i++) {
         const spread = (i - (count - 1) / 2) * 0.12;
         const ang = targetAngle + spread;
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'staple',
           x: player.x,
           y: player.y - 12,
@@ -378,7 +408,7 @@ class WeaponManager {
         const ang = targetAngle + (Math.random() - 0.5) * spread;
         const spd = stats.speed * (0.85 + Math.random() * 0.3);
         const keys = ['ESC', 'ENTER', 'CTRL', 'TAB', 'F5', 'DEL'];
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'keycap',
           label: keys[i % keys.length],
           x: player.x,
@@ -400,7 +430,7 @@ class WeaponManager {
       if (window.soundEngine) window.soundEngine.playDrink();
       const count = stats.projectiles;
       const area = stats.area * player.stats.areaMul;
-      const duration = stats.duration;
+      const duration = stats.duration * (player.stats.projectileSpeed || 1.0);
 
       for (let i = 0; i < count; i++) {
         const tx = nearest ? nearest.x + (Math.random() * 80 - 40) : player.x + Math.cos(targetAngle) * 140;
@@ -425,16 +455,7 @@ class WeaponManager {
         const tx = target ? target.x : player.x + (Math.random() * 200 - 100);
         const ty = target ? target.y : player.y + (Math.random() * 200 - 100);
 
-        setTimeout(() => {
-          this.stampStrikes.push({
-            x: tx,
-            y: ty,
-            radius: area,
-            damage: baseDmg,
-            progress: 0,
-            hasHit: false
-          });
-        }, i * 180);
+        this.queueStampStrike(tx, ty, area, baseDmg, i * 0.18);
       }
     } else if (wId === 'shredder') {
       // 📑 문서 세단기 톱니 (나선형 회전 관통)
@@ -443,7 +464,7 @@ class WeaponManager {
 
       for (let i = 0; i < count; i++) {
         const ang = (i / count) * Math.PI * 2;
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'shredder_blade',
           x: player.x,
           y: player.y - 10,
@@ -467,7 +488,7 @@ class WeaponManager {
       for (let i = 0; i < count; i++) {
         const spread = (i - (count - 1) / 2) * 0.18;
         const ang = targetAngle + spread;
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'laser_beam',
           x: player.x,
           y: player.y - 12,
@@ -491,7 +512,7 @@ class WeaponManager {
       for (let i = 0; i < count; i++) {
         const dist = 120 + Math.random() * 80;
         const ang = targetAngle + (Math.random() - 0.5) * 0.4;
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'coffee_tumbler',
           x: player.x,
           y: player.y - 10,
@@ -525,7 +546,7 @@ class WeaponManager {
       if (window.soundEngine) window.soundEngine.playStapler();
       for (let i = 0; i < 16; i++) {
         const ang = (i / 16) * Math.PI * 2 + (Math.random() - 0.5) * 0.1;
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'super_staple',
           x: player.x,
           y: player.y - 12,
@@ -547,7 +568,7 @@ class WeaponManager {
         x: player.x,
         y: player.y,
         radius: 240 * player.stats.areaMul,
-        duration: 4.0,
+        duration: 4.0 * (player.stats.projectileSpeed || 1.0),
         damage: baseDmg,
         color: '#ff8800',
         tickTimer: 0
@@ -558,7 +579,7 @@ class WeaponManager {
       if (window.soundEngine) window.soundEngine.playKeyboard();
       for (let i = 0; i < 16; i++) {
         const ang = (player.facing === 'left' ? Math.PI : 0) + (Math.random() - 0.5) * 1.5;
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'super_keycap',
           label: 'CRIT!',
           x: player.x,
@@ -580,24 +601,14 @@ class WeaponManager {
       for (let i = 0; i < 6; i++) {
         const tx = player.x + (Math.random() * 400 - 200);
         const ty = player.y + (Math.random() * 400 - 200);
-        setTimeout(() => {
-          this.stampStrikes.push({
-            x: tx,
-            y: ty,
-            radius: 180 * player.stats.areaMul,
-            damage: baseDmg,
-            progress: 0,
-            hasHit: false,
-            isSuper: true
-          });
-        }, i * 140);
+        this.queueStampStrike(tx, ty, 180 * player.stats.areaMul, baseDmg, i * 0.14, true);
       }
     } else if (sId === 'super_shredder') {
       // 🌀 [초고속 문서 분쇄 토네이도]
       if (window.soundEngine) window.soundEngine.playShredder();
       for (let i = 0; i < 8; i++) {
         const ang = (i / 8) * Math.PI * 2;
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'super_shredder_blade',
           x: player.x,
           y: player.y - 10,
@@ -618,7 +629,7 @@ class WeaponManager {
       if (window.soundEngine) window.soundEngine.playTone(1100, 'sawtooth', 0.15, 0.25, 0.02);
       for (let i = 0; i < 4; i++) {
         const ang = (i / 4) * Math.PI * 2;
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'super_laser_beam',
           x: player.x,
           y: player.y - 12,
@@ -638,7 +649,7 @@ class WeaponManager {
       if (window.soundEngine) window.soundEngine.playDrink();
       for (let i = 0; i < 4; i++) {
         const ang = (i / 4) * Math.PI * 2;
-        this.projectiles.push({
+        this.addProjectile(player, {
           type: 'super_coffee_tumbler',
           x: player.x,
           y: player.y - 10,
@@ -671,16 +682,26 @@ class WeaponManager {
       ctx.save();
       ctx.translate(sx, sy);
 
-      ctx.fillStyle = pud.color + '44';
-      ctx.beginPath();
-      ctx.arc(0, 0, pud.radius, 0, Math.PI * 2);
-      ctx.fill();
+      if (pud.splat === undefined) {
+        pud.splat = 'splat' + Math.floor(Math.random() * 8);
+        pud.rot = Math.random() * Math.PI * 2;
+      }
+      const fade = Math.min(1, pud.duration / 0.4);
+      const drewSplat = window.assets && window.assets.draw(ctx, pud.splat, 0, 0, pud.radius * 2.3, pud.radius * 2.3, { color: pud.color, alpha: 0.32 * fade, rot: pud.rot });
+      if (drewSplat) {
+        window.assets.draw(ctx, 'fx_glow', 0, 0, pud.radius * 2.2, pud.radius * 2.2, { color: pud.color, alpha: 0.18 * fade, blend: 'lighter' });
+      } else {
+        ctx.fillStyle = pud.color + '44';
+        ctx.beginPath();
+        ctx.arc(0, 0, pud.radius, 0, Math.PI * 2);
+        ctx.fill();
 
-      ctx.strokeStyle = pud.color;
-      ctx.lineWidth = 2;
-      ctx.shadowColor = pud.color;
-      ctx.shadowBlur = 12;
-      ctx.stroke();
+        ctx.strokeStyle = pud.color;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = pud.color;
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+      }
 
       for (let b = 0; b < 5; b++) {
         const ba = (b / 5) * Math.PI * 2 + Math.sin(performance.now() * 0.003 + b);
@@ -732,6 +753,7 @@ class WeaponManager {
         ctx.fillText(p.label || 'K', 0, 0);
       } else if (p.type === 'shredder_blade' || p.type === 'super_shredder_blade') {
         const isSuper = (p.type === 'super_shredder_blade');
+        if (window.assets) window.assets.draw(ctx, 'fx_twirl', 0, 0, p.radius * 3.4, p.radius * 3.4, { color: isSuper ? '#a855f7' : '#38bdf8', alpha: 0.8, blend: 'lighter' });
         ctx.fillStyle = isSuper ? '#a855f7' : '#94a3b8';
         ctx.strokeStyle = isSuper ? '#d8b4fe' : '#ffffff';
         ctx.lineWidth = 1.5;
@@ -752,6 +774,7 @@ class WeaponManager {
         ctx.stroke();
       } else if (p.type === 'laser_beam' || p.type === 'super_laser_beam') {
         const isSuper = (p.type === 'super_laser_beam');
+        if (window.assets) window.assets.draw(ctx, 'fx_trace', -6, 0, isSuper ? 40 : 28, isSuper ? 130 : 96, { color: isSuper ? '#00ffaa' : '#34d399', rot: Math.PI / 2, blend: 'lighter' });
         ctx.fillStyle = isSuper ? '#ffffff' : '#a7f3d0';
         ctx.strokeStyle = isSuper ? '#00ffaa' : '#10b981';
         ctx.lineWidth = isSuper ? 6 : 3.5;
@@ -768,6 +791,12 @@ class WeaponManager {
         ctx.fill();
       } else if (p.type === 'coffee_tumbler' || p.type === 'super_coffee_tumbler') {
         const isSuper = (p.type === 'super_coffee_tumbler');
+        if (window.assets && window.assets.get('item_tumbler')) {
+          window.assets.draw(ctx, 'fx_glow', 0, 0, 48, 48, { color: isSuper ? '#ea580c' : '#f97316', alpha: 0.6, blend: 'lighter' });
+          window.assets.draw(ctx, 'item_tumbler', 0, 0, isSuper ? 34 : 26, isSuper ? 34 : 26);
+          ctx.restore();
+          return;
+        }
         ctx.fillStyle = isSuper ? '#7c2d12' : '#451a03';
         ctx.strokeStyle = isSuper ? '#ea580c' : '#fb923c';
         ctx.lineWidth = 2;
@@ -815,6 +844,7 @@ class WeaponManager {
 
     // 4. 결재 반려 도장 렌더링
     this.stampStrikes.forEach(st => {
+      if (st.delay > 0) return;
       const sx = st.x - camera.x;
       const sy = st.y - camera.y;
 
