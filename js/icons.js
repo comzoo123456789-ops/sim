@@ -92,33 +92,75 @@ window.GAME_ICONS = {
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
   </svg>`,
 
-  // 3. 캐릭터 아바타 벡터 아이콘
-  char_intern: `<svg viewBox="0 0 24 24" fill="none" class="svg-icon char-avatar-svg">
-    <circle cx="12" cy="12" r="10" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
-    <circle cx="12" cy="9" r="3.5" fill="#f8fafc"/>
-    <path d="M6.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" fill="#f8fafc"/>
-    <rect x="10" y="14" width="4" height="2" rx="0.5" fill="#ffd700"/>
+  // 3. 캐릭터 아바타 벡터 아이콘 (2D SD 오피스 캐릭터)
+  char_intern: `<svg viewBox="0 0 40 40" fill="none" class="svg-icon char-avatar-svg">
+    <circle cx="20" cy="20" r="19" fill="#0f172a" stroke="#38bdf8" stroke-width="2"/>
+    <path d="M10 36c0-6 4.5-10 10-10s10 4 10 10" fill="#38bdf8"/>
+    <polygon points="17,26 20,31 23,26 20,28" fill="#ffffff"/>
+    <path d="M18 26l2 6 2-6" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="18" y="32" width="4" height="4" rx="0.5" fill="#fef08a" stroke="#d97706" stroke-width="0.8"/>
+    <circle cx="20" cy="16" r="9" fill="#fde68a"/>
+    <circle cx="14" cy="18" r="2" fill="#f87171" opacity="0.6"/>
+    <circle cx="26" cy="18" r="2" fill="#f87171" opacity="0.6"/>
+    <ellipse cx="16.5" cy="15.5" rx="1.5" ry="2" fill="#0f172a"/>
+    <ellipse cx="23.5" cy="15.5" rx="1.5" ry="2" fill="#0f172a"/>
+    <circle cx="16" cy="14.5" r="0.7" fill="#ffffff"/>
+    <circle cx="23" cy="14.5" r="0.7" fill="#ffffff"/>
+    <path d="M18 19q2 2 4 0" stroke="#0f172a" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M11 15c0-6 4-10 9-10s9 4 9 10c0 1-1 2-2 2-2 0-3-2-5-2s-3 2-6 2c-2 0-5-1-5-2z" fill="#1e293b"/>
+    <path d="M15 8c2-2 6-2 8 0" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
   </svg>`,
 
-  char_planner: `<svg viewBox="0 0 24 24" fill="none" class="svg-icon char-avatar-svg">
-    <circle cx="12" cy="12" r="10" fill="#7c3aed" stroke="#c084fc" stroke-width="2"/>
-    <circle cx="12" cy="9" r="3.5" fill="#fdf4ff"/>
-    <path d="M6.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" fill="#fdf4ff"/>
-    <circle cx="12" cy="9" r="4.5" stroke="#e879f9" stroke-width="1" stroke-dasharray="2 2"/>
+  char_planner: `<svg viewBox="0 0 40 40" fill="none" class="svg-icon char-avatar-svg">
+    <circle cx="20" cy="20" r="19" fill="#1e1035" stroke="#c084fc" stroke-width="2"/>
+    <path d="M10 36c0-6 4.5-10 10-10s10 4 10 10" fill="#7c3aed"/>
+    <polygon points="17,26 20,32 23,26" fill="#f5d0fe"/>
+    <circle cx="20" cy="16" r="9" fill="#fde68a"/>
+    <path d="M9 16c0 6 3 11 11 11s11-5 11-11v-3H9v3z" fill="#581c87"/>
+    <circle cx="14" cy="18.5" r="2" fill="#f43f5e" opacity="0.6"/>
+    <circle cx="26" cy="18.5" r="2" fill="#f43f5e" opacity="0.6"/>
+    <ellipse cx="16.5" cy="15.5" rx="1.5" ry="2" fill="#0f172a"/>
+    <ellipse cx="23.5" cy="15.5" rx="1.5" ry="2" fill="#0f172a"/>
+    <circle cx="16" cy="14.5" r="0.7" fill="#ffffff"/>
+    <circle cx="23" cy="14.5" r="0.7" fill="#ffffff"/>
+    <path d="M18.5 20q1.5 1.5 3 0" stroke="#be185d" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M10 14c1-6 4.5-9 10-9s9 3 10 9c-3-1-6 1-9-1s-6 1-11 1z" fill="#7e22ce"/>
+    <path d="M26 9l3-2v4l-3-2zM32 9l-3-2v4l3-2z" fill="#f43f5e"/>
+    <circle cx="29" cy="9" r="1.5" fill="#fef08a"/>
   </svg>`,
 
-  char_deputy: `<svg viewBox="0 0 24 24" fill="none" class="svg-icon char-avatar-svg">
-    <circle cx="12" cy="12" r="10" fill="#0f766e" stroke="#2dd4bf" stroke-width="2"/>
-    <circle cx="12" cy="9" r="3.5" fill="#f0fdfa"/>
-    <path d="M6.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" fill="#f0fdfa"/>
-    <path d="M10 8h4" stroke="#0f766e" stroke-width="1.5" stroke-linecap="round"/>
+  char_deputy: `<svg viewBox="0 0 40 40" fill="none" class="svg-icon char-avatar-svg">
+    <circle cx="20" cy="20" r="19" fill="#062d29" stroke="#2dd4bf" stroke-width="2"/>
+    <path d="M10 36c0-6 4.5-10 10-10s10 4 10 10" fill="#0f766e"/>
+    <polygon points="18,26 20,33 22,26" fill="#f0fdfa"/>
+    <path d="M19.5 27v6" stroke="#2dd4bf" stroke-width="1.5"/>
+    <circle cx="20" cy="16" r="9" fill="#fde68a"/>
+    <rect x="13" y="13" width="6" height="5" rx="1.5" stroke="#2dd4bf" stroke-width="1.5" fill="rgba(45,212,191,0.15)"/>
+    <rect x="21" y="13" width="6" height="5" rx="1.5" stroke="#2dd4bf" stroke-width="1.5" fill="rgba(45,212,191,0.15)"/>
+    <line x1="19" y1="15" x2="21" y2="15" stroke="#2dd4bf" stroke-width="1.5"/>
+    <circle cx="16" cy="15.5" r="1" fill="#0f172a"/>
+    <circle cx="24" cy="15.5" r="1" fill="#0f172a"/>
+    <path d="M18 20h4" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M11 14c0-6 4-9 9-9s9 3 9 9c-2-2-4-1-6-2s-4 0-6 2-4 0-6 0z" fill="#1e293b"/>
+    <path d="M14 7c2-1 4 0 6-1" stroke="#2dd4bf" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
   </svg>`,
 
-  char_manager: `<svg viewBox="0 0 24 24" fill="none" class="svg-icon char-avatar-svg">
-    <circle cx="12" cy="12" r="10" fill="#be123c" stroke="#fb7185" stroke-width="2"/>
-    <circle cx="12" cy="9" r="3.5" fill="#fff1f2"/>
-    <path d="M6.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" fill="#fff1f2"/>
-    <polygon points="12,2 14,5 17,4 16,7 19,8 17,10 18,13 15,12 14,15 12,13 10,15 9,12 6,13 7,10 5,8 8,7 7,4 10,5" fill="#ffd700" transform="scale(0.35) translate(14, 2)"/>
+  char_manager: `<svg viewBox="0 0 40 40" fill="none" class="svg-icon char-avatar-svg">
+    <circle cx="20" cy="20" r="19" fill="#3b0716" stroke="#fb7185" stroke-width="2"/>
+    <path d="M10 36c0-6 4.5-10 10-10s10 4 10 10" fill="#be123c"/>
+    <polygon points="17,26 20,33 23,26" fill="#fff1f2"/>
+    <circle cx="20" cy="29" r="1.5" fill="#ffd700"/>
+    <path d="M8 17c0 8 3 13 12 13s12-5 12-13v-4H8v4z" fill="#4c0519"/>
+    <circle cx="20" cy="16" r="9" fill="#fde68a"/>
+    <circle cx="14" cy="18" r="2" fill="#fb7185" opacity="0.6"/>
+    <circle cx="26" cy="18" r="2" fill="#fb7185" opacity="0.6"/>
+    <ellipse cx="16.5" cy="15.5" rx="1.5" ry="2" fill="#0f172a"/>
+    <ellipse cx="23.5" cy="15.5" rx="1.5" ry="2" fill="#0f172a"/>
+    <circle cx="16" cy="14.5" r="0.7" fill="#ffffff"/>
+    <circle cx="23" cy="14.5" r="0.7" fill="#ffffff"/>
+    <path d="M18 20q2 2 4 0" stroke="#be123c" stroke-width="1.8" stroke-linecap="round"/>
+    <polygon points="20,4 23,8 26,6 25,10 20,8 15,10 14,6 17,8" fill="#ffd700" stroke="#ca8a04" stroke-width="0.8"/>
+    <path d="M10 14c1-6 4.5-9 10-9s9 3 10 9c-3-2-6 0-8-2s-5 1-12 2z" fill="#881337"/>
   </svg>`,
 
   // 4. 무기 8종 및 초월 무기 8종 벡터 아이콘

@@ -1210,7 +1210,7 @@ class GameEngine {
 
     document.getElementById('hudPlayerName').innerText = this.player.name;
     document.getElementById('hudPlayerRank').innerText = this.player.title;
-    document.getElementById('hudPlayerAvatar').innerText = this.player.charData.avatar;
+    document.getElementById('hudPlayerAvatar').innerHTML = this.player.charData.avatar;
 
     const hpRate = Math.max(0, Math.min(100, (this.player.hp / this.player.maxHp) * 100));
     document.getElementById('hudHpFill').style.width = `${hpRate}%`;
