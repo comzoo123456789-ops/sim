@@ -1623,28 +1623,33 @@ class GameEngine {
     this.renderBlacksmithUI('runestone');
   }
 
-  // D: 모바일 / 태블릿 가상 조이스틱 & 터치 액션 버튼 바인딩
+  // D: 모바일 / 태블릿 화면 전체 동적 반응형 가상 조이스틱 바인딩
   setupTouchControls() {
     const vstickBase = document.getElementById('vstickBase');
     const vstickKnob = document.getElementById('vstickKnob');
     if (!vstickBase || !vstickKnob) return;
 
-    let isDragging = false;
-    let baseRect = null;
-    const maxRadius = 40;
+    let moveTouchId = null;
+    let baseX = 0;
+    let baseY = 0;
+    const maxRadius = 45;
 
-    const onStart = (clientX, clientY) => {
-      isDragging = true;
-      baseRect = vstickBase.getBoundingClientRect();
-      onMove(clientX, clientY);
+    const startJoy = (id, clientX, clientY) => {
+      moveTouchId = id;
+      baseX = clientX;
+      baseY = clientY;
+
+      // 터치한 임의의 화면 좌표로 조이스틱 동적 이동 및 노출
+      vstickBase.style.left = `${clientX - 45}px`;
+      vstickBase.style.top = `${clientY - 45}px`;
+      vstickBase.style.display = 'block';
+      vstickBase.style.opacity = '1';
+      vstickKnob.style.transform = `translate(0px, 0px)`;
     };
 
-    const onMove = (clientX, clientY) => {
-      if (!isDragging || !baseRect) return;
-      const centerX = baseRect.left + baseRect.width / 2;
-      const centerY = baseRect.top + baseRect.height / 2;
-      let dx = clientX - centerX;
-      let dy = clientY - centerY;
+    const moveJoy = (clientX, clientY) => {
+      let dx = clientX - baseX;
+      let dy = clientY - baseY;
       const dist = Math.hypot(dx, dy);
 
       let normX = 0;
@@ -1659,7 +1664,7 @@ class GameEngine {
       const knobY = normY * clampedDist;
       vstickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
 
-      if (dist > 5) {
+      if (dist > 6) {
         const mag = clampedDist / maxRadius;
         this.input.joyX = normX * mag;
         this.input.joyY = normY * mag;
@@ -1670,46 +1675,60 @@ class GameEngine {
       }
     };
 
-    const onEnd = () => {
-      isDragging = false;
-      vstickKnob.style.transform = `translate(0px, 0px)`;
+    const stopJoy = () => {
+      moveTouchId = null;
       this.input.joyX = 0;
       this.input.joyY = 0;
+      vstickKnob.style.transform = `translate(0px, 0px)`;
+      vstickBase.style.opacity = '0';
+      setTimeout(() => {
+        if (moveTouchId === null) vstickBase.style.display = 'none';
+      }, 150);
     };
 
-    vstickBase.addEventListener('touchstart', e => {
-      e.preventDefault();
-      if (e.touches.length > 0) {
-        const t = e.touches[0];
-        onStart(t.clientX, t.clientY);
-      }
-    }, { passive: false });
+    // 화면 전체 터치 수신기 (UI 버튼 영역 제외 전체 화면 터치패드 반응)
+    window.addEventListener('touchstart', e => {
+      if (this.activeModal) return;
 
-    window.addEventListener('touchmove', e => {
-      if (!isDragging) return;
       for (let i = 0; i < e.touches.length; i++) {
         const t = e.touches[i];
-        onMove(t.clientX, t.clientY);
-        break;
+        const target = t.target;
+        const isUI = target.closest('.game-modal, .mobile-action-cluster, .bottom-action-console, .side-nav-dock, .mobile-hamburger-btn, .game-btn, button');
+
+        if (!isUI && moveTouchId === null) {
+          startJoy(t.identifier, t.clientX, t.clientY);
+          break;
+        }
       }
     }, { passive: true });
 
-    window.addEventListener('touchend', e => {
-      if (isDragging && e.touches.length === 0) {
-        onEnd();
+    window.addEventListener('touchmove', e => {
+      if (moveTouchId === null) return;
+      for (let i = 0; i < e.touches.length; i++) {
+        const t = e.touches[i];
+        if (t.identifier === moveTouchId) {
+          moveJoy(t.clientX, t.clientY);
+          break;
+        }
       }
-    });
-    window.addEventListener('touchcancel', () => onEnd());
+    }, { passive: true });
 
-    vstickBase.addEventListener('mousedown', e => {
-      onStart(e.clientX, e.clientY);
-    });
-    window.addEventListener('mousemove', e => {
-      if (isDragging) onMove(e.clientX, e.clientY);
-    });
-    window.addEventListener('mouseup', () => {
-      if (isDragging) onEnd();
-    });
+    const handleTouchEnd = e => {
+      if (moveTouchId === null) return;
+      let stillActive = false;
+      for (let i = 0; i < e.touches.length; i++) {
+        if (e.touches[i].identifier === moveTouchId) {
+          stillActive = true;
+          break;
+        }
+      }
+      if (!stillActive) {
+        stopJoy();
+      }
+    };
+
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
 
     const mBtnAtk = document.getElementById('mBtnAtk');
     if (mBtnAtk) {

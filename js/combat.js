@@ -840,25 +840,35 @@ class Player {
       ctx.scale(-1, 1);
     }
 
+    // 1. 발 아래 접지 그림자 (둥둥 떠다님 모션 완벽 제거)
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 22, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
     const isMoving = (window.game && window.game.input && (window.game.input.w || window.game.input.a || window.game.input.s || window.game.input.d || window.game.input.joyX || window.game.input.joyY));
     const now = Date.now();
-    // 걷기 상하 쿵쿵 바운스 & 좌우 리듬 틸트 애니메이션
+    
+    // 둥둥 떠다니는 모션(bobbing) 삭제: 지면 고정 및 보행 시 부드러운 스텝 틸트 적용
     const walkStep = isMoving ? Math.sin(now * 0.016) : 0;
-    const bobOffset = isMoving ? Math.abs(walkStep) * 4 : Math.sin(now * 0.003) * 1.5;
-    const tiltAngle = isMoving ? walkStep * 0.07 : 0;
+    const tiltAngle = isMoving ? walkStep * 0.08 : 0;
 
-    // 공격 돌진(Lunge) 수치
+    // 공격 시 검을 직접 휘두르는 파동 각도 (Swing Motion)
     let atkProgress = 0;
+    let swingAngle = 0;
     if (this.atkCooldown > 0) {
       const maxCd = Math.max(0.18, 0.65 / (this.statCache ? this.statCache.atkSpeed : 1));
       atkProgress = Math.max(0, Math.min(1, 1 - (this.atkCooldown / maxCd)));
+      swingAngle = Math.sin(atkProgress * Math.PI) * 0.65;
     }
-    const lungeDist = atkProgress > 0 ? Math.sin(atkProgress * Math.PI) * 16 : 0;
+    const lungeDist = atkProgress > 0 ? Math.sin(atkProgress * Math.PI) * 14 : 0;
 
-    ctx.translate(lungeDist, bobOffset);
-    ctx.rotate(tiltAngle);
+    ctx.translate(lungeDist, 0); // Y축 둥둥 떠다님 없이 지면에 완벽 착지
+    ctx.rotate(tiltAngle + swingAngle);
 
-    // 100% 완전 불투명 고화질 3등신 캐릭터 일러스트 렌더링 (투명도 실루엣 현상 완벽 해결)
+    // 온전한 캐릭터 렌더링 (노란 테두리 띠 및 인위적인 프레임 선 전면 삭제)
     const rawImg = window.PLAYER_SPRITES_SD && window.PLAYER_SPRITES_SD[this.job];
     const auraColors = {
       warrior: '#ffd700',
@@ -869,47 +879,31 @@ class Player {
     const aura = auraColors[this.job] || '#ffd700';
 
     if (rawImg && rawImg.complete && rawImg.naturalWidth > 0) {
-      const sprW = 54;
+      const sprW = 56;
       const sprH = 68;
       const sprX = -sprW / 2;
-      const sprY = -sprH + 8;
+      const sprY = -sprH + 6;
 
       ctx.save();
-      // 아치형 히어로 캡슐 클리핑 & 100% 선명 렌더링
-      ctx.beginPath();
-      ctx.roundRect(sprX, sprY, sprW, sprH, [16, 16, 8, 8]);
-      ctx.clip();
-
+      // 노란 띠나 상자 라인 없이 온전히 캐릭터 본연의 모습만 렌더링
       ctx.drawImage(rawImg, sprX, sprY, sprW, sprH);
-
-      // 발 부분 부드러운 다크 그라운드 그라디언트 블렌딩
-      const bGrad = ctx.createLinearGradient(0, sprY + sprH * 0.75, 0, sprY + sprH);
-      bGrad.addColorStop(0, 'rgba(0,0,0,0)');
-      bGrad.addColorStop(1, 'rgba(10,5,20,0.65)');
-      ctx.fillStyle = bGrad;
-      ctx.fillRect(sprX, sprY, sprW, sprH);
       ctx.restore();
 
-      // 영웅 테두리 골드/직업 오라 림라이트
-      ctx.save();
-      ctx.strokeStyle = aura;
-      ctx.lineWidth = 2.2;
-      ctx.shadowColor = aura;
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.roundRect(sprX, sprY, sprW, sprH, [16, 16, 8, 8]);
-      ctx.stroke();
-      ctx.restore();
-
-      // 공격 액션 시 번쩍이는 전방 궤적 이펙트
-      if (atkProgress > 0 && atkProgress < 0.85) {
+      // 공격 액션 시 팔과 검을 휘두르는 시원한 검기 호(Slash Arc) 이펙트
+      if (atkProgress > 0 && atkProgress < 0.9) {
         ctx.save();
         ctx.strokeStyle = aura;
         ctx.lineWidth = 4;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 18;
         ctx.shadowColor = aura;
         ctx.beginPath();
-        ctx.arc(10, -18, 38, -0.7, 0.7);
+        ctx.arc(8, -24, 42, -0.9 + swingAngle, 0.9 + swingAngle);
+        ctx.stroke();
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(8, -24, 40, -0.6 + swingAngle, 0.6 + swingAngle);
         ctx.stroke();
         ctx.restore();
       }
