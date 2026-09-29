@@ -779,6 +779,141 @@ window.GAME_DATA = {
       desc: '"전사원 비상 야근 선포!" 16방향 초고속 레이저 탄막을 사방으로 난사합니다.',
       strategy: '탄막 사이 틈을 정밀하게 파고들며 6종 풀업 무기로 총공격하세요.'
     }
+  ],
+
+  // 9. 챕터 및 스테이지 데이터 (1챕터: 판교 테크노밸리 스타트업 탈출 1-1 ~ 1-10)
+  CHAPTERS: [
+    {
+      id: 'ch1',
+      title: '제1장: 판교 테크노밸리 스타트업 본사',
+      subtitle: '칼퇴를 가로막는 10단계의 결재선을 돌파하라!',
+      icon: '🏢',
+      stages: [
+        {
+          id: '1-1',
+          name: '1-1 탕비실 커피 쟁탈전',
+          desc: '월요일 아침, 탕비실 믹스커피를 싹쓸이하는 너구리 도둑들을 소탕하고 생존 카페인을 확보하세요.',
+          duration: 60,
+          boss: null,
+          spawnRate: 1.0,
+          reward: 200,
+          theme: 'pantry',
+          targetKills: 30,
+          icon: '☕'
+        },
+        {
+          id: '1-2',
+          name: '1-2 오픈오피스 슬랙 폭격',
+          desc: '퇴근 10분 전 쏟아지는 슬랙 @99+ 멘션 괴물들의 알림을 뚫고 다음 구역으로 전진하세요.',
+          duration: 75,
+          boss: null,
+          spawnRate: 1.2,
+          reward: 250,
+          theme: 'open_office',
+          targetKills: 45,
+          icon: '💬'
+        },
+        {
+          id: '1-3',
+          name: '1-3 기획전략실 결재판 담판',
+          desc: '라떼는 말이야 음파 폭격을 난사하는 꼰대 김과장의 결재판을 파쇄하세요!',
+          duration: 90,
+          boss: 'boss_manager',
+          bossTime: 50,
+          spawnRate: 1.3,
+          reward: 400,
+          theme: 'meeting_room',
+          targetKills: 60,
+          icon: '👔'
+        },
+        {
+          id: '1-4',
+          name: '1-4 재무회계팀 엑셀 지옥',
+          desc: '끝없이 분열하며 증식하는 #REF! 수식 오류 슬라임들을 분쇄하고 결산서를 지키세요.',
+          duration: 90,
+          boss: null,
+          spawnRate: 1.4,
+          reward: 350,
+          theme: 'open_office',
+          targetKills: 75,
+          icon: '📊'
+        },
+        {
+          id: '1-5',
+          name: '1-5 지하 전산 서버실 비상',
+          desc: '과열된 서버 랙과 전산망 마비 오류 파편들을 뚫고 메인 전원을 재가동하세요.',
+          duration: 100,
+          boss: null,
+          spawnRate: 1.5,
+          reward: 450,
+          theme: 'server_room',
+          targetKills: 90,
+          icon: '🖥️'
+        },
+        {
+          id: '1-6',
+          name: '1-6 디자인실 밤샘 마감',
+          desc: '수정_최종_진짜최종.psd 파일 폭풍을 뚫고 클라이언트 컨펌을 통과시키세요.',
+          duration: 110,
+          boss: null,
+          spawnRate: 1.6,
+          reward: 500,
+          theme: 'open_office',
+          targetKills: 110,
+          icon: '🎨'
+        },
+        {
+          id: '1-7',
+          name: '1-7 총무인사팀 복사기실',
+          desc: '종이 걸린 채 사방으로 토너 레이저를 난사하는 폭주 복합기 군단을 모조리 파괴하세요.',
+          duration: 120,
+          boss: null,
+          spawnRate: 1.7,
+          reward: 600,
+          theme: 'pantry',
+          targetKills: 130,
+          icon: '🖨️'
+        },
+        {
+          id: '1-8',
+          name: '1-8 20층 대회의실 긴급소집',
+          desc: '분노의 박부장이 뿜어내는 💢 분노 오라와 서류가방 투척 폭격을 격파하세요!',
+          duration: 130,
+          boss: 'boss_director',
+          bossTime: 75,
+          spawnRate: 1.8,
+          reward: 750,
+          theme: 'meeting_room',
+          targetKills: 150,
+          icon: '💼'
+        },
+        {
+          id: '1-9',
+          name: '1-9 펜트하우스 임원 비서실',
+          desc: '철야 근무 사수대와 최정예 업무 몬스터들의 총공세를 돌파하여 대표이사실 문을 여세요.',
+          duration: 140,
+          boss: null,
+          spawnRate: 2.0,
+          reward: 900,
+          theme: 'executive',
+          targetKills: 170,
+          icon: '🚪'
+        },
+        {
+          id: '1-10',
+          name: '1-10 대표이사실 최종 사직서',
+          desc: '황금 결계 쉴드를 두른 철야 지시 대표이사를 쓰러뜨리고 최종 퇴근 결재 도장을 쟁취하세요!',
+          duration: 180,
+          boss: 'boss_ceo',
+          bossTime: 90,
+          spawnRate: 2.2,
+          reward: 2000,
+          theme: 'executive',
+          targetKills: 200,
+          icon: '👑'
+        }
+      ]
+    }
   ]
 };
 

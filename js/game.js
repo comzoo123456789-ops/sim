@@ -197,8 +197,12 @@ class GameEngine {
     this.canvas = document.getElementById('gameCanvas');
     this.ctx = this.canvas.getContext('2d');
 
-    this.state = 'char_select'; // 'char_select', 'playing', 'level_up', 'game_over', 'victory'
+    this.state = 'char_select'; // 'char_select', 'playing', 'level_up', 'game_over', 'victory', 'stage_clear'
     this.selectedCharId = 'intern';
+    this.selectedMode = 'stage'; // 'stage' or 'survival'
+    this.selectedStageId = '1-1';
+    this.currentStageId = '1-1';
+    this.currentStage = null;
 
     this.player = null;
     this.weaponMgr = new WeaponManager();
@@ -215,7 +219,7 @@ class GameEngine {
     };
 
     this.levelUpQueue = 0;
-    this.gameTime = 600; // 10분(600초) 카운트다운
+    this.gameTime = 60; // 기본 1분 (스테이지별 duration으로 덮어씌워짐)
     this.lastTime = performance.now();
 
     this.init();
@@ -230,6 +234,7 @@ class GameEngine {
     this.setupUIBindings();
     this.setupLobbyTabs();
 
+    this.renderStageSelectGrid();
     this.renderCharSelectGrid();
     this.renderShop();
     this.renderAchievements();
@@ -376,28 +381,100 @@ class GameEngine {
   }
 
   setupUIBindings() {
-    // 시작 버튼
-    document.getElementById('btnStartGame').onclick = () => {
-      this.startGame(this.selectedCharId);
-    };
+    // 1. 모드 토글 (스테이지 돌파 vs 10분 무한 서바이벌)
+    const btnModeStage = document.getElementById('btnModeStage');
+    const btnModeSurvival = document.getElementById('btnModeSurvival');
 
-    // 재도전 버튼
-    document.getElementById('btnRestartGame').onclick = () => {
-      this.startGame(this.selectedCharId);
-    };
+    if (btnModeStage && btnModeSurvival) {
+      btnModeStage.onclick = () => {
+        this.selectedMode = 'stage';
+        btnModeStage.classList.add('active');
+        btnModeSurvival.classList.remove('active');
+        const grid = document.getElementById('stageGridContainer');
+        if (grid) grid.style.display = 'grid';
+        this.updateStageSelectedInfo();
+        if (window.soundEngine) window.soundEngine.playClick();
+      };
 
-    // 로비로 돌아가기 버튼
-    document.getElementById('btnReturnLobby').onclick = () => {
-      document.getElementById('endGameModal').classList.remove('active');
-      document.getElementById('charSelectModal').classList.add('active');
-      this.state = 'char_select';
-      this.updateLobbyGold();
-      this.renderShop();
-      this.renderAchievements();
-      this.renderBestiary();
-    };
+      btnModeSurvival.onclick = () => {
+        this.selectedMode = 'survival';
+        btnModeSurvival.classList.add('active');
+        btnModeStage.classList.remove('active');
+        const grid = document.getElementById('stageGridContainer');
+        if (grid) grid.style.display = 'none';
+        const titleEl = document.getElementById('selectedStageTitle');
+        const rewardEl = document.getElementById('selectedStageReward');
+        if (titleEl) titleEl.innerText = '모드: ⏱️ 10분 무한 심야 서바이벌 (막차 탈출)';
+        if (rewardEl) rewardEl.innerText = '보스 처치 및 생존 시 대량의 코인 획득!';
+        if (window.soundEngine) window.soundEngine.playClick();
+      };
+    }
 
-    // 일시정지 버튼
+    // 2. 스테이지 시작 버튼
+    const btnStartSelectedStage = document.getElementById('btnStartSelectedStage');
+    if (btnStartSelectedStage) {
+      btnStartSelectedStage.onclick = () => {
+        this.startGame(this.selectedCharId, this.selectedStageId, this.selectedMode);
+      };
+    }
+
+    // 3. 사원 출근 시작 버튼
+    const btnStartGame = document.getElementById('btnStartGame');
+    if (btnStartGame) {
+      btnStartGame.onclick = () => {
+        this.startGame(this.selectedCharId, this.selectedStageId, this.selectedMode);
+      };
+    }
+
+    // 4. 재도전 버튼
+    const btnRestartGame = document.getElementById('btnRestartGame');
+    if (btnRestartGame) {
+      btnRestartGame.onclick = () => {
+        this.startGame(this.selectedCharId, this.currentStageId, this.selectedMode);
+      };
+    }
+
+    // 5. 로비로 돌아가기 버튼
+    const btnReturnLobby = document.getElementById('btnReturnLobby');
+    if (btnReturnLobby) {
+      btnReturnLobby.onclick = () => {
+        document.getElementById('endGameModal').classList.remove('active');
+        document.getElementById('stageClearModal').classList.remove('active');
+        document.getElementById('charSelectModal').classList.add('active');
+        this.state = 'char_select';
+        this.updateLobbyGold();
+        this.renderStageSelectGrid();
+        this.renderShop();
+        this.renderAchievements();
+        this.renderBestiary();
+      };
+    }
+
+    // 6. 다음 스테이지 출근 버튼
+    const btnNextStage = document.getElementById('btnNextStage');
+    if (btnNextStage) {
+      btnNextStage.onclick = () => {
+        document.getElementById('stageClearModal').classList.remove('active');
+        const curStageNum = parseInt(this.currentStageId.split('-')[1], 10);
+        const nextStageId = `1-${Math.min(10, curStageNum + 1)}`;
+        this.selectedStageId = nextStageId;
+        this.startGame(this.selectedCharId, nextStageId, 'stage');
+      };
+    }
+
+    // 7. 클리어 모달에서 스테이지 목록으로 귀환
+    const btnClearToLobby = document.getElementById('btnClearToLobby');
+    if (btnClearToLobby) {
+      btnClearToLobby.onclick = () => {
+        document.getElementById('stageClearModal').classList.remove('active');
+        document.getElementById('charSelectModal').classList.add('active');
+        this.state = 'char_select';
+        this.updateLobbyGold();
+        this.renderStageSelectGrid();
+      };
+    }
+
+    // 8. 일시정지 버튼
     const pauseModal = document.getElementById('pauseModal');
     const pauseBtn = document.getElementById('btnPauseGame');
     if (pauseBtn) {
@@ -411,7 +488,7 @@ class GameEngine {
       };
     }
 
-    // 일시정지 해제 (재개)
+    // 9. 일시정지 해제 (재개)
     const resumeBtn = document.getElementById('btnResumeGame');
     if (resumeBtn) {
       resumeBtn.onclick = () => {
@@ -423,19 +500,19 @@ class GameEngine {
       };
     }
 
-    // 사운드 토글 버튼
+    // 10. 사운드 토글 버튼
     const soundBtn = document.getElementById('btnToggleSound');
     if (soundBtn) {
       soundBtn.onclick = () => {
         if (window.soundEngine) {
           window.soundEngine.isMuted = !window.soundEngine.isMuted;
           soundBtn.innerText = window.soundEngine.isMuted ? '🔇 사운드 OFF' : '🔊 사운드 ON';
-          if (!window.soundEngine.isMuted) window.soundEngine.playClick();
+          if (!window.soundEngine) window.soundEngine.playClick();
         }
       };
     }
 
-    // 야근 포기 (항복 및 로비 귀환)
+    // 11. 야근 포기 (항복 및 로비 귀환)
     const surrenderBtn = document.getElementById('btnSurrenderGame');
     if (surrenderBtn) {
       surrenderBtn.onclick = () => {
@@ -488,7 +565,14 @@ class GameEngine {
 
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
 
-        if (targetTab === 'char') document.getElementById('tabPanelChar').classList.add('active');
+        if (targetTab === 'stage') {
+          document.getElementById('tabPanelStage').classList.add('active');
+          this.renderStageSelectGrid();
+        }
+        if (targetTab === 'char') {
+          document.getElementById('tabPanelChar').classList.add('active');
+          this.renderCharSelectGrid();
+        }
         if (targetTab === 'shop') {
           document.getElementById('tabPanelShop').classList.add('active');
           this.renderShop();
@@ -511,6 +595,75 @@ class GameEngine {
     const gold = window.saveMgr ? window.saveMgr.getGold() : 0;
     const el = document.getElementById('lobbyGoldVal');
     if (el) el.innerText = `${gold}`;
+  }
+
+  renderStageSelectGrid() {
+    const grid = document.getElementById('stageGridContainer');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const ch1 = window.GAME_DATA.CHAPTERS.ch1;
+    if (!ch1) return;
+
+    ch1.stages.forEach(st => {
+      const isUnlocked = window.saveMgr ? window.saveMgr.isStageUnlocked(st.id) : (st.id === '1-1');
+      const stars = window.saveMgr ? window.saveMgr.getStageStars(st.id) : 0;
+      const isSelected = st.id === this.selectedStageId;
+
+      const card = document.createElement('div');
+      card.className = `stage-card ${isUnlocked ? 'unlocked' : 'locked'} ${isSelected ? 'selected' : ''}`;
+
+      let starIcons = '';
+      for (let s = 1; s <= 3; s++) {
+        starIcons += `<span class="star-icon ${s <= stars ? 'active' : ''}">⭐</span>`;
+      }
+
+      const durM = Math.floor(st.duration / 60);
+      const durS = (st.duration % 60).toString().padStart(2, '0');
+
+      card.innerHTML = `
+        <div class="stage-card-header">
+          <span class="stage-id-badge">${st.id}</span>
+          <div class="stage-stars-row">${starIcons}</div>
+        </div>
+        <div class="stage-card-title">${st.name}</div>
+        <div class="stage-card-desc">${st.desc}</div>
+        <div class="stage-card-meta">
+          <span class="stage-meta-item">⏱️ ${durM}:${durS}</span>
+          <span class="stage-meta-item">🪙 +${st.goldReward}</span>
+          ${st.boss ? '<span class="stage-meta-boss">⚠️ 보스 출현</span>' : ''}
+        </div>
+        ${!isUnlocked ? '<div class="stage-lock-overlay">🔒 이전 결재선 승인 필요</div>' : ''}
+      `;
+
+      if (isUnlocked) {
+        card.onclick = () => {
+          this.selectedStageId = st.id;
+          document.querySelectorAll('.stage-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          this.updateStageSelectedInfo();
+          if (window.soundEngine) window.soundEngine.playClick();
+        };
+      }
+
+      grid.appendChild(card);
+    });
+
+    this.updateStageSelectedInfo();
+  }
+
+  updateStageSelectedInfo() {
+    const ch1 = window.GAME_DATA.CHAPTERS.ch1;
+    if (!ch1) return;
+
+    const st = ch1.stages.find(s => s.id === this.selectedStageId) || ch1.stages[0];
+    const titleEl = document.getElementById('selectedStageTitle');
+    const rewardEl = document.getElementById('selectedStageReward');
+
+    if (this.selectedMode === 'stage' && st) {
+      if (titleEl) titleEl.innerText = `선택된 결재선: [${st.id}] ${st.name} (${Math.floor(st.duration / 60)}분)`;
+      if (rewardEl) rewardEl.innerText = `클리어 보상: +${st.goldReward} 코인 | 3성 달성 시 추가 보너스`;
+    }
   }
 
   renderCharSelectGrid() {
@@ -645,19 +798,34 @@ class GameEngine {
     });
   }
 
-  startGame(charId) {
+  startGame(charId, stageId = null, mode = 'stage') {
     document.getElementById('charSelectModal').classList.remove('active');
     document.getElementById('endGameModal').classList.remove('active');
+    document.getElementById('stageClearModal').classList.remove('active');
 
-    this.player = new Player(charId);
+    this.selectedCharId = charId || 'intern';
+    this.selectedMode = mode || 'stage';
+    this.currentStageId = stageId || this.selectedStageId || '1-1';
+
+    if (this.selectedMode === 'stage') {
+      const ch1 = window.GAME_DATA.CHAPTERS.ch1;
+      this.currentStage = ch1.stages.find(s => s.id === this.currentStageId) || ch1.stages[0];
+      this.gameTime = this.currentStage.duration;
+    } else {
+      this.currentStage = null;
+      this.gameTime = 600; // 10분
+    }
+
+    this.player = new Player(this.selectedCharId);
     this.weaponMgr.reset();
     this.monsterMgr.reset();
     this.propMgr.reset();
     this.dropMgr.reset();
     this.effectEngine.reset();
 
+    this.monsterMgr.setStage(this.currentStage);
+
     this.levelUpQueue = 0;
-    this.gameTime = 600; // 10분
     this.state = 'playing';
 
     if (window.soundEngine) window.soundEngine.playLevelUp();
@@ -884,7 +1052,80 @@ class GameEngine {
     this.updateHUD();
   }
 
+  handleStageClear() {
+    this.state = 'stage_clear';
+    const modal = document.getElementById('stageClearModal');
+    if (!modal) return;
+
+    // 1. 별점 계산 (HP 잔여율 기준: 80% 이상 3성, 40% 이상 2성, 클리어 1성)
+    const hpPercent = (this.player.hp / this.player.maxHp) * 100;
+    let stars = 1;
+    if (hpPercent >= 80) stars = 3;
+    else if (hpPercent >= 40) stars = 2;
+
+    const goldReward = this.currentStage ? this.currentStage.goldReward : 200;
+
+    // 영구 데이터 저장 및 다음 스테이지 자동 해금
+    if (window.saveMgr) {
+      window.saveMgr.saveStageClear(this.currentStageId, stars, goldReward);
+      window.saveMgr.addGold(this.player.gold);
+      window.saveMgr.data.totalRuns = (window.saveMgr.data.totalRuns || 0) + 1;
+      window.saveMgr.data.totalKills = (window.saveMgr.data.totalKills || 0) + this.player.kills;
+      window.saveMgr.save();
+    }
+
+    if (window.soundEngine) window.soundEngine.playVictory();
+
+    // UI 별점 렌더링
+    const starContainer = document.getElementById('clearStarRating');
+    if (starContainer) {
+      starContainer.innerHTML = '';
+      for (let s = 1; s <= 3; s++) {
+        const span = document.createElement('span');
+        span.className = `star-pill star-${s} ${s <= stars ? 'earned' : 'empty'}`;
+        span.innerText = s <= stars ? '⭐' : '☆';
+        starContainer.appendChild(span);
+      }
+    }
+
+    const stageTitle = this.currentStage ? this.currentStage.name : '스테이지';
+    const subEl = document.getElementById('stageClearSubtitle');
+    if (subEl) subEl.innerText = `[${this.currentStageId}] ${stageTitle} 결재 승인 완료! (${stars}성 획득)`;
+
+    const totalDur = this.currentStage ? this.currentStage.duration : 60;
+    const durM = Math.floor(totalDur / 60).toString().padStart(2, '0');
+    const durS = (totalDur % 60).toString().padStart(2, '0');
+
+    document.getElementById('clearTimeVal').innerText = `${durM}:${durS}`;
+    document.getElementById('clearKillsVal').innerText = `${this.player.kills} 마리`;
+    document.getElementById('clearGoldVal').innerText = `+${goldReward + this.player.gold} 코인`;
+
+    // 마지막 1-10 스테이지 여부에 따른 다음 스테이지 버튼 텍스트 변경
+    const nextBtn = document.getElementById('btnNextStage');
+    if (nextBtn) {
+      if (this.currentStageId === '1-10') {
+        nextBtn.innerText = '🏆 챕터 1 완전 정복! (로비로)';
+        nextBtn.onclick = () => {
+          modal.classList.remove('active');
+          document.getElementById('charSelectModal').classList.add('active');
+          this.state = 'char_select';
+          this.renderStageSelectGrid();
+        };
+      } else {
+        nextBtn.innerText = '다음 결재선(스테이지) 출근 ➔';
+      }
+    }
+
+    modal.classList.add('active');
+  }
+
   handleGameOver(isVictory = false) {
+    // 스테이지 모드에서 생존 시간 만료로 클리어한 경우 -> 스테이지 클리어 모달 실행
+    if (this.selectedMode === 'stage' && isVictory) {
+      this.handleStageClear();
+      return;
+    }
+
     this.state = isVictory ? 'victory' : 'game_over';
     const modal = document.getElementById('endGameModal');
     const titleEl = document.getElementById('endModalTitle');
@@ -917,7 +1158,8 @@ class GameEngine {
       window.saveMgr.save();
     }
 
-    const elapsed = Math.max(0, 600 - this.gameTime);
+    const maxTime = this.currentStage ? this.currentStage.duration : 600;
+    const elapsed = Math.max(0, maxTime - this.gameTime);
     const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
     const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
 
@@ -949,7 +1191,7 @@ class GameEngine {
     document.getElementById('hudKillCount').innerText = `${this.player.kills}`;
     document.getElementById('hudGoldCount').innerText = `${this.player.gold}`;
 
-    // 타이머 (10:00 -> 00:00)
+    // 타이머
     const m = Math.floor(this.gameTime / 60).toString().padStart(2, '0');
     const s = Math.floor(this.gameTime % 60).toString().padStart(2, '0');
     document.getElementById('hudTimerText').innerText = `${m}:${s}`;
@@ -1024,58 +1266,168 @@ class GameEngine {
     }
   }
 
-  // 오피스 맵 배경 렌더링
+  // 리얼 테크 오피스 2D 맵 렌더러 (5대 테마 구역 + 정밀 오피스 벡터 그래픽)
   renderOfficeMap(ctx, camera) {
-    const startTileX = Math.floor(camera.x / 80) * 80;
-    const startTileY = Math.floor(camera.y / 80) * 80;
-    const endTileX = startTileX + this.canvas.width + 80;
-    const endTileY = startTileY + this.canvas.height + 80;
+    const mapW = 2400;
+    const mapH = 2400;
+    const tileSize = 80;
 
-    // 1. 카펫 바닥 체커보드 타일
-    for (let x = startTileX; x <= endTileX; x += 80) {
-      for (let y = startTileY; y <= endTileY; y += 80) {
-        if (x < 0 || x >= 2400 || y < 0 || y >= 2400) continue;
-        const isAlt = ((x / 80) + (y / 80)) % 2 === 0;
-        ctx.fillStyle = isAlt ? '#111827' : '#1e293b';
-        ctx.fillRect(x - camera.x, y - camera.y, 80, 80);
+    const startX = Math.max(0, Math.floor(camera.x / tileSize) * tileSize);
+    const startY = Math.max(0, Math.floor(camera.y / tileSize) * tileSize);
+    const endX = Math.min(mapW, startX + this.canvas.width + tileSize * 2);
+    const endY = Math.min(mapH, startY + this.canvas.height + tileSize * 2);
 
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x - camera.x, y - camera.y, 80, 80);
+    // 1. 구역별 바닥재 렌더링
+    for (let x = startX; x < endX; x += tileSize) {
+      for (let y = startY; y < endY; y += tileSize) {
+        const sx = x - camera.x;
+        const sy = y - camera.y;
+
+        // 구역 판별:
+        // NW (0..1200, 0..1200): 오픈 오피스 (차콜 직조 카펫 타일)
+        // NE (1200..2400, 0..1200): 탕비실 & 라운지 (내추럴 오크 마루바닥)
+        // SW (0..1200, 1200..2400): IDC 서버실 (천공 메탈 패널 & 하저드 라인)
+        // SE (1200..2400, 1200..2400): 임원실 & 대회의실 (월넛 헤링본 & 버건디 러그)
+        // Center (900..1500, 900..1500): 중앙 테라조 대리석 로비
+
+        const inCenterLobby = (x >= 900 && x < 1500 && y >= 900 && y < 1500);
+        const inPantry = (x >= 1200 && y < 1200);
+        const inServerRoom = (x < 1200 && y >= 1200);
+        const inExecutive = (x >= 1200 && y >= 1200);
+
+        if (inCenterLobby) {
+          // 중앙 테라조 대리석 로비
+          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#1e293b' : '#334155';
+          ctx.fillRect(sx, sy, tileSize, tileSize);
+          // 골드 트림 라인
+          ctx.strokeStyle = 'rgba(234, 179, 8, 0.15)';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(sx, sy, tileSize, tileSize);
+        } else if (inPantry) {
+          // 탕비실 & 라운지 (오크 우드 플랭크)
+          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#292524' : '#1c1917';
+          ctx.fillRect(sx, sy, tileSize, tileSize);
+          // 우드 결 라인
+          ctx.strokeStyle = 'rgba(180, 83, 9, 0.12)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(sx, sy, tileSize, tileSize);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy + 25);
+          ctx.lineTo(sx + tileSize, sy + 25);
+          ctx.moveTo(sx, sy + 55);
+          ctx.lineTo(sx + tileSize, sy + 55);
+          ctx.stroke();
+        } else if (inServerRoom) {
+          // IDC 서버실 (천공 강철 패널)
+          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#090d16' : '#0f172a';
+          ctx.fillRect(sx, sy, tileSize, tileSize);
+          // 펀칭 메탈 도트
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+          ctx.beginPath();
+          ctx.arc(sx + 20, sy + 20, 2, 0, Math.PI * 2);
+          ctx.arc(sx + 60, sy + 20, 2, 0, Math.PI * 2);
+          ctx.arc(sx + 20, sy + 60, 2, 0, Math.PI * 2);
+          ctx.arc(sx + 60, sy + 60, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(sx, sy, tileSize, tileSize);
+        } else if (inExecutive) {
+          // 임원실 & 대회의실 (월넛 & 버건디)
+          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#181119' : '#221520';
+          ctx.fillRect(sx, sy, tileSize, tileSize);
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.1)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(sx, sy, tileSize, tileSize);
+        } else {
+          // 일반 오픈 오피스 (차콜 직조 타일)
+          ctx.fillStyle = ((x / tileSize + y / tileSize) % 2 === 0) ? '#0f172a' : '#141e33';
+          ctx.fillRect(sx, sy, tileSize, tileSize);
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(sx, sy, tileSize, tileSize);
+        }
       }
     }
 
-    // 2. 중앙 비상구 엘리베이터 (1200, 1200)
+    // 2. 오피스 구역 타이틀 바닥 네온 마킹
+    this.renderZoneSign(ctx, camera, 400, 200, '💻 DEV & DESIGN OPEN OFFICE', '#38bdf8');
+    this.renderZoneSign(ctx, camera, 1800, 200, '☕ PANTRY & SNACK LOUNGE', '#fbbf24');
+    this.renderZoneSign(ctx, camera, 400, 2100, '🖥️ IDC SERVER & INFRA ROOM', '#00f0ff');
+    this.renderZoneSign(ctx, camera, 1800, 2100, '👔 EXECUTIVE SUITE & BOARDROOM', '#f43f5e');
+
+    // 3. 중앙 비상구 엘리베이터 및 탈출 지점 (1200, 1200)
     const exitX = 1200 - camera.x;
     const exitY = 1200 - camera.y;
     ctx.save();
-    ctx.fillStyle = '#0f172a';
+    ctx.fillStyle = '#020617';
     ctx.strokeStyle = '#22c55e';
     ctx.lineWidth = 3;
+    ctx.shadowColor = '#22c55e';
+    ctx.shadowBlur = 12;
+
     ctx.beginPath();
-    ctx.roundRect(exitX - 60, exitY - 60, 120, 120, 12);
+    ctx.roundRect(exitX - 80, exitY - 80, 160, 160, 16);
     ctx.fill();
     ctx.stroke();
 
+    // 엘리베이터 문 슬릿
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(exitX, exitY - 70);
+    ctx.lineTo(exitX, exitY + 70);
+    ctx.stroke();
+
+    ctx.shadowBlur = 6;
     ctx.fillStyle = '#22c55e';
-    ctx.font = '900 16px "Pretendard", sans-serif';
+    ctx.font = '900 13px "Pretendard", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('EMERGENCY EXIT', exitX, exitY - 15);
+    ctx.fillText('EMERGENCY ESCAPE ELEVATOR', exitX, exitY - 25);
+    ctx.font = '900 18px "Pretendard", sans-serif';
+    ctx.fillText('[ 20F ▲ ]', exitX, exitY + 5);
     ctx.font = 'bold 12px "Pretendard", sans-serif';
-    ctx.fillText('🚨 비상구 엘리베이터', exitX, exitY + 15);
+    ctx.fillText('🚨 정시 퇴근 탈출구', exitX, exitY + 30);
     ctx.restore();
 
-    // 3. 캐릭터 주변 심야 조명 비네팅
+    // 4. 맵 경계 벽면 렌더링
+    this.renderMapBorders(ctx, camera, mapW, mapH);
+
+    // 5. 캐릭터 주변 부드러운 야근 조명 비네팅 효과
     const pScreenX = this.player ? this.player.x - camera.x : this.canvas.width / 2;
     const pScreenY = this.player ? this.player.y - camera.y : this.canvas.height / 2;
 
     ctx.save();
-    const vigGrad = ctx.createRadialGradient(pScreenX, pScreenY, 180, pScreenX, pScreenY, 650);
+    const vigGrad = ctx.createRadialGradient(pScreenX, pScreenY, 200, pScreenX, pScreenY, 700);
     vigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    vigGrad.addColorStop(0.7, 'rgba(8, 12, 22, 0.45)');
-    vigGrad.addColorStop(1, 'rgba(4, 7, 14, 0.95)');
+    vigGrad.addColorStop(0.65, 'rgba(3, 7, 18, 0.35)');
+    vigGrad.addColorStop(1, 'rgba(2, 6, 23, 0.92)');
     ctx.fillStyle = vigGrad;
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.restore();
+  }
+
+  renderZoneSign(ctx, camera, x, y, text, color) {
+    const sx = x - camera.x;
+    const sy = y - camera.y;
+    if (sx < -200 || sx > this.canvas.width + 200 || sy < -100 || sy > this.canvas.height + 100) return;
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.35;
+    ctx.font = '900 22px "Pretendard", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(text, sx, sy);
+    ctx.restore();
+  }
+
+  renderMapBorders(ctx, camera, mapW, mapH) {
+    ctx.save();
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 6;
+    ctx.shadowColor = '#3b82f6';
+    ctx.shadowBlur = 10;
+    ctx.strokeRect(-camera.x, -camera.y, mapW, mapH);
     ctx.restore();
   }
 

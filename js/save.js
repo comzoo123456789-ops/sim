@@ -20,6 +20,9 @@ class SaveManager {
       },
       achievements: {}, // { ach_first_clear: true, ... }
       unlockedBestiary: ['paper', 'slime'],
+      unlockedStages: ['1-1'],
+      stageStars: {}, // { '1-1': 3, '1-2': 2 }
+      clearedStages: [],
       totalRuns: 0,
       totalKills: 0,
       totalPropsDestroyed: 0
@@ -38,7 +41,10 @@ class SaveManager {
           ...parsed,
           upgrades: { ...this.data.upgrades, ...(parsed.upgrades || {}) },
           achievements: { ...this.data.achievements, ...(parsed.achievements || {}) },
-          highScore: { ...this.data.highScore, ...(parsed.highScore || {}) }
+          highScore: { ...this.data.highScore, ...(parsed.highScore || {}) },
+          unlockedStages: parsed.unlockedStages || ['1-1'],
+          stageStars: parsed.stageStars || {},
+          clearedStages: parsed.clearedStages || []
         };
       }
     } catch (e) {
@@ -52,6 +58,38 @@ class SaveManager {
     } catch (e) {
       console.warn('Save write failed', e);
     }
+  }
+
+  isStageUnlocked(stageId) {
+    return this.data.unlockedStages.includes(stageId);
+  }
+
+  getStageStars(stageId) {
+    return this.data.stageStars[stageId] || 0;
+  }
+
+  saveStageClear(stageId, stars, goldReward) {
+    if (!this.data.clearedStages.includes(stageId)) {
+      this.data.clearedStages.push(stageId);
+    }
+    const curStars = this.data.stageStars[stageId] || 0;
+    this.data.stageStars[stageId] = Math.max(curStars, stars);
+
+    // 다음 스테이지 자동 해금
+    const parts = stageId.split('-');
+    if (parts.length === 2) {
+      const nextNum = parseInt(parts[1], 10) + 1;
+      const nextId = `${parts[0]}-${nextNum}`;
+      if (!this.data.unlockedStages.includes(nextId) && nextNum <= 10) {
+        this.data.unlockedStages.push(nextId);
+      }
+    }
+
+    if (goldReward > 0) {
+      this.addGold(goldReward);
+    }
+
+    this.save();
   }
 
   getGold() {

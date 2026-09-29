@@ -790,6 +790,8 @@ class MonsterManager {
     this.enemyBullets = [];
     this.warningZones = [];
     this.spawnTimer = 0;
+    this.currentStage = null;
+    this.stageBossSpawned = false;
   }
 
   reset() {
@@ -797,12 +799,18 @@ class MonsterManager {
     this.enemyBullets = [];
     this.warningZones = [];
     this.spawnTimer = 0;
+    this.stageBossSpawned = false;
     this.boss1Spawned = false;
     this.boss2Spawned = false;
     this.boss3Spawned = false;
     this.event1Spawned = false;
     this.event2Spawned = false;
     this.event3Spawned = false;
+  }
+
+  setStage(stageDef) {
+    this.currentStage = stageDef;
+    this.reset();
   }
 
   spawnChildSlimes(x, y) {
@@ -838,7 +846,15 @@ class MonsterManager {
   update(dt, player, gameTime, effectEngine) {
     // 1. 타임라인에 따른 몬스터 주기적 스폰
     this.spawnTimer += dt;
-    const spawnInterval = Math.max(0.4, 1.8 - ((600 - gameTime) / 600) * 1.3);
+
+    let spawnInterval = 1.4;
+    if (this.currentStage) {
+      const elapsed = this.currentStage.duration - gameTime;
+      const rateMul = this.currentStage.spawnRate || 1.0;
+      spawnInterval = Math.max(0.35, (1.6 / rateMul) - (elapsed / this.currentStage.duration) * 0.7);
+    } else {
+      spawnInterval = Math.max(0.4, 1.8 - ((600 - gameTime) / 600) * 1.3);
+    }
 
     if (this.spawnTimer >= spawnInterval) {
       this.spawnTimer = 0;
@@ -846,7 +862,11 @@ class MonsterManager {
     }
 
     // 2. 보스 및 돌발 이벤트 시간대 체크
-    this.checkBossTimeline(gameTime, player, effectEngine);
+    if (this.currentStage) {
+      this.checkStageBossTimeline(gameTime, player, effectEngine);
+    } else {
+      this.checkBossTimeline(gameTime, player, effectEngine);
+    }
 
     // 3. 몬스터 업데이트
     for (let i = this.monsters.length - 1; i >= 0; i--) {
@@ -899,6 +919,29 @@ class MonsterManager {
 
         this.warningZones.splice(i, 1);
       }
+    }
+  }
+
+  checkStageBossTimeline(gameTime, player, effectEngine) {
+    if (!this.currentStage || !player) return;
+
+    const elapsed = this.currentStage.duration - gameTime;
+
+    // 스테이지 보스가 지정되어 있고 보스 스폰 시간에 도달했을 때
+    if (this.currentStage.boss && !this.stageBossSpawned && elapsed >= (this.currentStage.bossTime || 40)) {
+      this.stageBossSpawned = true;
+      const bKey = this.currentStage.boss;
+      const bDef = window.GAME_DATA.MONSTERS[bKey];
+
+      if (effectEngine) {
+        effectEngine.spawnEventBanner(`⚠️ [결재선 보스 출현] ${bDef ? bDef.name : '상사 등장'}!`, bDef ? bDef.title : '결재판을 지키세요!', '#ff2255');
+        effectEngine.screenShake(12, 0.5);
+      }
+      if (window.soundEngine) window.soundEngine.playBossAlert();
+
+      const ang = Math.random() * Math.PI * 2;
+      const boss = new Monster(bKey, player.x + Math.cos(ang) * 260, player.y + Math.sin(ang) * 260);
+      this.monsters.push(boss);
     }
   }
 

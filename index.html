@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>야근 탈출: 오피스 서바이벌 (Office Escape Survivor)</title>
   <meta name="description" content="쏟아지는 업무와 상사들을 물리치고 10분 만에 정시 퇴근하라! 2D 로그라이크 탄막 서바이벌">
-  <link rel="stylesheet" href="css/style.css?v=20260929_108">
+  <link rel="stylesheet" href="css/style.css?v=20260929_109">
 </head>
 <body>
   <div id="app">
@@ -93,20 +93,44 @@
           </div>
           <p class="modal-subtitle">10분간 쏟아지는 야근 폭격을 버텨내고 밤 11시 막차를 타세요!</p>
 
-          <!-- 4대 메인 탭 네비게이션 -->
+          <!-- 5대 메인 탭 네비게이션 -->
           <div class="menu-tabs-bar">
-            <button class="menu-tab-btn active" data-tab="char">🧑‍💼 사원 출근</button>
+            <button class="menu-tab-btn active" data-tab="stage">📋 챕터/스테이지</button>
+            <button class="menu-tab-btn" data-tab="char">🧑‍💼 사원 출근</button>
             <button class="menu-tab-btn" data-tab="shop">💰 연봉 협상</button>
             <button class="menu-tab-btn" data-tab="ach">🏆 사내 업적</button>
             <button class="menu-tab-btn" data-tab="bestiary">📖 업무 도감</button>
           </div>
         </div>
 
+        <!-- 탭 0: 챕터 & 스테이지 (1-1 ~ 1-10) 패널 -->
+        <div id="tabPanelStage" class="tab-panel active">
+          <div class="chapter-header-box">
+            <div class="chapter-title-col">
+              <span class="chapter-badge">CHAPTER 1</span>
+              <h3 class="chapter-title">🏢 판교 테크노밸리 스타트업 본사</h3>
+              <p class="chapter-subtitle">1-1 탕비실부터 1-10 대표이사실까지 10단계 결재선을 차례로 돌파하세요!</p>
+            </div>
+            <div class="mode-toggle-group">
+              <button id="btnModeStage" class="mode-toggle-btn active">🚀 스테이지 돌파 (1-1~1-10)</button>
+              <button id="btnModeSurvival" class="mode-toggle-btn">⏱️ 10분 무한 서바이벌</button>
+            </div>
+          </div>
+          <div class="stage-grid-container" id="stageGridContainer"></div>
+          <div class="modal-footer stage-footer">
+            <div class="stage-selected-info">
+              <span id="selectedStageTitle" class="stage-selected-title">선택된 스테이지: 1-1 탕비실 커피 쟁탈전</span>
+              <span id="selectedStageReward" class="stage-selected-reward">클리어 보상: +200 코인</span>
+            </div>
+            <button id="btnStartSelectedStage" class="btn-primary">스테이지 출근하기 ➔</button>
+          </div>
+        </div>
+
         <!-- 탭 1: 사원 출근 패널 -->
-        <div id="tabPanelChar" class="tab-panel active">
+        <div id="tabPanelChar" class="tab-panel">
           <div class="char-card-grid" id="charCardGrid"></div>
           <div class="modal-footer">
-            <button id="btnStartGame" class="btn-primary">야근 탈출 출근하기 ➔</button>
+            <button id="btnStartGame" class="btn-primary">선택 사원으로 출근 ➔</button>
           </div>
         </div>
 
@@ -123,6 +147,39 @@
         <!-- 탭 4: 업무 도감 패널 -->
         <div id="tabPanelBestiary" class="tab-panel">
           <div class="bestiary-list" id="bestiaryList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 스테이지 클리어 성공 축하 모달 -->
+    <div id="stageClearModal" class="modal-overlay">
+      <div class="modal-window clear-window">
+        <div class="modal-header">
+          <div class="clear-star-rating" id="clearStarRating">
+            <span class="star-pill star-1">⭐</span>
+            <span class="star-pill star-2">⭐</span>
+            <span class="star-pill star-3">⭐</span>
+          </div>
+          <h2 class="modal-title" style="color: #00ffaa;">🎉 STAGE CLEAR!</h2>
+          <p id="stageClearSubtitle" class="modal-subtitle">1-1 탕비실 커피 쟁탈전 결재 승인 완료!</p>
+        </div>
+        <div class="end-stats-card">
+          <div class="stat-row">
+            <span>클리어 시간</span>
+            <b id="clearTimeVal">01:00</b>
+          </div>
+          <div class="stat-row">
+            <span>처치한 업무 몬스터</span>
+            <b id="clearKillsVal">42 마리</b>
+          </div>
+          <div class="stat-row">
+            <span>획득한 보너스 코인</span>
+            <b id="clearGoldVal" style="color:#ffd700;">+200 코인</b>
+          </div>
+        </div>
+        <div class="modal-footer-column">
+          <button id="btnNextStage" class="btn-primary">다음 결재선(스테이지) 출근 ➔</button>
+          <button id="btnClearToLobby" class="btn-secondary">스테이지 목록으로 귀환 📋</button>
         </div>
       </div>
     </div>
@@ -209,14 +266,14 @@
   </div>
 
   <!-- 스크립트 로드 순서 엄수 -->
-  <script src="js/sound.js?v=20260929_108"></script>
-  <script src="js/data.js?v=20260929_108"></script>
-  <script src="js/save.js?v=20260929_108"></script>
-  <script src="js/props.js?v=20260929_108"></script>
-  <script src="js/drops.js?v=20260929_108"></script>
-  <script src="js/weapons.js?v=20260929_108"></script>
-  <script src="js/monsters.js?v=20260929_108"></script>
-  <script src="js/player.js?v=20260929_108"></script>
-  <script src="js/game.js?v=20260929_108"></script>
+  <script src="js/sound.js?v=20260929_109"></script>
+  <script src="js/data.js?v=20260929_109"></script>
+  <script src="js/save.js?v=20260929_109"></script>
+  <script src="js/props.js?v=20260929_109"></script>
+  <script src="js/drops.js?v=20260929_109"></script>
+  <script src="js/weapons.js?v=20260929_109"></script>
+  <script src="js/monsters.js?v=20260929_109"></script>
+  <script src="js/player.js?v=20260929_109"></script>
+  <script src="js/game.js?v=20260929_109"></script>
 </body>
 </html>
