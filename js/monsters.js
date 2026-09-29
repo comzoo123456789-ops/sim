@@ -246,200 +246,541 @@ class Monster {
     ctx.restore();
   }
 
-  // 1. 날아다니는 A4 서류 뭉치
+  // 1. 날아다니는 A4 서류 뭉치 (Flying Paper Monster)
   renderPaper(ctx) {
-    const wobble = Math.sin(this.animTimer) * 3;
-    ctx.fillStyle = '#f8fafc';
-    ctx.shadowColor = '#94a3b8';
-    ctx.shadowBlur = 4;
-    ctx.fillRect(-8, -11 + wobble, 16, 22);
+    const wobble = Math.sin(this.animTimer) * 4;
+    const flap = Math.cos(this.animTimer * 1.5) * 0.15;
 
+    ctx.save();
+    ctx.rotate(flap);
+
+    // 3단 레이어 날갯짓 서류
+    // 뒷장 그림자 서류
     ctx.fillStyle = '#cbd5e1';
-    ctx.fillRect(-6, -7 + wobble, 12, 2);
-    ctx.fillRect(-6, -3 + wobble, 12, 2);
-    ctx.fillRect(-6, 1 + wobble, 8, 2);
+    ctx.fillRect(-10, -13 + wobble, 18, 24);
 
-    // 붉은 반려 도장 마크
-    ctx.fillStyle = '#ef4444';
-    ctx.font = 'bold 8px sans-serif';
-    ctx.fillText('REJECT', -8, 8 + wobble);
-  }
+    // 중간장
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(-8, -12 + wobble * 0.8, 18, 24);
 
-  // 2. 엑셀 수식 슬라임 (초록 젤리 + 격자무늬)
-  renderSlime(ctx) {
-    const squish = Math.sin(this.animTimer) * 0.15;
-    ctx.fillStyle = '#10b981';
-    ctx.shadowColor = '#10b981';
+    // 앞장 (메인 고해상도 서류)
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0, 240, 255, 0.4)';
     ctx.shadowBlur = 8;
     ctx.beginPath();
-    ctx.ellipse(0, 0, this.radius * (1 + squish), this.radius * (1 - squish), 0, 0, Math.PI * 2);
+    ctx.roundRect(-9, -14 + wobble, 18, 25, [3, 6, 2, 2]); // 우상단 종이 접힘
     ctx.fill();
+    ctx.shadowBlur = 0;
 
-    // 엑셀 셀 라인
-    ctx.strokeStyle = '#047857';
-    ctx.lineWidth = 1.2;
+    // 접힌 우상단 모서리
+    ctx.fillStyle = '#94a3b8';
     ctx.beginPath();
-    ctx.moveTo(-this.radius * 0.6, 0);
-    ctx.lineTo(this.radius * 0.6, 0);
-    ctx.moveTo(0, -this.radius * 0.6);
-    ctx.lineTo(0, this.radius * 0.6);
-    ctx.stroke();
-
-    // 분노한 슬라임 눈
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(-4, -3, 3, 0, Math.PI * 2);
-    ctx.arc(4, -3, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.arc(-3.5, -3, 1.5, 0, Math.PI * 2);
-    ctx.arc(4.5, -3, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // 3. 고장난 폭주 복사기
-  renderCopier(ctx) {
-    ctx.fillStyle = '#475569';
-    ctx.fillRect(-14, -14, 28, 28);
-
-    // 스캐너 빛
-    ctx.fillStyle = '#38bdf8';
-    ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 10;
-    ctx.fillRect(-10, -10, 20, 6);
-
-    // 경고등 (적색 점멸)
-    ctx.fillStyle = Math.sin(this.animTimer * 2) > 0 ? '#ef4444' : '#7f1d1d';
-    ctx.beginPath();
-    ctx.arc(8, -14, 3, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // 4. 슬랙 알림 유령 (@Channel 빨간 뱃지)
-  renderSlack(ctx) {
-    const floatY = Math.sin(this.animTimer) * 4;
-    ctx.fillStyle = 'rgba(238, 242, 255, 0.85)';
-    ctx.shadowColor = '#6366f1';
-    ctx.shadowBlur = 12;
-
-    ctx.beginPath();
-    ctx.arc(0, -4 + floatY, 12, Math.PI, 0);
-    ctx.lineTo(12, 8 + floatY);
-    ctx.lineTo(6, 4 + floatY);
-    ctx.lineTo(0, 8 + floatY);
-    ctx.lineTo(-6, 4 + floatY);
-    ctx.lineTo(-12, 8 + floatY);
+    ctx.moveTo(4, -14 + wobble);
+    ctx.lineTo(9, -9 + wobble);
+    ctx.lineTo(4, -9 + wobble);
     ctx.closePath();
     ctx.fill();
 
-    // 빨간색 @ 알림 뱃지
+    // 텍스트 라인 & 표 구조
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(-6, -8 + wobble, 10, 1.5);
+    ctx.fillRect(-6, -4 + wobble, 12, 1.5);
+    ctx.fillRect(-6, 0 + wobble, 8, 1.5);
+
+    // 붉은 결재 반려 도장 (REJECT)
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(-7, 3 + wobble, 14, 7);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = '900 6.5px "Pretendard", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('반려', 0, 8.5 + wobble);
+
+    ctx.restore();
+  }
+
+  // 2. 엑셀 수식 슬라임 (Excel Error Slime)
+  renderSlime(ctx) {
+    const squish = Math.sin(this.animTimer) * 0.12;
+    const r = this.radius;
+
+    // 투명 에메랄드 젤리 본체
+    const grad = ctx.createRadialGradient(0, -r * 0.3, r * 0.2, 0, 0, r);
+    grad.addColorStop(0, '#34d399');
+    grad.addColorStop(0.6, '#059669');
+    grad.addColorStop(1, '#064e3b');
+
+    ctx.fillStyle = grad;
+    ctx.shadowColor = '#10b981';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * (1 + squish), r * (1 - squish), 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 엑셀 격자 그리드 라인
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.7, -r * 0.1);
+    ctx.lineTo(r * 0.7, -r * 0.1);
+    ctx.moveTo(-r * 0.7, r * 0.3);
+    ctx.lineTo(r * 0.7, r * 0.3);
+    ctx.moveTo(0, -r * 0.7);
+    ctx.lineTo(0, r * 0.7);
+    ctx.stroke();
+
+    // 슬라임 내부 부유 에러 텍스트
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 4;
+    ctx.fillText('#REF!', 0, r * 0.45);
+    ctx.shadowBlur = 0;
+
+    // 반짝이는 큰 눈망울 (초롱초롱 분노 눈)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.35, -r * 0.25, 4.5, 5.5, -0.1, 0, Math.PI * 2);
+    ctx.ellipse(r * 0.35, -r * 0.25, 4.5, 5.5, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 동공
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(-r * 0.3, -r * 0.25, 2.5, 0, Math.PI * 2);
+    ctx.arc(r * 0.38, -r * 0.25, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 눈 하이라이트
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-r * 0.35, -r * 0.32, 1.2, 0, Math.PI * 2);
+    ctx.arc(r * 0.33, -r * 0.32, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 볼터치
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.5)';
+    ctx.beginPath();
+    ctx.arc(-r * 0.55, 0, 2.5, 0, Math.PI * 2);
+    ctx.arc(r * 0.55, 0, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 3. 고장난 폭주 복사기 (Broken Runaway Copier)
+  renderCopier(ctx) {
+    // 본체 (다크 슬레이트 메탈릭)
+    const bodyGrad = ctx.createLinearGradient(-16, 0, 16, 0);
+    bodyGrad.addColorStop(0, '#334155');
+    bodyGrad.addColorStop(0.5, '#475569');
+    bodyGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.roundRect(-16, -16, 32, 32, 5);
+    ctx.fill();
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 상단 스캐너 글래스 & 네온 레이저 빔
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-12, -12, 24, 8);
+
+    const beamX = -10 + (Math.sin(this.animTimer * 5) + 1) * 0.5 * 20;
+    ctx.fillStyle = '#00f0ff';
+    ctx.shadowColor = '#00f0ff';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(beamX - 1.5, -12, 3, 8);
+    ctx.shadowBlur = 0;
+
+    // 용지 걸림 아코디언 종이
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath();
+    ctx.moveTo(-10, 2);
+    ctx.lineTo(-6, -2);
+    ctx.lineTo(-2, 2);
+    ctx.lineTo(2, -2);
+    ctx.lineTo(6, 2);
+    ctx.lineTo(10, -2);
+    ctx.lineTo(10, 4);
+    ctx.lineTo(-10, 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // 경고 사이렌 등 (상단)
+    const isBlink = Math.sin(this.animTimer * 6) > 0;
+    ctx.fillStyle = isBlink ? '#ef4444' : '#7f1d1d';
+    ctx.shadowColor = isBlink ? '#ef4444' : 'transparent';
+    ctx.shadowBlur = isBlink ? 12 : 0;
+    ctx.beginPath();
+    ctx.roundRect(4, -20, 8, 5, [3, 3, 0, 0]);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 전면 배출구
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-12, 8, 24, 5);
+  }
+
+  // 4. 슬랙 알림 유령 (Unread Slack Ghost)
+  renderSlack(ctx) {
+    const floatY = Math.sin(this.animTimer) * 5;
+    const wave = Math.sin(this.animTimer * 2) * 3;
+
+    ctx.save();
+    ctx.translate(0, floatY);
+
+    // 고스트 실루엣
+    const ghostGrad = ctx.createLinearGradient(0, -18, 0, 16);
+    ghostGrad.addColorStop(0, 'rgba(238, 242, 255, 0.95)');
+    ghostGrad.addColorStop(0.7, 'rgba(199, 210, 254, 0.85)');
+    ghostGrad.addColorStop(1, 'rgba(129, 140, 248, 0)');
+
+    ctx.fillStyle = ghostGrad;
+    ctx.shadowColor = '#6366f1';
+    ctx.shadowBlur = 14;
+
+    ctx.beginPath();
+    ctx.arc(0, -8, 14, Math.PI, 0);
+    ctx.lineTo(14, 10 + wave);
+    ctx.quadraticCurveTo(7, 4, 0, 10 - wave);
+    ctx.quadraticCurveTo(-7, 4, -14, 10 + wave);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 슬랙 4색 해시태그 심볼 (#)
+    ctx.lineWidth = 2;
+    // 빨강
+    ctx.strokeStyle = '#e01e5a';
+    ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(-6, 2); ctx.stroke();
+    // 노랑
+    ctx.strokeStyle = '#ecb22e';
+    ctx.beginPath(); ctx.moveTo(6, -6); ctx.lineTo(6, 2); ctx.stroke();
+    // 초록
+    ctx.strokeStyle = '#2eb67d';
+    ctx.beginPath(); ctx.moveTo(-8, -4); ctx.lineTo(4, -4); ctx.stroke();
+    // 파랑
+    ctx.strokeStyle = '#36c5f0';
+    ctx.beginPath(); ctx.moveTo(-4, 0); ctx.lineTo(8, 0); ctx.stroke();
+
+    // 붉은 분노 유령 눈
     ctx.fillStyle = '#ef4444';
     ctx.shadowColor = '#ef4444';
     ctx.shadowBlur = 8;
     ctx.beginPath();
-    ctx.arc(8, -8 + floatY, 6, 0, Math.PI * 2);
+    ctx.ellipse(-5, -8, 2.5, 3.5, 0.2, 0, Math.PI * 2);
+    ctx.ellipse(5, -8, 2.5, 3.5, -0.2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 상단 플로팅 @99+ 빨간 알림 뱃지
+    ctx.fillStyle = '#dc2626';
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.roundRect(2, -26, 18, 12, 6);
+    ctx.fill();
+    ctx.shadowBlur = 0;
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 8px sans-serif';
-    ctx.fillText('@', 5, -5 + floatY);
+    ctx.font = '900 7.5px "Pretendard", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('@99+', 11, -17.5);
+
+    ctx.restore();
   }
 
-  // 5. 간식 도둑 (월급 루팡)
+  // 5. 탕비실 믹스커피 도둑 (Coffee Thief Bandit)
   renderThief(ctx) {
-    ctx.fillStyle = '#334155';
+    const legStride = Math.sin(this.animTimer * 2) * 5;
+
+    ctx.save();
+
+    // 발/다리 뜀박질
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-6, 4, 4, 8 + legStride);
+    ctx.fillRect(2, 4, 4, 8 - legStride);
+
+    // 도둑 몸체 (스텔스 후드)
+    ctx.fillStyle = '#1e293b';
     ctx.beginPath();
-    ctx.arc(0, -4, 10, 0, Math.PI * 2);
+    ctx.roundRect(-10, -12, 20, 18, 5);
     ctx.fill();
 
-    // 안대 / 마스크
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(-10, -8, 20, 5);
+    // 머리 & 도둑 마스크
+    ctx.fillStyle = '#fcd34d';
+    ctx.beginPath();
+    ctx.arc(0, -18, 9, 0, Math.PI * 2);
+    ctx.fill();
 
-    // 훔친 탕비실 과자 봉지
+    // 검은 안대 마스크
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(-8, -21, 16, 5);
+
+    // 날카로운 눈빛
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-5, -20, 2, 2.5);
+    ctx.fillRect(3, -20, 2, 2.5);
+
+    // 훔친 거대한 맥심 골드 커피믹스 보따리
     ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(-12, 2, 8, 10);
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.roundRect(-18, -10, 12, 18, 4);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 튀어나온 노란 커피믹스 스틱들
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(-17, -15, 3, 8);
+    ctx.fillRect(-13, -17, 3, 9);
+    ctx.fillStyle = '#ef4444'; // 빨간 맥심 라벨
+    ctx.fillRect(-17, -12, 3, 2);
+    ctx.fillRect(-13, -13, 3, 2);
+
+    ctx.restore();
   }
 
-  // 6. 03:00 보스: 꼰대 과장 (김과장)
+  // 6. 03:00 중간보스: 꼰대 과장 (김과장)
   renderBossManager(ctx) {
-    // 양복 몸체 (갈색 정장)
-    ctx.fillStyle = '#78350f';
-    ctx.fillRect(-16, -6, 32, 26);
+    ctx.save();
 
-    // 머리 & 벗겨진 이마
+    // 꼰대 분노 오라 펄스
+    const auraPulse = (Math.sin(this.animTimer) + 1) * 0.5;
+    ctx.strokeStyle = `rgba(245, 158, 11, ${0.3 + auraPulse * 0.4})`;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(0, -10, this.radius + 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 양복 수트 (브라운 체크 패턴)
+    ctx.fillStyle = '#78350f';
+    ctx.beginPath();
+    ctx.roundRect(-20, -10, 40, 32, 6);
+    ctx.fill();
+
+    // 와이셔츠 & 줄무늬 넥타이
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(-4, -10, 8, 14);
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(-2, -9, 4, 18);
+
+    // 머리 & 벗겨진 이마 콤보버 머리
     ctx.fillStyle = '#fde047';
     ctx.beginPath();
-    ctx.arc(0, -16, 12, 0, Math.PI * 2);
+    ctx.arc(0, -24, 14, 0, Math.PI * 2);
     ctx.fill();
 
-    // 안경
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(-9, -19, 7, 5);
-    ctx.strokeRect(2, -19, 7, 5);
+    // 콤보버 흑발 머리카락 (가르마)
+    ctx.fillStyle = '#1e1e24';
+    ctx.beginPath();
+    ctx.arc(0, -27, 14.5, Math.PI * 0.9, Math.PI * 1.9);
+    ctx.fill();
+    // 흩날리는 잔머리
+    ctx.fillRect(8, -26, 6, 2);
 
-    // '라떼는' 서류철
-    ctx.fillStyle = '#3b82f6';
-    ctx.fillRect(-22, -2, 10, 16);
+    // 금테 안경 & 번뜩이는 렌즈
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 1.8;
+    ctx.strokeRect(-11, -26, 8, 6);
+    ctx.strokeRect(3, -26, 8, 6);
+    ctx.beginPath(); ctx.moveTo(-3, -23); ctx.lineTo(3, -23); ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-8, -25, 3, 2);
+    ctx.fillRect(6, -25, 3, 2);
+
+    // 오른손: 김이 모락모락 피어나는 'LATTE' 머그잔
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.roundRect(16, -14, 12, 14, 3);
+    ctx.fill();
+    ctx.fillStyle = '#ef4444';
+    ctx.font = '900 6px sans-serif';
+    ctx.fillText('LATTE', 22, -6);
+
+    // 모락모락 커피 김 (스팀)
+    const steamY = Math.sin(this.animTimer * 3) * 4;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(20, -16);
+    ctx.quadraticCurveTo(24, -20 + steamY, 20, -25);
+    ctx.stroke();
+
+    // 왼손: 두꺼운 파란색 결재 서류철 바인더
+    ctx.fillStyle = '#2563eb';
+    ctx.fillRect(-28, -12, 10, 22);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-26, -9, 6, 16);
+
+    ctx.restore();
   }
 
-  // 7. 07:00 보스: 분노의 부장님 (박부장)
+  // 7. 07:00 엘리트보스: 분노의 부장님 (박부장)
   renderBossDirector(ctx) {
-    // 붉은 아우라
-    ctx.shadowColor = '#ef4444';
-    ctx.shadowBlur = 18;
+    ctx.save();
 
-    // 네이비 정장
-    ctx.fillStyle = '#1e1b4b';
-    ctx.fillRect(-22, -8, 44, 34);
-
-    // 머리
-    ctx.fillStyle = '#fca5a5';
+    // 붉은 화염 분노 아우라
+    const firePulse = Math.sin(this.animTimer * 4) * 4;
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 3.5;
+    ctx.shadowColor = '#ff0033';
+    ctx.shadowBlur = 24;
     ctx.beginPath();
-    ctx.arc(0, -22, 16, 0, Math.PI * 2);
+    ctx.arc(0, -12, this.radius + 8 + firePulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 네이비 스트라이프 최고급 수트
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect(-26, -14, 52, 42, 8);
     ctx.fill();
 
-    // 붉게 충혈된 눈
+    // 골드 단추
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    ctx.arc(0, -4, 2.5, 0, Math.PI * 2);
+    ctx.arc(0, 8, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 새빨간 파워 넥타이
     ctx.fillStyle = '#dc2626';
     ctx.beginPath();
-    ctx.arc(-5, -24, 3, 0, Math.PI * 2);
-    ctx.arc(5, -24, 3, 0, Math.PI * 2);
+    ctx.moveTo(-4, -14); ctx.lineTo(0, 16); ctx.lineTo(4, -14);
     ctx.fill();
 
-    // 거대한 결재판
-    ctx.fillStyle = '#713f12';
-    ctx.fillRect(-30, -5, 14, 22);
+    // 얼굴 (분노로 붉게 달아오름)
+    ctx.fillStyle = '#fca5a5';
+    ctx.beginPath();
+    ctx.arc(0, -32, 18, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 이마에 솟아오른 분노 핏줄 마크 (💢)
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-10, -44); ctx.lineTo(-6, -40); ctx.lineTo(-10, -36);
+    ctx.stroke();
+
+    // 핏발 선 불타는 눈 & 일자 눈썹
+    ctx.fillStyle = '#ff0000';
+    ctx.shadowColor = '#ff0000';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(-6, -34, 3.5, 0, Math.PI * 2);
+    ctx.arc(6, -34, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 거대한 최고급 가죽 결재 서류가방 (무기화)
+    ctx.fillStyle = '#78350f';
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-38, -12, 16, 28, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ffd700'; // 황금 버클
+    ctx.fillRect(-32, -2, 4, 6);
+
+    ctx.restore();
   }
 
-  // 8. 10:00 최종 보스: 대표이사 (CEO)
+  // 8. 10:00 최종보스: 철야 지시 대표이사 (CEO)
   renderBossCEO(ctx) {
-    // 보라색 패왕의 오라
-    ctx.shadowColor = '#a855f7';
-    ctx.shadowBlur = 24;
+    ctx.save();
 
-    // 프리미엄 블랙 턱시도 & 금장 단추
-    ctx.fillStyle = '#09090b';
-    ctx.fillRect(-26, -10, 52, 40);
-
-    ctx.fillStyle = '#ffd700';
-    ctx.fillRect(-2, -4, 4, 4);
-    ctx.fillRect(-2, 6, 4, 4);
-
-    // 백발 머리
-    ctx.fillStyle = '#f1f5f9';
+    // 보라색 패왕의 암흑 소용돌이 오라
+    const rot = performance.now() * 0.002;
+    ctx.save();
+    ctx.rotate(rot);
+    ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)';
+    ctx.lineWidth = 4;
+    ctx.shadowColor = '#c084fc';
+    ctx.shadowBlur = 30;
     ctx.beginPath();
-    ctx.arc(0, -26, 18, 0, Math.PI * 2);
+    ctx.arc(0, 0, this.radius + 12, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    ctx.shadowBlur = 0;
+
+    // 프리미엄 블랙 턱시도 & 순금 라펠
+    ctx.fillStyle = '#050508';
+    ctx.beginPath();
+    ctx.roundRect(-32, -18, 64, 52, 10);
     ctx.fill();
 
-    // 금테 선글라스
+    // 순금 깃 라펠
     ctx.fillStyle = '#ffd700';
-    ctx.fillRect(-12, -29, 24, 6);
+    ctx.beginPath();
+    ctx.moveTo(-24, -18); ctx.lineTo(-6, 12); ctx.lineTo(-2, -18);
+    ctx.moveTo(24, -18); ctx.lineTo(6, 12); ctx.lineTo(2, -18);
+    ctx.fill();
 
-    // 황금 만년필 & 사원 해고 통지서
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(-34, -8, 16, 26);
+    // 순백 와이셔츠 & 보타이
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-4, -18, 8, 14);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(-6, -16, 12, 4);
+
+    // 품격 있는 은발 포마드 헤어
+    ctx.fillStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.arc(0, -38, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 금테 틴트 선글라스
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(-16, -42, 32, 8);
+    ctx.fillStyle = '#a855f7';
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 8;
+    ctx.fillRect(-14, -40, 12, 5);
+    ctx.fillRect(2, -40, 12, 5);
+    ctx.shadowBlur = 0;
+
+    // 오른손: 번개 불꽃을 뿜는 황금 만년필
+    ctx.fillStyle = '#ffd700';
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 12;
+    ctx.fillRect(28, -20, 6, 24);
+    ctx.beginPath();
+    ctx.moveTo(28, -20); ctx.lineTo(31, -28); ctx.lineTo(34, -20);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 왼손: 붉은 도장이 찍힌 '사직서 반려' 통지서
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-44, -16, 16, 26);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = '900 6.5px sans-serif';
+    ctx.fillText('사직반려', -36, -3);
+
+    // 머리 위 절대 권력 황금 왕관 (👑)
+    ctx.fillStyle = '#ffd700';
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.moveTo(-14, -58);
+    ctx.lineTo(-10, -66);
+    ctx.lineTo(-4, -60);
+    ctx.lineTo(0, -68);
+    ctx.lineTo(4, -60);
+    ctx.lineTo(10, -66);
+    ctx.lineTo(14, -58);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
   }
 }
 
