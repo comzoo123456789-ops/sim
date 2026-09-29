@@ -53,12 +53,17 @@ class Player {
       atkMul: 1.0 + (charData.bonus.atkMul || 0),
       speedMul: 1.0 + (charData.bonus.speedMul || 0),
       areaMul: 1.0,
-      cdReduc: 0.0,
-      magnetRange: 60,
-      dmgReduc: 0.0,
+      cdReduc: charData.bonus.cdReduc || 0.0,
+      magnetRange: 65,
+      dmgReduc: charData.bonus.dmgReduc || 0.0,
       hpRegen: charData.bonus.regenRate || 0,
       critRate: charData.bonus.critRate || 0.05,
-      xpMul: 1.0 + (charData.bonus.xpMul || 0)
+      critDmgMul: 1.0 + (charData.bonus.critDmgMul || 0),
+      xpMul: 1.0 + (charData.bonus.xpMul || 0),
+      goldMul: 1.0,
+      dodgeRate: 0.0,
+      dashCdReduc: 0.0,
+      projectileSpeed: 1.0
     };
 
     this.recalculateStats();
@@ -69,14 +74,18 @@ class Player {
     let atkMul = 1.0 + (this.charData.bonus.atkMul || 0);
     let speedMul = 1.0 + (this.charData.bonus.speedMul || 0);
     let areaMul = 1.0;
-    let cdReduc = 0.0;
+    let cdReduc = this.charData.bonus.cdReduc || 0.0;
     let magnetRange = 65;
-    let dmgReduc = 0.0;
+    let dmgReduc = this.charData.bonus.dmgReduc || 0.0;
     let hpRegen = this.charData.bonus.regenRate || 0;
     let critRate = this.charData.bonus.critRate || 0.05;
+    let critDmgMul = 1.0 + (this.charData.bonus.critDmgMul || 0);
     let xpMul = 1.0 + (this.charData.bonus.xpMul || 0);
     let maxHpBonus = 1.0 + (this.charData.bonus.hpMul || 0);
     let goldMul = 1.0;
+    let dodgeRate = 0.0;
+    let dashCdReduc = 0.0;
+    let projectileSpeed = 1.0;
 
     // 연봉 협상 영구 강화 스탯 적용
     if (window.saveMgr) {
@@ -89,7 +98,7 @@ class Player {
       if (up.gold) goldMul += up.gold * 0.15;
     }
 
-    // 사내 복지 패시브 적용
+    // 사내 복지 패시브 적용 (10종)
     Object.entries(this.passives).forEach(([pId, lv]) => {
       const pDef = window.GAME_DATA.PASSIVES[pId];
       if (!pDef || !pDef.levels[lv - 1]) return;
@@ -102,6 +111,13 @@ class Player {
       if (cur.dmgReduc) dmgReduc = Math.min(0.70, dmgReduc + cur.dmgReduc);
       if (cur.hpRegen) hpRegen += cur.hpRegen;
       if (cur.revive) this.reviveCount = cur.revive;
+      if (cur.projectileSpeed) projectileSpeed += cur.projectileSpeed;
+      if (cur.critRate) critRate += cur.critRate;
+      if (cur.critDmgMul) critDmgMul += cur.critDmgMul;
+      if (cur.dodgeRate) dodgeRate = Math.min(0.60, dodgeRate + cur.dodgeRate);
+      if (cur.dashCdReduc) dashCdReduc = Math.min(0.50, dashCdReduc + cur.dashCdReduc);
+      if (cur.xpMul) xpMul += cur.xpMul;
+      if (cur.goldMul) goldMul += cur.goldMul;
     });
 
     this.stats = {
@@ -113,8 +129,12 @@ class Player {
       dmgReduc,
       hpRegen,
       critRate,
+      critDmgMul,
       xpMul,
-      goldMul
+      goldMul,
+      dodgeRate,
+      dashCdReduc,
+      projectileSpeed
     };
 
     const newMaxHp = Math.floor(this.charData.baseHp * maxHpBonus);
@@ -156,6 +176,14 @@ class Player {
   takeDamage(amount) {
     if (this.isDead || this.invincibleTimer > 0) return;
 
+    // 회피율 검사 (Passive: airpod)
+    if (this.stats.dodgeRate > 0 && Math.random() < this.stats.dodgeRate) {
+      if (window.game && window.game.effectEngine) {
+        window.game.effectEngine.spawnFloatingText(this.x, this.y - 25, '💨 회피!', '#00f0ff');
+      }
+      return;
+    }
+
     let actual = Math.max(1, Math.floor(amount * (1 - this.stats.dmgReduc)));
     this.hp -= actual;
     this.invincibleTimer = 0.45; // 0.45초 무적 시간
@@ -195,7 +223,8 @@ class Player {
 
     this.isDashing = true;
     this.dashTimer = 0.22;
-    this.dashCooldown = this.maxDashCooldown * (1 - this.stats.cdReduc * 0.4);
+    const cdFactor = Math.max(0.4, 1 - (this.stats.cdReduc * 0.3 + (this.stats.dashCdReduc || 0)));
+    this.dashCooldown = this.maxDashCooldown * cdFactor;
     this.invincibleTimer = 0.28;
 
     // 대시 방향 산출
@@ -295,7 +324,7 @@ class Player {
     this.y = Math.max(80, Math.min(2320, this.y));
   }
 
-  // 캐릭터 렌더링 (순수 캔버스 2D 벡터 아트 - 100% 지면 접지 & 양발 보행 모션)
+  // 🎨 귀여운 K-직장인 SD 애니메이션 캔버스 2D 벡터 렌더링 (No Emojis!)
   render(ctx, camera) {
     const sx = this.x - camera.x;
     const sy = this.y - camera.y;
@@ -307,20 +336,20 @@ class Player {
       ctx.save();
       ctx.translate(gx, gy);
       if (g.facing === 'left') ctx.scale(-1, 1);
-      ctx.globalAlpha = Math.max(0, g.alpha * 0.5);
+      ctx.globalAlpha = Math.max(0, g.alpha * 0.4);
       ctx.fillStyle = '#00f0ff';
       ctx.beginPath();
-      ctx.roundRect(-8, -28, 16, 28, 4);
+      ctx.arc(0, -22, 16, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     });
 
     ctx.save();
 
-    // 1. 발바닥 바로 아래 지면 밀착 그림자 (간격 0px, 둥둥 떠다님 원천 차단)
+    // 1. 발바닥 지면 밀착 그림자
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.beginPath();
-    ctx.ellipse(sx, sy, 16, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, 18, 7, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // 2. 피격 무적 시 깜빡임
@@ -335,97 +364,263 @@ class Player {
     }
 
     const isMoving = (this.vx !== 0 || this.vy !== 0);
-    const legStride = isMoving ? Math.sin(this.walkTimer) * 6 : 0;
-    const bodyTilt = isMoving ? Math.sin(this.walkTimer * 0.5) * 0.06 : 0;
+    const legStride = isMoving ? Math.sin(this.walkTimer) * 5 : 0;
+    const bodyBob = isMoving ? Math.abs(Math.sin(this.walkTimer)) * 2 : 0;
+    const bodyTilt = isMoving ? Math.sin(this.walkTimer * 0.5) * 0.05 : 0;
 
     ctx.rotate(bodyTilt);
 
-    // [하체: 실제 양발 걸음걸이 관절] (바닥 y = 0 에 단단히 착지)
-    ctx.fillStyle = '#1e293b'; // 슬랙스 바지
-    // 왼발
-    ctx.fillRect(-6, -14, 5, 14 + legStride);
-    // 오른발
-    ctx.fillRect(2, -14, 5, 14 - legStride);
-
-    // 구두 (Black Oxford Shoes)
-    ctx.fillStyle = '#090d16';
-    ctx.beginPath();
-    ctx.roundRect(-7, legStride, 7, 4, [2, 2, 1, 1]);
-    ctx.roundRect(1, -legStride, 7, 4, [2, 2, 1, 1]);
-    ctx.fill();
-
-    // [상체: 셔츠 & 직급별 의상]
-    if (this.id === 'intern') {
-      // 🧑‍💻 신입사원: 하늘색 셔츠 + 사원증 목걸이
-      ctx.fillStyle = '#38bdf8';
+    // [하체: 다리 & 신발]
+    if (this.id === 'planner') {
+      // 👩‍💼 기획팀 대리 한소희 (여): A라인 오피스 스커트 & 힐
+      ctx.fillStyle = '#334155'; // 차콜 스커트
       ctx.beginPath();
-      ctx.roundRect(-8, -28, 16, 15, 3);
+      ctx.moveTo(-9, -16 - bodyBob);
+      ctx.lineTo(9, -16 - bodyBob);
+      ctx.lineTo(11, -8 - bodyBob);
+      ctx.lineTo(-11, -8 - bodyBob);
+      ctx.closePath();
       ctx.fill();
 
-      // 사원증 끈 & 카드
+      // 다리 (살구빛)
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(-6, -8 - bodyBob, 4, 8 + legStride);
+      ctx.fillRect(2, -8 - bodyBob, 4, 8 - legStride);
+
+      // 구두 (Rose Gold Stiletto Heels)
+      ctx.fillStyle = '#f43f5e';
+      ctx.beginPath();
+      ctx.roundRect(-7, legStride - bodyBob, 6, 4, [2, 2, 1, 1]);
+      ctx.roundRect(1, -legStride - bodyBob, 6, 4, [2, 2, 1, 1]);
+      ctx.fill();
+    } else if (this.id === 'manager') {
+      // 👩‍💻 마케팅 팀장 박영희 (여): 네이비 슬림 슬랙스 & 펌프스 힐
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-7, -15 - bodyBob, 5, 15 + legStride);
+      ctx.fillRect(2, -15 - bodyBob, 5, 15 - legStride);
+
+      ctx.fillStyle = '#020617';
+      ctx.beginPath();
+      ctx.roundRect(-8, legStride - bodyBob, 7, 4, [2, 2, 1, 1]);
+      ctx.roundRect(1, -legStride - bodyBob, 7, 4, [2, 2, 1, 1]);
+      ctx.fill();
+    } else {
+      // 🧑‍💻 신입사원 이민우 / 👨‍💼 만년 대리 김철수 (남): 슬랙스 & 스니커즈/구두
+      ctx.fillStyle = (this.id === 'intern') ? '#1e293b' : '#334155';
+      ctx.fillRect(-7, -15 - bodyBob, 5, 15 + legStride);
+      ctx.fillRect(2, -15 - bodyBob, 5, 15 - legStride);
+
+      ctx.fillStyle = (this.id === 'intern') ? '#ffffff' : '#090d16';
+      ctx.beginPath();
+      ctx.roundRect(-8, legStride - bodyBob, 7, 4, [2, 2, 1, 1]);
+      ctx.roundRect(1, -legStride - bodyBob, 7, 4, [2, 2, 1, 1]);
+      ctx.fill();
+    }
+
+    // [상체: 직급별 오피스웨어 & 의상]
+    const bodyY = -30 - bodyBob;
+
+    if (this.id === 'intern') {
+      // 🧑‍💻 신입사원 이민우: 산뜻한 스카이블루 셔츠 + 노란 사원증
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.roundRect(-9, bodyY, 18, 16, 4);
+      ctx.fill();
+
+      // 화이트 셔츠 깃
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(-4, bodyY); ctx.lineTo(0, bodyY + 5); ctx.lineTo(4, bodyY);
+      ctx.fill();
+
+      // 사원증 목걸이 & 카드
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(-3, -28); ctx.lineTo(0, -20); ctx.lineTo(3, -28);
+      ctx.moveTo(-4, bodyY); ctx.lineTo(0, bodyY + 9); ctx.lineTo(4, bodyY);
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(-2.5, -20, 5, 7);
-    } else if (this.id === 'deputy') {
-      // 👨‍💼 만년 대리: 롤업 셔츠 + 네이비 조끼
+      ctx.fillRect(-3, bodyY + 9, 6, 8);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(-2, bodyY + 11, 4, 3);
+    } else if (this.id === 'planner') {
+      // 👩‍💼 기획팀 대리 한소희: 아이보리 블라우스 + 라벤더 니트 조끼
       ctx.fillStyle = '#f8fafc';
       ctx.beginPath();
-      ctx.roundRect(-8, -28, 16, 15, 3);
+      ctx.roundRect(-9, bodyY, 18, 16, 4);
+      ctx.fill();
+
+      // 라벤더 조끼
+      ctx.fillStyle = '#c084fc';
+      ctx.fillRect(-9, bodyY + 2, 4, 14);
+      ctx.fillRect(5, bodyY + 2, 4, 14);
+
+      // 골드 하트 목걸이
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(0, bodyY + 6, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (this.id === 'deputy') {
+      // 👨‍💼 만년 대리 김철수: 화이트 셔츠 + 다크 네이비 조끼 + 스트라이프 넥타이
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.roundRect(-9, bodyY, 18, 16, 4);
       ctx.fill();
 
       ctx.fillStyle = '#1e3a8a';
-      ctx.fillRect(-8, -28, 4, 15);
-      ctx.fillRect(4, -28, 4, 15);
+      ctx.fillRect(-9, bodyY + 1, 5, 15);
+      ctx.fillRect(4, bodyY + 1, 5, 15);
+
+      // 네이비/골드 넥타이
+      ctx.fillStyle = '#1e40af';
+      ctx.fillRect(-1.5, bodyY + 2, 3, 11);
     } else {
-      // 🧓 멘탈갑 과장: 짙은 정장 수트 + 붉은 넥타이
+      // 👩‍💻 마케팅 팀장 박영희: 카리스마 미드나잇 수트 & 골드 더블 버튼
       ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.roundRect(-9, -29, 18, 16, 3);
+      ctx.roundRect(-10, bodyY, 20, 16, 4);
       ctx.fill();
 
-      // 와이셔츠 & 붉은 넥타이
-      ctx.fillStyle = '#ffffff';
+      // 이너 버건디 탑
+      ctx.fillStyle = '#991b1b';
       ctx.beginPath();
-      ctx.moveTo(-3, -29); ctx.lineTo(0, -22); ctx.lineTo(3, -29);
+      ctx.moveTo(-4, bodyY); ctx.lineTo(0, bodyY + 6); ctx.lineTo(4, bodyY);
       ctx.fill();
 
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(-1.5, -28, 3, 10);
+      // 골드 단추 2개
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(-2, bodyY + 9, 1.5, 0, Math.PI * 2);
+      ctx.arc(2, bodyY + 9, 1.5, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    // [머리 & 얼굴]
-    ctx.fillStyle = '#fcd34d'; // 피부톤
+    // [머리 & 귀여운 얼굴 & 표정]
+    const headY = bodyY - 11;
+    const skinColor = '#fed7aa'; // 부드러운 웜톤 피치 피부
+
+    // 목
+    ctx.fillStyle = skinColor;
+    ctx.fillRect(-3, bodyY - 2, 6, 4);
+
+    // 얼굴 윤곽 (동글동글 귀여운 SD 뺨)
     ctx.beginPath();
-    ctx.arc(0, -36, 9, 0, Math.PI * 2);
+    ctx.arc(0, headY, 12, 0, Math.PI * 2);
     ctx.fill();
 
-    // 헤어스타일
-    ctx.fillStyle = '#1e1e24';
+    // 복숭아빛 볼터치
+    ctx.fillStyle = 'rgba(244, 63, 94, 0.4)';
     ctx.beginPath();
-    ctx.arc(0, -38, 9.5, Math.PI, Math.PI * 2);
+    ctx.arc(-6, headY + 3, 3, 0, Math.PI * 2);
+    ctx.arc(6, headY + 3, 3, 0, Math.PI * 2);
     ctx.fill();
 
-    // 눈 (초롱초롱한 눈빛)
+    // 초롱초롱한 애니 눈 & 하이라이트
     ctx.fillStyle = '#0f172a';
-    ctx.fillRect(2, -37, 2, 3);
+    ctx.beginPath();
+    ctx.ellipse(3, headY + 1, 2.5, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-    // 대리인 경우 뿔테 안경 추가
-    if (this.id === 'deputy') {
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 1.2;
-      ctx.strokeRect(1, -38, 4, 4);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(4, headY - 0.5, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 캐릭터별 개성 넘치는 헤어스타일 & 액세서리
+    if (this.id === 'intern') {
+      // 🧑‍💻 신입 이민우: 댄디 컷 뱅 헤어 (다크 브라운)
+      ctx.fillStyle = '#3e2723';
+      ctx.beginPath();
+      ctx.arc(0, headY - 2, 13, Math.PI * 0.9, Math.PI * 2.1);
+      ctx.fill();
+      // 앞머리 결
+      ctx.beginPath();
+      ctx.moveTo(-10, headY - 4);
+      ctx.lineTo(-4, headY - 1);
+      ctx.lineTo(2, headY - 3);
+      ctx.lineTo(8, headY - 1);
+      ctx.lineTo(12, headY - 5);
+      ctx.fill();
+    } else if (this.id === 'planner') {
+      // 👩‍💼 기획 한소희: 우아한 웨이브 포니테일 & 리본 (카라멜 브라운)
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.arc(0, headY - 2, 13, Math.PI * 0.85, Math.PI * 2.15);
+      ctx.fill();
+      // 옆머리 & 앞머리
+      ctx.fillRect(-12, headY - 2, 3, 9);
+      ctx.fillRect(8, headY - 2, 3, 9);
+      // 뒷머리 포니테일
+      ctx.beginPath();
+      ctx.arc(-11, headY - 2, 7, 0, Math.PI * 2);
+      ctx.fill();
+      // 리본 끈
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillRect(-13, headY - 5, 4, 6);
+    } else if (this.id === 'deputy') {
+      // 👨‍💼 만년 대리 김철수: 7:3 가르마 블랙 헤어 + 둥근 뿔테 안경
+      ctx.fillStyle = '#18181b';
+      ctx.beginPath();
+      ctx.arc(0, headY - 2, 13, Math.PI * 0.9, Math.PI * 2.1);
+      ctx.fill();
+      // 둥근 스마트 안경
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(3, headY + 1, 4.5, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      // 👩‍💻 마케팅 팀장 박영희: 시크한 칼단발 보브컷 + 골드 링 귀걸이 + 레드 립
+      ctx.fillStyle = '#09090b';
+      ctx.beginPath();
+      ctx.arc(0, headY - 2, 13.5, Math.PI * 0.8, Math.PI * 2.2);
+      ctx.fill();
+      // 볼을 감싸는 샤프한 단발 옆선
+      ctx.fillRect(-12, headY - 2, 4, 11);
+      ctx.fillRect(8, headY - 2, 4, 11);
+
+      // 골드 링 귀걸이
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(-8, headY + 6, 2.5, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 레드 립
+      ctx.fillStyle = '#e11d48';
+      ctx.fillRect(2, headY + 6, 3, 1.5);
     }
 
-    // [손 & 무기 파지 모션]
-    ctx.fillStyle = '#fcd34d';
+    // [손 & 스마트 오피스 기기 파지]
+    const handX = 8;
+    const handY = bodyY + 8 + (isMoving ? Math.sin(this.walkTimer) * 2 : 0);
+
+    ctx.fillStyle = skinColor;
     ctx.beginPath();
-    ctx.arc(6, -20 + (isMoving ? Math.sin(this.walkTimer) * 2 : 0), 3, 0, Math.PI * 2);
+    ctx.arc(handX, handY, 3.5, 0, Math.PI * 2);
     ctx.fill();
+
+    // 손에 들린 오피스 기물 (노트북/태블릿/머그)
+    if (this.id === 'intern') {
+      // 실버 맥북 노트북
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(handX - 2, handY - 5, 9, 7);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(handX, handY - 3, 5, 4);
+    } else if (this.id === 'planner') {
+      // 스마트 태블릿 & 애플 펜슬
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(handX - 2, handY - 6, 8, 10);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(handX, handY - 4, 5, 6);
+    } else if (this.id === 'deputy') {
+      // 커피 텀블러
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(handX - 1, handY - 5, 6, 9);
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(handX - 1, handY - 6, 6, 2);
+    }
 
     ctx.restore();
     ctx.restore();

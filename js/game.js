@@ -461,8 +461,10 @@ class GameEngine {
       { label: '자석 흡입', val: `${s.magnetRange}px`, icon: '🧲' },
       { label: '받는 피해 감소', val: `${Math.round(s.dmgReduc * 100)}%`, icon: '🛡️' },
       { label: '초당 HP 재생', val: `+${s.hpRegen.toFixed(1)}/초`, icon: '🌿' },
-      { label: '치명타 확률', val: `${Math.round(s.critRate * 100)}%`, icon: '💥' },
-      { label: '부활 기회', val: `${this.player.reviveCount}회`, icon: '🏖️' }
+      { label: '치명타율', val: `${Math.round(s.critRate * 100)}%`, icon: '💥' },
+      { label: '회피율', val: `${Math.round((s.dodgeRate || 0) * 100)}%`, icon: '💨' },
+      { label: '부활 기회', val: `${this.player.reviveCount}회`, icon: '🏖️' },
+      { label: '골드 획득량', val: `x${(s.goldMul || 1.0).toFixed(2)}`, icon: '🪙' }
     ];
 
     grid.innerHTML = statsList.map(item => `

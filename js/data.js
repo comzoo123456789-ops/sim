@@ -1,47 +1,59 @@
 // Office Escape Survivor - Game Constants & Data Registry
 
 window.GAME_DATA = {
-  // 1. 캐릭터 직급 데이터
+  // 1. 캐릭터 직급 데이터 (남/여 캐릭터 4종 완비)
   CHARACTERS: {
     intern: {
       id: 'intern',
       name: '신입사원 이민우',
-      title: '풋풋한 신입',
+      title: '풋풋한 신입 (남)',
       avatar: '🧑‍💻',
-      desc: '빠른 발과 불타는 열정으로 야근 지옥을 탈출합니다.',
+      desc: '빠른 발과 불타는 열정으로 야근 지옥을 탈출하는 새내기 사원입니다.',
       baseHp: 100,
       speed: 3.8,
       initialWeapon: 'stapler',
       bonusText: '이동 속도 +15% / 경험치 획득 +20%',
       bonus: { speedMul: 0.15, xpMul: 0.20 }
     },
+    planner: {
+      id: 'planner',
+      name: '기획팀 대리 한소희',
+      title: '스마트 기획자 (여)',
+      avatar: '👩‍💼',
+      desc: '완벽한 PT와 분석력으로 난관을 돌파하는 에이스 기획 대리입니다.',
+      baseHp: 110,
+      speed: 3.6,
+      initialWeapon: 'laser',
+      bonusText: '기본 공격력 +20% / 쿨타임 감소 -15%',
+      bonus: { atkMul: 0.20, cdReduc: 0.15 }
+    },
     deputy: {
       id: 'deputy',
       name: '만년 대리 김철수',
-      title: '숙련된 야근 전사',
+      title: '야근의 전설 (남)',
       avatar: '👨‍💼',
-      desc: '쌓인 짬바와 분노의 타건력으로 결재 서류를 부숩니다.',
-      baseHp: 120,
+      desc: '쌓인 짬바와 분노의 폭풍 타건력으로 결재 서류를 부수는 베테랑입니다.',
+      baseHp: 125,
       speed: 3.3,
       initialWeapon: 'keyboard',
-      bonusText: '기본 공격력 +20% / 치명타율 +10%',
-      bonus: { atkMul: 0.20, critRate: 0.10 }
+      bonusText: '치명타율 +15% / 치명타 피해량 +30%',
+      bonus: { critRate: 0.15, critDmgMul: 0.30 }
     },
     manager: {
       id: 'manager',
-      name: '멘탈갑 과장 박영희',
-      title: '철벽의 방어자',
-      avatar: '🧓',
-      desc: '어떤 폭풍 잔소리도 튕겨내는 강철 멘탈의 소유자입니다.',
+      name: '마케팅 팀장 박영희',
+      title: '철벽의 리더 (여)',
+      avatar: '👩‍💻',
+      desc: '어떤 폭풍 지시와 잔소리도 튕겨내는 카리스마 마케팅 팀장입니다.',
       baseHp: 160,
-      speed: 3.0,
+      speed: 3.1,
       initialWeapon: 'card',
-      bonusText: '최대 체력 +40% / 초당 HP 재생 +1.5%',
-      bonus: { hpMul: 0.40, regenRate: 1.5 }
+      bonusText: '최대 체력 +40% / 초당 HP 재생 +2.0 / 피해 감소 10%',
+      bonus: { hpMul: 0.40, regenRate: 2.0, dmgReduc: 0.10 }
     }
   },
 
-  // 2. 오피스 기본 무기 6종
+  // 2. 오피스 기본 무기 8종 (누적 스탯 완전 보장)
   WEAPONS: {
     stapler: {
       id: 'stapler',
@@ -58,14 +70,14 @@ window.GAME_DATA = {
       evolution: 'super_stapler',
       partnerPassive: 'glasses',
       levels: [
-        { desc: '기본 스테이플러 침 발사' },
-        { dmg: 24, desc: '피해량 증가 (+6)' },
-        { projectiles: 2, desc: '발사 침 개수 +1' },
-        { cooldown: 0.65, desc: '발사 속도 증가' },
-        { projectiles: 3, pierce: 2, desc: '발사 침 +1 & 관통력 +1' },
-        { dmg: 36, desc: '피해량 대폭 증가 (+12)' },
-        { projectiles: 4, cooldown: 0.45, desc: '발사 침 +1 & 쿨타임 대폭 감소' },
-        { dmg: 50, pierce: 3, desc: '최대 레벨! (관통 침 4연사)' }
+        { dmg: 18, cooldown: 0.85, projectiles: 1, pierce: 1, desc: '기본 스테이플러 침 발사' },
+        { dmg: 24, cooldown: 0.85, projectiles: 1, pierce: 1, desc: '피해량 증가 (+6)' },
+        { dmg: 24, cooldown: 0.85, projectiles: 2, pierce: 1, desc: '발사 침 개수 +1' },
+        { dmg: 28, cooldown: 0.65, projectiles: 2, pierce: 1, desc: '발사 속도 증가' },
+        { dmg: 28, cooldown: 0.65, projectiles: 3, pierce: 2, desc: '발사 침 +1 & 관통력 +1' },
+        { dmg: 38, cooldown: 0.65, projectiles: 3, pierce: 2, desc: '피해량 대폭 증가 (+10)' },
+        { dmg: 38, cooldown: 0.45, projectiles: 4, pierce: 2, desc: '발사 침 +1 & 쿨타임 대폭 감소' },
+        { dmg: 52, cooldown: 0.45, projectiles: 4, pierce: 3, desc: '최대 레벨! (관통 침 4연사)' }
       ]
     },
     drink: {
@@ -78,18 +90,19 @@ window.GAME_DATA = {
       cooldown: 1.8,
       area: 60,
       duration: 2.5,
+      projectiles: 1,
       color: '#ffaa00',
       evolution: 'super_drink',
       partnerPassive: 'eyedrop',
       levels: [
-        { desc: '바닥에 각성 장판 1개 투척' },
-        { dmg: 18, desc: '지속 피해량 증가 (+4)' },
-        { area: 80, desc: '장판 범위 30% 증가' },
-        { projectiles: 2, desc: '투척 개수 +1' },
-        { cooldown: 1.4, desc: '투척 쿨타임 감소' },
-        { dmg: 26, area: 100, desc: '피해량 & 범위 증가' },
-        { projectiles: 3, duration: 3.2, desc: '투척 개수 +1 & 지속 시간 증가' },
-        { dmg: 38, area: 120, desc: '최대 레벨! (광역 3중 폭풍 장판)' }
+        { dmg: 14, cooldown: 1.8, area: 60, duration: 2.5, projectiles: 1, desc: '바닥에 각성 장판 1개 투척' },
+        { dmg: 18, cooldown: 1.8, area: 60, duration: 2.5, projectiles: 1, desc: '지속 피해량 증가 (+4)' },
+        { dmg: 18, cooldown: 1.8, area: 80, duration: 2.5, projectiles: 1, desc: '장판 범위 30% 증가' },
+        { dmg: 22, cooldown: 1.8, area: 80, duration: 2.8, projectiles: 2, desc: '투척 개수 +1' },
+        { dmg: 22, cooldown: 1.4, area: 80, duration: 2.8, projectiles: 2, desc: '투척 쿨타임 감소' },
+        { dmg: 28, cooldown: 1.4, area: 100, duration: 3.0, projectiles: 2, desc: '피해량 & 범위 증가' },
+        { dmg: 28, cooldown: 1.2, area: 100, duration: 3.4, projectiles: 3, desc: '투척 개수 +1 & 지속 시간 증가' },
+        { dmg: 40, cooldown: 1.0, area: 125, duration: 3.8, projectiles: 3, desc: '최대 레벨! (광역 3중 폭풍 장판)' }
       ]
     },
     keyboard: {
@@ -107,14 +120,14 @@ window.GAME_DATA = {
       evolution: 'super_keyboard',
       partnerPassive: 'desk',
       levels: [
-        { desc: '전방 4방향 키캡 산탄 발사' },
-        { dmg: 32, desc: '피해량 증가 (+7)' },
-        { projectiles: 6, spread: 0.7, desc: '키캡 개수 +2 (범위 확장)' },
-        { cooldown: 0.95, desc: '연타 속도 증가' },
-        { dmg: 42, projectiles: 8, desc: '피해량 증가 & 키캡 개수 +2' },
-        { cooldown: 0.75, desc: '쿨타임 감소' },
-        { projectiles: 10, spread: 0.85, desc: '키캡 개수 10발로 증가' },
-        { dmg: 60, projectiles: 12, desc: '최대 레벨! (12발 산탄 폭격)' }
+        { dmg: 25, cooldown: 1.2, projectiles: 4, spread: 0.55, desc: '전방 4방향 키캡 산탄 발사' },
+        { dmg: 32, cooldown: 1.2, projectiles: 4, spread: 0.55, desc: '피해량 증가 (+7)' },
+        { dmg: 32, cooldown: 1.2, projectiles: 6, spread: 0.70, desc: '키캡 개수 +2 (범위 확장)' },
+        { dmg: 36, cooldown: 0.95, projectiles: 6, spread: 0.70, desc: '연타 속도 증가' },
+        { dmg: 44, cooldown: 0.95, projectiles: 8, spread: 0.75, desc: '피해량 증가 & 키캡 개수 +2' },
+        { dmg: 44, cooldown: 0.75, projectiles: 8, spread: 0.75, desc: '쿨타임 감소' },
+        { dmg: 50, cooldown: 0.75, projectiles: 10, spread: 0.85, desc: '키캡 개수 10발로 증가' },
+        { dmg: 65, cooldown: 0.60, projectiles: 12, spread: 0.90, desc: '최대 레벨! (12발 산탄 폭격)' }
       ]
     },
     stamp: {
@@ -126,18 +139,19 @@ window.GAME_DATA = {
       baseDmg: 45,
       cooldown: 2.2,
       area: 70,
+      strikes: 1,
       color: '#ff2255',
       evolution: 'super_stamp',
       partnerPassive: 'bankbook',
       levels: [
-        { desc: '적 머리 위에 결재 반려 도장 낙하' },
-        { dmg: 60, desc: '압살 피해량 증가 (+15)' },
-        { area: 90, desc: '타격 반경 확장' },
-        { strikes: 2, desc: '도장 낙하 횟수 +1' },
-        { cooldown: 1.7, desc: '결재 반려 쿨타임 감소' },
-        { dmg: 85, area: 110, desc: '피해량 & 범위 증가' },
-        { strikes: 3, cooldown: 1.3, desc: '도장 3연속 낙하' },
-        { dmg: 120, area: 130, strikes: 4, desc: '최대 레벨! (4연속 융단 반려 폭격)' }
+        { dmg: 45, cooldown: 2.2, area: 70, strikes: 1, desc: '적 머리 위에 결재 반려 도장 낙하' },
+        { dmg: 60, cooldown: 2.2, area: 70, strikes: 1, desc: '압살 피해량 증가 (+15)' },
+        { dmg: 60, cooldown: 2.2, area: 90, strikes: 1, desc: '타격 반경 확장' },
+        { dmg: 70, cooldown: 2.0, area: 90, strikes: 2, desc: '도장 낙하 횟수 +1' },
+        { dmg: 70, cooldown: 1.6, area: 90, strikes: 2, desc: '결재 반려 쿨타임 감소' },
+        { dmg: 90, cooldown: 1.6, area: 110, strikes: 2, desc: '피해량 & 범위 증가' },
+        { dmg: 90, cooldown: 1.3, area: 110, strikes: 3, desc: '도장 3연속 낙하' },
+        { dmg: 130, cooldown: 1.1, area: 130, strikes: 4, desc: '최대 레벨! (4연속 융단 반려 폭격)' }
       ]
     },
     card: {
@@ -155,14 +169,14 @@ window.GAME_DATA = {
       evolution: 'super_card',
       partnerPassive: 'headphone',
       levels: [
-        { desc: '회전하는 법인카드 2장 생성' },
-        { dmg: 22, desc: '타격 피해량 증가 (+6)' },
-        { count: 3, desc: '카드 개수 +1' },
-        { orbitSpeed: 4.2, desc: '회전 속도 증가' },
-        { count: 4, orbitRadius: 75, desc: '카드 개수 +1 & 회전 반경 증가' },
-        { dmg: 32, desc: '피해량 증가 (+10)' },
-        { count: 5, orbitSpeed: 5.2, desc: '카드 개수 5장 & 초고속 회전' },
-        { dmg: 48, count: 6, desc: '최대 레벨! (6장 황금 실드 결계)' }
+        { dmg: 16, count: 2, orbitRadius: 65, orbitSpeed: 3.2, desc: '회전하는 법인카드 2장 생성' },
+        { dmg: 22, count: 2, orbitRadius: 65, orbitSpeed: 3.5, desc: '타격 피해량 증가 (+6)' },
+        { dmg: 22, count: 3, orbitRadius: 70, orbitSpeed: 3.8, desc: '카드 개수 +1' },
+        { dmg: 26, count: 3, orbitRadius: 70, orbitSpeed: 4.5, desc: '회전 속도 및 피해량 증가' },
+        { dmg: 26, count: 4, orbitRadius: 78, orbitSpeed: 4.8, desc: '카드 개수 +1 & 회전 반경 증가' },
+        { dmg: 34, count: 4, orbitRadius: 78, orbitSpeed: 5.2, desc: '피해량 및 회전 속도 증가' },
+        { dmg: 38, count: 5, orbitRadius: 85, orbitSpeed: 5.8, desc: '카드 개수 5장 & 초고속 회전' },
+        { dmg: 50, count: 6, orbitRadius: 90, orbitSpeed: 6.5, desc: '최대 레벨! (6장 황금 실드 결계)' }
       ]
     },
     shredder: {
@@ -173,25 +187,75 @@ window.GAME_DATA = {
       type: 'spiral',
       baseDmg: 20,
       cooldown: 1.5,
+      projectiles: 1,
       speed: 5,
       pierce: 999,
       color: '#a044ff',
       evolution: 'super_shredder',
       partnerPassive: 'leave',
       levels: [
-        { desc: '나선형 관통 톱니 1개 발사' },
-        { dmg: 28, desc: '톱니 피해량 증가 (+8)' },
-        { projectiles: 2, desc: '양방향 톱니 발사' },
-        { cooldown: 1.1, desc: '발사 쿨타임 감소' },
-        { dmg: 38, projectiles: 3, desc: '3방향 톱니 발사' },
-        { speed: 7, desc: '톱니 비행 속도 & 지속 시간 증가' },
-        { projectiles: 4, cooldown: 0.8, desc: '4방향 톱니 발사' },
-        { dmg: 55, projectiles: 6, desc: '최대 레벨! (6방향 문서 분쇄 토네이도)' }
+        { dmg: 20, cooldown: 1.5, projectiles: 1, speed: 5, desc: '나선형 관통 톱니 1개 발사' },
+        { dmg: 28, cooldown: 1.5, projectiles: 1, speed: 5, desc: '톱니 피해량 증가 (+8)' },
+        { dmg: 28, cooldown: 1.5, projectiles: 2, speed: 5.5, desc: '양방향 톱니 발사' },
+        { dmg: 32, cooldown: 1.1, projectiles: 2, speed: 5.5, desc: '발사 쿨타임 감소' },
+        { dmg: 38, cooldown: 1.1, projectiles: 3, speed: 6.0, desc: '3방향 톱니 발사' },
+        { dmg: 38, cooldown: 1.0, projectiles: 3, speed: 7.0, desc: '톱니 비행 속도 & 지속 시간 증가' },
+        { dmg: 45, cooldown: 0.8, projectiles: 4, speed: 7.5, desc: '4방향 톱니 발사' },
+        { dmg: 60, cooldown: 0.7, projectiles: 6, speed: 8.5, desc: '최대 레벨! (6방향 문서 분쇄 토네이도)' }
+      ]
+    },
+    laser: {
+      id: 'laser',
+      name: 'PT 레이저 포인터',
+      icon: '🔦',
+      desc: '가장 가까운 적들을 일직선으로 관통하는 고출력 그린 레이저 빔을 발사합니다.',
+      type: 'laser',
+      baseDmg: 22,
+      cooldown: 1.1,
+      projectiles: 1,
+      speed: 16,
+      pierce: 999,
+      color: '#00ff88',
+      evolution: 'super_laser',
+      partnerPassive: 'timer',
+      levels: [
+        { dmg: 22, cooldown: 1.1, projectiles: 1, desc: '초록색 관통 레이저 빔 1줄기 발사' },
+        { dmg: 30, cooldown: 1.1, projectiles: 1, desc: '레이저 출력 및 피해량 증가 (+8)' },
+        { dmg: 30, cooldown: 1.1, projectiles: 2, desc: '트윈 레이저 빔 2줄기 발사' },
+        { dmg: 36, cooldown: 0.85, projectiles: 2, desc: '레이저 조사 쿨타임 감소' },
+        { dmg: 44, cooldown: 0.85, projectiles: 3, desc: '3방향 확산 레이저 빔 발사' },
+        { dmg: 52, cooldown: 0.70, projectiles: 3, desc: '피해량 & 조사 속도 증가' },
+        { dmg: 52, cooldown: 0.55, projectiles: 4, desc: '4방향 크로스 레이저 빔' },
+        { dmg: 72, cooldown: 0.40, projectiles: 4, desc: '최대 레벨! (초고속 4줄기 파괴 광선)' }
+      ]
+    },
+    coffee_bomb: {
+      id: 'coffee_bomb',
+      name: '갓 내린 텀블러',
+      icon: '☕',
+      desc: '뜨거운 커피 텀블러를 던져 강력한 360도 스플래시 폭발을 일으킵니다.',
+      type: 'bomb',
+      baseDmg: 35,
+      cooldown: 2.0,
+      area: 75,
+      projectiles: 1,
+      color: '#c2410c',
+      evolution: 'super_coffee',
+      partnerPassive: 'bonus',
+      levels: [
+        { dmg: 35, cooldown: 2.0, area: 75, projectiles: 1, desc: '뜨거운 커피 텀블러 투척 폭발' },
+        { dmg: 48, cooldown: 2.0, area: 75, projectiles: 1, desc: '폭발 피해량 증가 (+13)' },
+        { dmg: 48, cooldown: 2.0, area: 95, projectiles: 1, desc: '스플래시 폭발 반경 확장' },
+        { dmg: 56, cooldown: 1.7, area: 95, projectiles: 2, desc: '텀블러 2개 동시 투척' },
+        { dmg: 56, cooldown: 1.35, area: 95, projectiles: 2, desc: '투척 쿨타임 대폭 감소' },
+        { dmg: 72, cooldown: 1.35, area: 115, projectiles: 2, desc: '피해량 & 폭발 반경 증가' },
+        { dmg: 72, cooldown: 1.1, area: 115, projectiles: 3, desc: '텀블러 3개 동시 투척' },
+        { dmg: 105, cooldown: 0.9, area: 140, projectiles: 3, desc: '최대 레벨! (3중 화산 폭발 텀블러)' }
       ]
     }
   },
 
-  // 3. 초월 진화 무기 6종 (Super Weapons)
+  // 3. 초월 진화 무기 8종 (Super Weapons)
   SUPER_WEAPONS: {
     super_stapler: {
       id: 'super_stapler',
@@ -245,11 +309,11 @@ window.GAME_DATA = {
       icon: '👑',
       desc: '빛나는 8장의 블랙카드가 절대 방어벽을 두르며 충격파를 뿜어냅니다!',
       type: 'super_orbital',
-      baseDmg: 70,
+      baseDmg: 75,
       cooldown: 0.5,
       count: 8,
-      orbitRadius: 90,
-      orbitSpeed: 7.0,
+      orbitRadius: 95,
+      orbitSpeed: 7.5,
       color: '#ffd700'
     },
     super_shredder: {
@@ -262,10 +326,33 @@ window.GAME_DATA = {
       cooldown: 0.5,
       projectiles: 8,
       color: '#bb33ff'
+    },
+    super_laser: {
+      id: 'super_laser',
+      name: '🔥 [PT 결재 올패스 홀로그램 빔]',
+      icon: '🌟',
+      desc: '화면 전체를 꿰뚫는 4줄기의 영구적 무한 회전 홀로그램 레이저가 모든 적을 절단합니다!',
+      type: 'super_laser',
+      baseDmg: 95,
+      cooldown: 0.3,
+      projectiles: 4,
+      color: '#00ffaa'
+    },
+    super_coffee: {
+      id: 'super_coffee',
+      name: '🔥 [화산 폭발 에스프레소 캐논]',
+      icon: '🌋',
+      desc: '화면을 뒤흔드는 초거대 에스프레소 마그마 폭발로 광역 초토화!',
+      type: 'super_bomb',
+      baseDmg: 160,
+      cooldown: 0.8,
+      area: 200,
+      projectiles: 4,
+      color: '#ea580c'
     }
   },
 
-  // 4. 사내 복지 패시브 6종
+  // 4. 사내 복지 패시브 10종
   PASSIVES: {
     glasses: {
       id: 'glasses',
@@ -337,6 +424,54 @@ window.GAME_DATA = {
         { hpRegen: 2.0, desc: '초당 HP +2 회복' },
         { hpRegen: 3.5, desc: '초당 HP +3.5 회복' },
         { hpRegen: 5.0, revive: 1, desc: '초당 HP +5 & 사망 시 1회 부활 (최대)' }
+      ]
+    },
+    timer: {
+      id: 'timer',
+      name: '칼퇴 전자 스톱워치',
+      icon: '⏱️',
+      desc: '모든 공격의 탄속 및 투사체 지속시간을 증가시킵니다.',
+      levels: [
+        { projectileSpeed: 0.15, desc: '탄속 및 지속시간 +15%' },
+        { projectileSpeed: 0.30, desc: '탄속 및 지속시간 +30%' },
+        { projectileSpeed: 0.45, desc: '탄속 및 지속시간 +45%' },
+        { projectileSpeed: 0.65, desc: '탄속 및 지속시간 +65% (최대)' }
+      ]
+    },
+    bonus: {
+      id: 'bonus',
+      name: '성과급 보너스 봉투',
+      icon: '💰',
+      desc: '치명타 확률과 치명타 피해량을 대폭 증가시킵니다.',
+      levels: [
+        { critRate: 0.06, critDmgMul: 0.25, desc: '치명타율 +6% / 치명타 피해 +25%' },
+        { critRate: 0.12, critDmgMul: 0.50, desc: '치명타율 +12% / 치명타 피해 +50%' },
+        { critRate: 0.18, critDmgMul: 0.75, desc: '치명타율 +18% / 치명타 피해 +75%' },
+        { critRate: 0.25, critDmgMul: 1.10, desc: '치명타율 +25% / 치명타 피해 +110% (최대)' }
+      ]
+    },
+    airpod: {
+      id: 'airpod',
+      name: '무선 노캔 이어폰',
+      icon: '🎵',
+      desc: '대시 쿨타임을 단축시키고 위기 시 자동 회피율을 부여합니다.',
+      levels: [
+        { dodgeRate: 0.06, dashCdReduc: 0.10, desc: '회피율 +6% / 대시 쿨타임 -10%' },
+        { dodgeRate: 0.12, dashCdReduc: 0.20, desc: '회피율 +12% / 대시 쿨타임 -20%' },
+        { dodgeRate: 0.18, dashCdReduc: 0.30, desc: '회피율 +18% / 대시 쿨타임 -30%' },
+        { dodgeRate: 0.25, dashCdReduc: 0.45, desc: '회피율 +25% / 대시 쿨타임 -45% (최대)' }
+      ]
+    },
+    badge: {
+      id: 'badge',
+      name: '골드 마스터 사원증',
+      icon: '🪪',
+      desc: '경험치(커피콩) 및 골드(영수증) 획득량을 대폭 증가시킵니다.',
+      levels: [
+        { xpMul: 0.15, goldMul: 0.20, desc: '경험치 +15% / 골드 +20%' },
+        { xpMul: 0.30, goldMul: 0.40, desc: '경험치 +30% / 골드 +40%' },
+        { xpMul: 0.45, goldMul: 0.60, desc: '경험치 +45% / 골드 +60%' },
+        { xpMul: 0.65, goldMul: 1.00, desc: '경험치 +65% / 골드 +100% (최대)' }
       ]
     }
   },

@@ -17,6 +17,45 @@ class WeaponManager {
     this.timers = {};
   }
 
+  getWeaponStats(wId, level) {
+    const wDef = window.GAME_DATA.WEAPONS[wId];
+    if (!wDef) return null;
+
+    const stats = {
+      baseDmg: wDef.baseDmg || 10,
+      cooldown: wDef.cooldown || 1.0,
+      projectiles: wDef.projectiles || 1,
+      speed: wDef.speed || 8,
+      pierce: wDef.pierce || 1,
+      area: wDef.area || 60,
+      duration: wDef.duration || 2.5,
+      spread: wDef.spread || 0.5,
+      count: wDef.count || 2,
+      orbitRadius: wDef.orbitRadius || 65,
+      orbitSpeed: wDef.orbitSpeed || 3.2,
+      strikes: wDef.strikes || 1
+    };
+
+    const targetLv = Math.min(level, wDef.levels.length);
+    for (let i = 0; i < targetLv; i++) {
+      const lvData = wDef.levels[i];
+      if (lvData.dmg !== undefined) stats.baseDmg = lvData.dmg;
+      if (lvData.cooldown !== undefined) stats.cooldown = lvData.cooldown;
+      if (lvData.projectiles !== undefined) stats.projectiles = lvData.projectiles;
+      if (lvData.speed !== undefined) stats.speed = lvData.speed;
+      if (lvData.pierce !== undefined) stats.pierce = lvData.pierce;
+      if (lvData.area !== undefined) stats.area = lvData.area;
+      if (lvData.duration !== undefined) stats.duration = lvData.duration;
+      if (lvData.spread !== undefined) stats.spread = lvData.spread;
+      if (lvData.count !== undefined) stats.count = lvData.count;
+      if (lvData.orbitRadius !== undefined) stats.orbitRadius = lvData.orbitRadius;
+      if (lvData.orbitSpeed !== undefined) stats.orbitSpeed = lvData.orbitSpeed;
+      if (lvData.strikes !== undefined) stats.strikes = lvData.strikes;
+    }
+
+    return stats;
+  }
+
   syncOrbitals(player) {
     const hasSuperCard = player.superWeapons.includes('super_card');
     const cardLv = player.weapons['card'] || 0;
@@ -35,20 +74,20 @@ class WeaponManager {
     if (hasSuperCard) {
       const sDef = window.GAME_DATA.SUPER_WEAPONS.super_card;
       targetCount = sDef.count || 8;
-      targetRadius = (sDef.orbitRadius || 90) * player.stats.areaMul;
-      targetSpeed = sDef.orbitSpeed || 7.0;
+      targetRadius = (sDef.orbitRadius || 95) * player.stats.areaMul;
+      targetSpeed = sDef.orbitSpeed || 7.5;
       targetDmg = Math.floor(sDef.baseDmg * player.stats.atkMul);
       isSuper = true;
     } else if (cardLv > 0) {
-      const wDef = window.GAME_DATA.WEAPONS.card;
-      const curLv = wDef.levels[cardLv - 1] || wDef.levels[0];
-      targetCount = curLv.count || wDef.count || 2;
-      targetRadius = (curLv.orbitRadius || wDef.orbitRadius || 65) * player.stats.areaMul;
-      targetSpeed = curLv.orbitSpeed || wDef.orbitSpeed || 3.2;
-      targetDmg = Math.floor((curLv.dmg || wDef.baseDmg) * player.stats.atkMul);
+      const stats = this.getWeaponStats('card', cardLv);
+      targetCount = stats.count;
+      targetRadius = stats.orbitRadius * player.stats.areaMul;
+      targetSpeed = stats.orbitSpeed;
+      targetDmg = Math.floor(stats.baseDmg * player.stats.atkMul);
     }
 
-    if (this.orbitals.length !== targetCount || this.orbitals[0]?.isSuper !== isSuper) {
+    // 카드 개수 또는 슈퍼 모드가 변경되었을 때만 재배치 (각도 재분배)
+    if (this.orbitals.length !== targetCount || (this.orbitals[0] && this.orbitals[0].isSuper !== isSuper)) {
       this.orbitals = [];
       for (let i = 0; i < targetCount; i++) {
         this.orbitals.push({
@@ -64,6 +103,7 @@ class WeaponManager {
         });
       }
     } else {
+      // 개수가 동일할 때는 회전 위치를 보존하며 스탯만 부드럽게 갱신
       this.orbitals.forEach(orb => {
         orb.orbitRadius = targetRadius;
         orb.speed = targetSpeed;
@@ -81,12 +121,11 @@ class WeaponManager {
       if (player.superWeapons.includes(`super_${wId}`)) return;
       if (wId === 'card') return; // 카드는 syncOrbitals로 상시 회전
 
-      const wDef = window.GAME_DATA.WEAPONS[wId];
-      if (!wDef) return;
+      const stats = this.getWeaponStats(wId, level);
+      if (!stats) return;
 
       this.timers[wId] = (this.timers[wId] || 0) + dt;
-      const curLv = wDef.levels[level - 1] || wDef.levels[0];
-      const actualCd = (curLv.cooldown || wDef.cooldown || 1.0) * (1 - player.stats.cdReduc);
+      const actualCd = stats.cooldown * (1 - player.stats.cdReduc);
 
       if (this.timers[wId] >= actualCd) {
         this.timers[wId] = 0;
@@ -117,6 +156,26 @@ class WeaponManager {
       p.life -= dt;
       p.rot += dt * (p.rotSpeed || 10);
 
+      // 폭탄 텀블러 지점 도달 시 폭발
+      if (p.isBomb) {
+        p.bombDist -= Math.hypot(p.vx * dt * 60, p.vy * dt * 60);
+        if (p.bombDist <= 0 || p.life <= 0) {
+          if (window.soundEngine) window.soundEngine.playDrink();
+          if (effectEngine) {
+            effectEngine.spawnShockwave(p.x, p.y, p.area, p.isSuper ? '#ea580c' : '#c2410c');
+            effectEngine.screenShake(5, 0.2);
+          }
+          monsters.forEach(m => {
+            if (!m.isAlive) return;
+            if (Math.hypot(m.x - p.x, m.y - p.y) <= p.area) {
+              m.takeDamage(p.damage, Math.random() < player.stats.critRate);
+            }
+          });
+          this.projectiles.splice(i, 1);
+          continue;
+        }
+      }
+
       // 몬스터 피격 판정
       monsters.forEach(m => {
         if (!m.isAlive || p.hitMonsters.includes(m.id)) return;
@@ -124,7 +183,8 @@ class WeaponManager {
         if (dist <= m.radius + p.radius) {
           p.hitMonsters.push(m.id);
           const isCrit = Math.random() < player.stats.critRate;
-          const dmg = isCrit ? Math.floor(p.damage * 1.8) : p.damage;
+          const critMul = 1.8 * (player.stats.critDmgMul || 1.0);
+          const dmg = isCrit ? Math.floor(p.damage * critMul) : p.damage;
           m.takeDamage(dmg, isCrit);
 
           if (effectEngine) {
@@ -271,8 +331,10 @@ class WeaponManager {
   // 기본 무기 발사 로직
   fireWeapon(wId, level, player, monsters, effectEngine) {
     const wDef = window.GAME_DATA.WEAPONS[wId];
-    const curLv = wDef.levels[level - 1] || wDef.levels[0];
-    const baseDmg = Math.floor((curLv.dmg || wDef.baseDmg) * player.stats.atkMul);
+    const stats = this.getWeaponStats(wId, level);
+    if (!stats || !wDef) return;
+
+    const baseDmg = Math.floor(stats.baseDmg * player.stats.atkMul);
     const nearest = this.getNearestMonster(player, monsters);
 
     let targetAngle = 0;
@@ -285,8 +347,8 @@ class WeaponManager {
     if (wId === 'stapler') {
       // 📎 스테이플러 (전방 날카로운 침 연사)
       if (window.soundEngine) window.soundEngine.playStapler();
-      const count = curLv.projectiles || wDef.projectiles || 1;
-      const pierce = curLv.pierce || wDef.pierce || 1;
+      const count = stats.projectiles;
+      const pierce = stats.pierce;
 
       for (let i = 0; i < count; i++) {
         const spread = (i - (count - 1) / 2) * 0.12;
@@ -295,8 +357,8 @@ class WeaponManager {
           type: 'staple',
           x: player.x,
           y: player.y - 12,
-          vx: Math.cos(ang) * (wDef.speed || 9),
-          vy: Math.sin(ang) * (wDef.speed || 9),
+          vx: Math.cos(ang) * stats.speed,
+          vy: Math.sin(ang) * stats.speed,
           damage: baseDmg,
           pierce: pierce,
           radius: 8,
@@ -309,13 +371,13 @@ class WeaponManager {
     } else if (wId === 'keyboard') {
       // ⌨️ 기계식 키보드 (키캡 산탄 폭발)
       if (window.soundEngine) window.soundEngine.playKeyboard();
-      const count = curLv.projectiles || wDef.projectiles || 4;
-      const spread = curLv.spread || wDef.spread || 0.55;
+      const count = stats.projectiles;
+      const spread = stats.spread;
 
       for (let i = 0; i < count; i++) {
         const ang = targetAngle + (Math.random() - 0.5) * spread;
-        const spd = (wDef.speed || 8) * (0.85 + Math.random() * 0.3);
-        const keys = ['ESC', 'ENTER', 'CTRL', 'TAB', 'F5'];
+        const spd = stats.speed * (0.85 + Math.random() * 0.3);
+        const keys = ['ESC', 'ENTER', 'CTRL', 'TAB', 'F5', 'DEL'];
         this.projectiles.push({
           type: 'keycap',
           label: keys[i % keys.length],
@@ -336,9 +398,9 @@ class WeaponManager {
     } else if (wId === 'drink') {
       // 🥤 핫식스 에너지캔 (바닥 탄산 장판 투척)
       if (window.soundEngine) window.soundEngine.playDrink();
-      const count = curLv.projectiles || 1;
-      const area = (curLv.area || wDef.area) * player.stats.areaMul;
-      const duration = curLv.duration || wDef.duration;
+      const count = stats.projectiles;
+      const area = stats.area * player.stats.areaMul;
+      const duration = stats.duration;
 
       for (let i = 0; i < count; i++) {
         const tx = nearest ? nearest.x + (Math.random() * 80 - 40) : player.x + Math.cos(targetAngle) * 140;
@@ -355,8 +417,8 @@ class WeaponManager {
       }
     } else if (wId === 'stamp') {
       // 🛑 결재 반려 도장 (머리 위 수직 강타)
-      const count = curLv.strikes || 1;
-      const area = (curLv.area || wDef.area) * player.stats.areaMul;
+      const count = stats.strikes;
+      const area = stats.area * player.stats.areaMul;
 
       for (let i = 0; i < count; i++) {
         const target = monsters[Math.floor(Math.random() * monsters.length)] || nearest;
@@ -377,7 +439,7 @@ class WeaponManager {
     } else if (wId === 'shredder') {
       // 📑 문서 세단기 톱니 (나선형 회전 관통)
       if (window.soundEngine) window.soundEngine.playShredder();
-      const count = curLv.projectiles || 1;
+      const count = stats.projectiles;
 
       for (let i = 0; i < count; i++) {
         const ang = (i / count) * Math.PI * 2;
@@ -385,8 +447,8 @@ class WeaponManager {
           type: 'shredder_blade',
           x: player.x,
           y: player.y - 10,
-          vx: Math.cos(ang) * (wDef.speed || 5),
-          vy: Math.sin(ang) * (wDef.speed || 5),
+          vx: Math.cos(ang) * stats.speed,
+          vy: Math.sin(ang) * stats.speed,
           damage: baseDmg,
           pierce: 999,
           radius: 14,
@@ -397,12 +459,64 @@ class WeaponManager {
           hitMonsters: []
         });
       }
+    } else if (wId === 'laser') {
+      // 🔦 PT 레이저 포인터 (고출력 관통 그린 빔)
+      if (window.soundEngine) window.soundEngine.playTone(880, 'sawtooth', 0.12, 0.2, 0.02);
+      const count = stats.projectiles;
+
+      for (let i = 0; i < count; i++) {
+        const spread = (i - (count - 1) / 2) * 0.18;
+        const ang = targetAngle + spread;
+        this.projectiles.push({
+          type: 'laser_beam',
+          x: player.x,
+          y: player.y - 12,
+          vx: Math.cos(ang) * stats.speed,
+          vy: Math.sin(ang) * stats.speed,
+          damage: baseDmg,
+          pierce: 999,
+          radius: 12,
+          life: 1.2,
+          color: wDef.color,
+          rot: ang,
+          hitMonsters: []
+        });
+      }
+    } else if (wId === 'coffee_bomb') {
+      // ☕ 갓 내린 텀블러 (스플래시 폭발 투척)
+      if (window.soundEngine) window.soundEngine.playDrink();
+      const count = stats.projectiles;
+      const area = stats.area * player.stats.areaMul;
+
+      for (let i = 0; i < count; i++) {
+        const dist = 120 + Math.random() * 80;
+        const ang = targetAngle + (Math.random() - 0.5) * 0.4;
+        this.projectiles.push({
+          type: 'coffee_tumbler',
+          x: player.x,
+          y: player.y - 10,
+          vx: Math.cos(ang) * 6.5,
+          vy: Math.sin(ang) * 6.5,
+          damage: baseDmg,
+          area: area,
+          isBomb: true,
+          bombDist: dist,
+          pierce: 999,
+          radius: 10,
+          life: 2.0,
+          color: wDef.color,
+          rot: 0,
+          rotSpeed: 12,
+          hitMonsters: []
+        });
+      }
     }
   }
 
   // 🔥 초월 진화 무기 발사 로직
   fireSuperWeapon(sId, player, monsters, effectEngine) {
     const sDef = window.GAME_DATA.SUPER_WEAPONS[sId];
+    if (!sDef) return;
     const baseDmg = Math.floor(sDef.baseDmg * player.stats.atkMul);
     const nearest = this.getNearestMonster(player, monsters);
 
@@ -499,6 +613,51 @@ class WeaponManager {
           hitMonsters: []
         });
       }
+    } else if (sId === 'super_laser') {
+      // 🌟 [PT 결재 올패스 홀로그램 빔] 360도 4방향 회전 무한 관통 홀로그램
+      if (window.soundEngine) window.soundEngine.playTone(1100, 'sawtooth', 0.15, 0.25, 0.02);
+      for (let i = 0; i < 4; i++) {
+        const ang = (i / 4) * Math.PI * 2;
+        this.projectiles.push({
+          type: 'super_laser_beam',
+          x: player.x,
+          y: player.y - 12,
+          vx: Math.cos(ang) * 18,
+          vy: Math.sin(ang) * 18,
+          damage: baseDmg,
+          pierce: 999,
+          radius: 16,
+          life: 1.5,
+          color: '#00ffaa',
+          rot: ang,
+          hitMonsters: []
+        });
+      }
+    } else if (sId === 'super_coffee') {
+      // 🌋 [화산 폭발 에스프레소 캐논] 4중 거대 에스프레소 마그마 폭발
+      if (window.soundEngine) window.soundEngine.playDrink();
+      for (let i = 0; i < 4; i++) {
+        const ang = (i / 4) * Math.PI * 2;
+        this.projectiles.push({
+          type: 'super_coffee_tumbler',
+          x: player.x,
+          y: player.y - 10,
+          vx: Math.cos(ang) * 8.0,
+          vy: Math.sin(ang) * 8.0,
+          damage: baseDmg,
+          area: 200 * player.stats.areaMul,
+          isBomb: true,
+          isSuper: true,
+          bombDist: 180,
+          pierce: 999,
+          radius: 14,
+          life: 2.2,
+          color: '#ea580c',
+          rot: 0,
+          rotSpeed: 18,
+          hitMonsters: []
+        });
+      }
     }
   }
 
@@ -512,7 +671,6 @@ class WeaponManager {
       ctx.save();
       ctx.translate(sx, sy);
 
-      // 탄산 발포 원형 장판
       ctx.fillStyle = pud.color + '44';
       ctx.beginPath();
       ctx.arc(0, 0, pud.radius, 0, Math.PI * 2);
@@ -524,7 +682,6 @@ class WeaponManager {
       ctx.shadowBlur = 12;
       ctx.stroke();
 
-      // 보글보글 기포 효과
       for (let b = 0; b < 5; b++) {
         const ba = (b / 5) * Math.PI * 2 + Math.sin(performance.now() * 0.003 + b);
         const br = pud.radius * 0.5 + Math.cos(performance.now() * 0.004 + b) * (pud.radius * 0.3);
@@ -537,7 +694,7 @@ class WeaponManager {
       ctx.restore();
     });
 
-    // 2. 투사체(스테이플러 침, 키캡, 톱니 등) 렌더링
+    // 2. 투사체(스테이플러 침, 키캡, 톱니, 레이저, 텀블러 등) 렌더링
     this.projectiles.forEach(p => {
       const sx = p.x - camera.x;
       const sy = p.y - camera.y;
@@ -547,7 +704,6 @@ class WeaponManager {
       ctx.rotate(p.rot || 0);
 
       if (p.type === 'staple' || p.type === 'super_staple') {
-        // 스테이플러 철제 침 (ㄷ자 메탈릭 발사체)
         const isSuper = (p.type === 'super_staple');
         ctx.fillStyle = isSuper ? '#00f0ff' : '#93c5fd';
         ctx.shadowColor = isSuper ? '#00f0ff' : '#60a5fa';
@@ -557,7 +713,6 @@ class WeaponManager {
         ctx.fillRect(-8, -2, 4, 8);
         ctx.fillRect(4, -2, 4, 8);
       } else if (p.type === 'keycap' || p.type === 'super_keycap') {
-        // 기계식 키보드 키캡 (3D 입체)
         const isSuper = (p.type === 'super_keycap');
         ctx.fillStyle = isSuper ? '#10b981' : '#0f172a';
         ctx.strokeStyle = isSuper ? '#00ffaa' : '#00f0ff';
@@ -576,7 +731,6 @@ class WeaponManager {
         ctx.textBaseline = 'middle';
         ctx.fillText(p.label || 'K', 0, 0);
       } else if (p.type === 'shredder_blade' || p.type === 'super_shredder_blade') {
-        // 티타늄 파쇄 톱날 (8각 회전 블레이드)
         const isSuper = (p.type === 'super_shredder_blade');
         ctx.fillStyle = isSuper ? '#a855f7' : '#94a3b8';
         ctx.strokeStyle = isSuper ? '#d8b4fe' : '#ffffff';
@@ -596,6 +750,38 @@ class WeaponManager {
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
+      } else if (p.type === 'laser_beam' || p.type === 'super_laser_beam') {
+        const isSuper = (p.type === 'super_laser_beam');
+        ctx.fillStyle = isSuper ? '#ffffff' : '#a7f3d0';
+        ctx.strokeStyle = isSuper ? '#00ffaa' : '#10b981';
+        ctx.lineWidth = isSuper ? 6 : 3.5;
+        ctx.shadowColor = isSuper ? '#00ffaa' : '#34d399';
+        ctx.shadowBlur = isSuper ? 16 : 10;
+
+        ctx.beginPath();
+        ctx.moveTo(-20, 0);
+        ctx.lineTo(20, 0);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(18, 0, isSuper ? 5 : 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.type === 'coffee_tumbler' || p.type === 'super_coffee_tumbler') {
+        const isSuper = (p.type === 'super_coffee_tumbler');
+        ctx.fillStyle = isSuper ? '#7c2d12' : '#451a03';
+        ctx.strokeStyle = isSuper ? '#ea580c' : '#fb923c';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = isSuper ? '#ea580c' : '#f97316';
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        ctx.roundRect(-7, -12, 14, 24, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        // 텀블러 리드 뚜껑
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-8, -15, 16, 4);
       }
 
       ctx.restore();
@@ -610,7 +796,6 @@ class WeaponManager {
       ctx.translate(sx, sy);
       ctx.rotate(orb.angle + Math.PI / 2);
 
-      // 블랙 플래티넘 카드 본체
       ctx.fillStyle = orb.isSuper ? '#090d16' : '#1e293b';
       ctx.strokeStyle = orb.isSuper ? '#ffd700' : '#38bdf8';
       ctx.lineWidth = 2;
@@ -622,7 +807,6 @@ class WeaponManager {
       ctx.fill();
       ctx.stroke();
 
-      // 황금 IC칩 각인
       ctx.fillStyle = '#ffd700';
       ctx.fillRect(-10, -4, 6, 5);
 
@@ -636,24 +820,20 @@ class WeaponManager {
 
       ctx.save();
       if (st.progress < 1.0) {
-        // 상공에서 회전하며 수직 낙하 중
         const scale = 3.0 - st.progress * 2.0;
         const dropY = sy - (1.0 - st.progress) * 250;
 
         ctx.translate(sx, dropY);
         ctx.scale(scale, scale);
 
-        // 원목 손잡이
         ctx.fillStyle = '#451a03';
         ctx.fillRect(-6, -26, 12, 22);
 
-        // 황동 헤드 & 붉은 고무 인장
         ctx.fillStyle = '#dc2626';
         ctx.beginPath();
         ctx.roundRect(-16, -4, 32, 10, 3);
         ctx.fill();
       } else {
-        // 바닥 충돌 충격파 & 붉은 낙인
         const alpha = Math.max(0, 1 - (st.progress - 1.0) * 1.25);
         ctx.translate(sx, sy);
         ctx.globalAlpha = alpha;
