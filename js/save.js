@@ -30,6 +30,22 @@ class SaveManager {
     };
 
     this.load();
+    this.applyTestUnlock();
+  }
+
+  // 테스트용: 주소에 ?unlock=all 을 붙여 접속하면 1-1 ~ 10-10 전 스테이지 해금 (저장됨)
+  applyTestUnlock() {
+    try {
+      if (new URLSearchParams(window.location.search).get('unlock') !== 'all') return;
+      const all = [];
+      for (let ch = 1; ch <= SaveManager.MAX_CHAPTER; ch++) {
+        for (let st = 1; st <= 10; st++) all.push(`${ch}-${st}`);
+      }
+      this.data.unlockedStages = all;
+      this.save();
+    } catch (e) {
+      console.warn('test unlock failed', e);
+    }
   }
 
   load() {
