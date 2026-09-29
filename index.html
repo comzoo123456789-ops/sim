@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>야근 탈출: 오피스 서바이벌 (Office Escape Survivor)</title>
   <meta name="description" content="쏟아지는 업무와 상사들을 물리치고 10분 만에 정시 퇴근하라! 2D 로그라이크 탄막 서바이벌">
-  <link rel="stylesheet" href="css/style.css?v=20260929_103">
+  <link rel="stylesheet" href="css/style.css?v=20260929_104">
 </head>
 <body>
   <div id="app">
@@ -14,7 +14,7 @@
 
     <!-- 인게임 최상단 일체형 HUD -->
     <div id="gameHUD" class="game-hud">
-      <!-- 1. 최상단 고정 네비게이션 HUD 바 -->
+      <!-- 1. 최상단 고정 일체형 네비게이션 & 스킬 슬롯 HUD 바 -->
       <div class="hud-top-bar">
         <div class="hud-top-content">
           <!-- 좌측: 플레이어 프로필 & 체력 -->
@@ -61,17 +61,16 @@
           </div>
           <div class="xp-bar-text" id="hudXpText">0 / 100 XP</div>
         </div>
-      </div>
 
-      <!-- 2. 하단 장착 무기 및 패시브 슬롯 바 -->
-      <div class="hud-bottom-row">
+        <!-- 상단 일체형 무기 및 패시브 슬롯 바 (하단 툴바에 절대 잘리지 않음) -->
         <div class="inventory-slots-deck">
           <div class="slot-group">
-            <span class="slot-group-title">WEAPONS</span>
+            <span class="slot-group-title">무기</span>
             <div id="hudWeaponSlots" class="slots-container"></div>
           </div>
+          <div class="slot-divider"></div>
           <div class="slot-group">
-            <span class="slot-group-title">PASSIVES</span>
+            <span class="slot-group-title">패시브</span>
             <div id="hudPassiveSlots" class="slots-container"></div>
           </div>
         </div>
@@ -182,14 +181,14 @@
   </div>
 
   <!-- 스크립트 로드 순서 엄수 -->
-  <script src="js/sound.js?v=20260929_103"></script>
-  <script src="js/data.js?v=20260929_103"></script>
-  <script src="js/save.js?v=20260929_103"></script>
-  <script src="js/props.js?v=20260929_103"></script>
-  <script src="js/drops.js?v=20260929_103"></script>
-  <script src="js/weapons.js?v=20260929_103"></script>
-  <script src="js/monsters.js?v=20260929_103"></script>
-  <script src="js/player.js?v=20260929_103"></script>
-  <script src="js/game.js?v=20260929_103"></script>
+  <script src="js/sound.js?v=20260929_104"></script>
+  <script src="js/data.js?v=20260929_104"></script>
+  <script src="js/save.js?v=20260929_104"></script>
+  <script src="js/props.js?v=20260929_104"></script>
+  <script src="js/drops.js?v=20260929_104"></script>
+  <script src="js/weapons.js?v=20260929_104"></script>
+  <script src="js/monsters.js?v=20260929_104"></script>
+  <script src="js/player.js?v=20260929_104"></script>
+  <script src="js/game.js?v=20260929_104"></script>
 </body>
 </html>

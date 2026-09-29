@@ -305,47 +305,42 @@ html, body {
   flex-shrink: 0;
 }
 
-/* 하단 무기 및 패시브 슬롯 바 */
-.hud-bottom-row {
-  position: absolute;
-  bottom: max(14px, env(safe-area-inset-bottom, 14px));
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 30;
-  padding: 0 8px;
-}
-
+/* 상단 HUD 일체형 무기 및 패시브 슬롯 바 */
 .inventory-slots-deck {
   background: var(--panel-bg);
   backdrop-filter: blur(14px);
   border: 1px solid var(--panel-border);
-  border-radius: 14px;
-  padding: 5px 12px;
+  border-radius: 12px;
+  padding: 4px 10px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.75);
-  max-width: 98vw;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .slot-group {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
 }
 
 .slot-group-title {
   font-family: var(--font-title);
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 800;
-  color: var(--text-muted);
+  color: var(--accent-cyan);
   letter-spacing: 0.5px;
   white-space: nowrap;
+}
+
+.slot-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .slots-container {
@@ -354,9 +349,9 @@ html, body {
 }
 
 .slot-box {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   background: rgba(10, 16, 28, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
@@ -369,29 +364,31 @@ html, body {
 
 .slot-box.active {
   border-color: var(--accent-cyan);
-  box-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+  background: rgba(0, 240, 255, 0.08);
 }
 
 .slot-box.super {
   border-color: var(--accent-gold);
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(255, 60, 80, 0.18));
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 60, 80, 0.22));
 }
 
 .slot-icon {
-  font-size: 15px;
+  font-size: 13px;
+  line-height: 1;
 }
 
 .slot-level-dots {
   position: absolute;
-  bottom: 2px;
+  bottom: 1.5px;
   display: flex;
-  gap: 1.5px;
+  gap: 1px;
 }
 
 .level-dot {
-  width: 3px;
-  height: 3px;
+  width: 2px;
+  height: 2px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.3);
 }
@@ -1018,35 +1015,38 @@ html, body {
     padding: 6px 2px;
   }
 
-  /* 하단 슬롯 바 모바일 최적화 */
-  .hud-bottom-row {
-    bottom: max(10px, env(safe-area-inset-bottom, 10px));
-  }
+  /* 상단 슬롯 바 모바일 최적화 */
   .inventory-slots-deck {
-    gap: 8px;
-    padding: 4px 8px;
-    border-radius: 10px;
+    gap: 4px;
+    padding: 3px 6px;
+    border-radius: 9px;
+  }
+  .slot-group {
+    gap: 3px;
   }
   .slot-group-title {
     font-size: 7.5px;
   }
   .slots-container {
-    gap: 2.5px;
+    gap: 2px;
   }
   .slot-box {
-    width: 24px;
-    height: 24px;
+    width: 21px;
+    height: 21px;
     border-radius: 5px;
   }
   .slot-icon {
-    font-size: 12px;
+    font-size: 11px;
   }
   .slot-level-dots {
     bottom: 1px;
-    gap: 1px;
+    gap: 0.8px;
   }
   .level-dot {
     width: 2px;
     height: 2px;
+  }
+  .slot-divider {
+    height: 14px;
   }
 }
