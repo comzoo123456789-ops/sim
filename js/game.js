@@ -340,6 +340,9 @@ class GameEngine {
     this.dropMgr = new DropManager();
     this.effectEngine = new EffectEngine();
     this.officeMap = new OfficeMap();
+    this.run = new RunManager();            // 연속 스테이지 상태 (지갑 · 아이템 · 동료)
+    this.companionMgr = new CompanionManager();
+    window.runMgr = this.run;
 
     this.camera = { x: 0, y: 0 };
     this.input = {
@@ -624,6 +627,7 @@ class GameEngine {
         // 마지막 스테이지(10-10) 클리어 시에는 로비로 귀환
         const nextStageId = SaveManager.nextStageId(this.currentStageId);
         if (!nextStageId) {
+          this.run.end();
           document.getElementById('charSelectModal').classList.add('active');
           this.state = 'char_select';
           this.updateLobbyGold();
@@ -632,7 +636,28 @@ class GameEngine {
         }
         this.selectedStageId = nextStageId;
         this.selectedChapter = parseInt(nextStageId.split('-')[0], 10);
-        this.startGame(this.selectedCharId, nextStageId, 'stage');
+        this.openRestShop(nextStageId);
+      };
+    }
+
+    // 6-1. 탕비실 상점: 새로고침 / 출근
+    const btnRestReroll = document.getElementById('btnRestReroll');
+    if (btnRestReroll) {
+      btnRestReroll.onclick = () => {
+        const cost = this.run.rerollCost(this.selectedChapter);
+        if (this.run.coins < cost) { if (window.soundEngine) window.soundEngine.playHit(); return; }
+        this.run.coins -= cost;
+        this.run.rerolls++;
+        this.run.rollOffers(this.selectedChapter);
+        this.renderRestShop();
+        if (window.soundEngine) window.soundEngine.playClick();
+      };
+    }
+    const btnRestContinue = document.getElementById('btnRestContinue');
+    if (btnRestContinue) {
+      btnRestContinue.onclick = () => {
+        document.getElementById('restShopModal').classList.remove('active');
+        this.startGame(this.selectedCharId, this.restNextStageId, 'stage', true);
       };
     }
 
@@ -642,6 +667,7 @@ class GameEngine {
       btnClearToLobby.onclick = (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         document.getElementById('stageClearModal').classList.remove('active');
+        this.run.end();
         document.getElementById('charSelectModal').classList.add('active');
         this.state = 'char_select';
         this.updateLobbyGold();
@@ -1105,7 +1131,84 @@ class GameEngine {
     if (count) count.innerText = `${found} / ${window.GAME_DATA.BESTIARY.length}`;
   }
 
-  startGame(charId, stageId = null, mode = 'stage') {
+  // 스테이지 사이 탕비실 상점 열기 (이번 판 지갑으로 아이템 구매 → 다음 스테이지로 유지)
+  openRestShop(nextStageId) {
+    this.restNextStageId = nextStageId;
+    this.state = 'rest_shop';
+    this.run.rerolls = 0;
+    this.run.rollOffers(this.selectedChapter);
+    this.renderRestShop();
+    document.getElementById('restShopModal').classList.add('active');
+  }
+
+  renderRestShop() {
+    const run = this.run;
+    const ch = this.selectedChapter;
+    const next = this.getStageById(this.restNextStageId);
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML = v; };
+    const coinIcon = window.getGameIcon('gold_coin');
+    const rarityLabel = { common: '일반', rare: '희귀', epic: '전설' };
+
+    set('restCoins', run.coins.toLocaleString());
+    set('restNextTitle', next ? `다음 출근: ${next.id} ${this.stageDisplayName(next)}` : '');
+
+    // 진열 상품
+    const offers = document.getElementById('restOffers');
+    if (offers) {
+      offers.innerHTML = '';
+      run.offers.forEach((o, idx) => {
+        const def = RUN_ITEMS[o.id];
+        const owned = run.count(o.id);
+        const card = document.createElement('div');
+        card.className = `rest-item rarity-${def.rarity} ${o.sold ? 'sold' : ''} ${!o.sold && run.coins < o.price ? 'poor' : ''}`;
+        card.innerHTML = `
+          <span class="rest-rarity">${rarityLabel[def.rarity]}</span>
+          <div class="rest-item-icon">${window.assets.iconHtml(def.icon)}</div>
+          <div class="rest-item-name">${def.name}</div>
+          <div class="rest-item-desc">${def.desc}</div>
+          <div class="rest-item-owned">${def.max > 1 ? `보유 ${owned}/${def.max}` : (owned ? '보유 중' : '1개 한정')}</div>
+          <button class="rest-buy">${o.sold ? '구매 완료' : `${coinIcon}${o.price.toLocaleString()}`}</button>
+        `;
+        if (!o.sold) {
+          card.querySelector('.rest-buy').onclick = (e) => {
+            e.stopPropagation();
+            if (run.buy(idx, Object.keys(window.GAME_DATA.CHARACTERS), this.selectedCharId)) {
+              if (window.soundEngine) window.soundEngine.playBuy();
+            } else if (window.soundEngine) {
+              window.soundEngine.playHit();
+            }
+            this.renderRestShop();
+          };
+        }
+        offers.appendChild(card);
+      });
+    }
+
+    // 새로고침 버튼
+    const reroll = document.getElementById('btnRestReroll');
+    if (reroll) {
+      const cost = run.rerollCost(ch);
+      reroll.innerHTML = `새로고침 ${coinIcon}${cost}`;
+      reroll.classList.toggle('poor', run.coins < cost);
+    }
+
+    // 보유 아이템 & 동료
+    const ownedIds = Object.keys(run.items).filter(id => run.items[id] > 0);
+    set('restOwned', ownedIds.length
+      ? ownedIds.map(id => `<span class="rest-chip" title="${RUN_ITEMS[id].name}: ${RUN_ITEMS[id].desc}">${window.assets.iconHtml(RUN_ITEMS[id].icon)}${run.items[id] > 1 ? `<b>×${run.items[id]}</b>` : ''}</span>`).join('')
+      : '<span class="rest-empty">아직 없음</span>');
+    set('restCompanions', run.companions.length
+      ? run.companions.map(id => {
+        const c = window.GAME_DATA.CHARACTERS[id];
+        return `<span class="rest-mate">${window.assets.spriteHtml(`char_${c.sprite}_idle`, 26, 'head')}${c.name.split(' ').pop()}</span>`;
+      }).join('')
+      : `<span class="rest-empty">스테이지 중 갇힌 동료를 구출하면 합류합니다 (최대 ${CompanionManager.MAX}명)</span>`);
+  }
+
+
+  startGame(charId, stageId = null, mode = 'stage', continueRun = false) {
+    document.getElementById('restShopModal').classList.remove('active');
+    if (!continueRun) this.run.start();
     document.getElementById('charSelectModal').classList.remove('active');
     document.getElementById('endGameModal').classList.remove('active');
     document.getElementById('stageClearModal').classList.remove('active');
@@ -1133,9 +1236,18 @@ class GameEngine {
     this.effectEngine.reset();
 
     this.monsterMgr.setStage(this.currentStage);
+    this.companionMgr.setup(this.player, this.run.companions, this.currentStage);
+
+    // 탕비실 아이템 시작 보너스
+    const bonus = this.run.bonuses();
+    if (bonus.startWeaponLv) {
+      const w = this.player.charData.initialWeapon;
+      this.player.weapons[w] = Math.min(8, (this.player.weapons[w] || 1) + bonus.startWeaponLv);
+    }
 
     this.levelUpQueue = 0;
     this.state = 'playing';
+    for (let i = 0; i < (bonus.startLevels || 0); i++) this.queueLevelUp();
 
     if (window.soundEngine) window.soundEngine.playLevelUp();
     this.updateHUD();
@@ -1435,12 +1547,15 @@ class GameEngine {
     // 영구 데이터 저장 및 다음 스테이지 자동 해금
     if (window.saveMgr) {
       window.saveMgr.saveStageClear(this.currentStageId, stars, goldReward);
-      window.saveMgr.addGold(this.player.gold);
       window.saveMgr.data.totalRuns = (window.saveMgr.data.totalRuns || 0) + 1;
       window.saveMgr.data.totalKills = (window.saveMgr.data.totalKills || 0) + this.player.kills;
       window.saveMgr.checkProgressAchievements();
       window.saveMgr.save();
     }
+
+    // 이번 판 코인 + 클리어 보너스 일부 → 탕비실 지갑 (다음 스테이지 상점에서 사용)
+    const walletGain = this.player.gold + Math.round(goldReward * 0.4);
+    this.run.coins += walletGain;
 
     if (window.soundEngine) window.soundEngine.playVictory();
 
@@ -1466,7 +1581,7 @@ class GameEngine {
 
     document.getElementById('clearTimeVal').innerText = `${durM}:${durS}`;
     document.getElementById('clearKillsVal').innerText = `${this.player.kills} 마리`;
-    document.getElementById('clearGoldVal').innerText = `+${goldReward + this.player.gold} 코인`;
+    document.getElementById('clearGoldVal').innerText = `+${goldReward} 코인 · 지갑 +${walletGain}`;
 
     // 마지막 1-10 스테이지 여부에 따른 다음 스테이지 버튼 텍스트 변경
     // (클릭 동작은 setupUIBindings에서 currentStageId로 분기)
@@ -1510,6 +1625,7 @@ class GameEngine {
     }
 
     // 영구 저장소에 골드 및 성과 동기화
+    const walletLeft = this.run.end();
     if (window.saveMgr) {
       window.saveMgr.addGold(this.player.gold);
       window.saveMgr.data.totalRuns = (window.saveMgr.data.totalRuns || 0) + 1;
@@ -1528,7 +1644,7 @@ class GameEngine {
     document.getElementById('endSurvivalTime').innerText = `${m}:${s}`;
     document.getElementById('endFinalLevel').innerText = `Lv.${this.player.level}`;
     document.getElementById('endTotalKills').innerText = `${this.player.kills} 마리`;
-    document.getElementById('endTotalGold').innerText = `+${this.player.gold} 코인`;
+    document.getElementById('endTotalGold').innerText = `+${this.player.gold + walletLeft} 코인`;
     document.getElementById('endBankGold').innerText = `${window.saveMgr ? window.saveMgr.getGold() : 0} 코인`;
 
     modal.classList.add('active');
@@ -1668,6 +1784,7 @@ class GameEngine {
         this.propMgr.resolveCollisions(this.player);
 
         this.weaponMgr.update(dt, this.player, this.monsterMgr.monsters, this.effectEngine);
+        this.companionMgr.update(dt, this);
         // 몬스터 벽 충돌은 Monster.update 내부에서 처리 (슬랙 유령은 벽 통과)
         this.monsterMgr.update(dt, this.player, this.gameTime, this.effectEngine);
 
@@ -1711,6 +1828,7 @@ class GameEngine {
       depth.length = 0;
       this.propMgr.collectRenderables(cam, depth);
       this.monsterMgr.collectRenderables(ctx, cam, depth);
+      this.companionMgr.collectRenderables(ctx, cam, depth);
       depth.push({ y: this.player.y, draw: () => this.player.render(ctx, cam) });
       depth.sort((a, b) => a.y - b.y);
       for (let i = 0; i < depth.length; i++) depth[i].draw();
@@ -1719,6 +1837,7 @@ class GameEngine {
       this.weaponMgr.render(ctx, cam, 'air');
       this.monsterMgr.renderBullets(ctx, cam);
       this.effectEngine.render(ctx, cam, this.viewW);
+      this.companionMgr.renderIndicator(ctx, cam, this.viewW, this.viewH, this.player);
     }
 
     requestAnimationFrame(t => this.gameLoop(t));

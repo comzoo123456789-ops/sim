@@ -913,6 +913,151 @@ html, body {
   .levelup-ribbon { font-size: 19px; }
 }
 
+/* 탕비실 상점 (스테이지 사이) */
+.rest-window { max-width: 460px; gap: 12px; }
+.rest-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.rest-kicker { font-family: var(--font-title); font-size: 11px; font-weight: 800; letter-spacing: 2px; color: var(--gold); }
+.rest-head .modal-title { margin-top: 2px; }
+.rest-next { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+.rest-wallet {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px 7px 9px;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  flex-shrink: 0;
+}
+
+.rest-wallet .svg-icon { width: 18px; height: 18px; }
+.rest-wallet b { font-family: var(--font-title); font-size: 18px; font-weight: 900; color: var(--gold); }
+
+.rest-offers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+.rest-item {
+  --c: #94a3b8;
+  position: relative;
+  border-radius: var(--radius-md);
+  padding: 12px 10px 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 14%, #111a2c), #0b111d);
+  border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  animation: luIn 0.4s calc(var(--i, 0) * 0.06s) cubic-bezier(0.2, 1.2, 0.35, 1) both;
+}
+
+.rest-item.rarity-rare { --c: #38bdf8; }
+.rest-item.rarity-epic { --c: #f59e0b; box-shadow: 0 0 18px rgba(245, 158, 11, 0.25); }
+.rest-item.sold { opacity: 0.45; }
+
+.rest-rarity {
+  position: absolute;
+  top: 7px;
+  left: 8px;
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--c);
+}
+
+.rest-item-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c) 30%, transparent), transparent 70%);
+  margin-top: 6px;
+}
+
+.rest-item-icon .svg-icon { width: 36px; height: 36px; }
+.rest-item-name { font-size: 13px; font-weight: 900; color: #fff; line-height: 1.25; }
+.rest-item-desc { font-size: 11.5px; font-weight: 600; color: #cbd5e1; line-height: 1.4; min-height: 2.8em; }
+.rest-item-owned { font-size: 10.5px; color: var(--text-muted); }
+
+.rest-buy {
+  margin-top: 4px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 6px;
+  background: linear-gradient(180deg, #fcd34d, #f59e0b);
+  color: #2b1600;
+  font-family: var(--font-title);
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.rest-buy .svg-icon { width: 14px; height: 14px; }
+.rest-item.sold .rest-buy { background: var(--surface-3); color: #94a3b8; font-family: var(--font-main); font-size: 12px; }
+.rest-item.poor .rest-buy { filter: grayscale(0.8) brightness(0.8); }
+.rest-buy:active { transform: scale(0.97); }
+
+.rest-reroll {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  color: #e2e8f0;
+  font-family: var(--font-main);
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.rest-reroll .svg-icon { width: 14px; height: 14px; }
+.rest-reroll.poor { opacity: 0.5; }
+
+.rest-section { display: flex; flex-direction: column; gap: 6px; }
+.rest-label { font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px; }
+.rest-owned { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; align-items: center; }
+
+.rest-chip {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rest-chip .svg-icon { width: 24px; height: 24px; }
+.rest-chip b { position: absolute; right: -4px; bottom: -4px; font-size: 10px; background: var(--brand); color: #04121f; border-radius: 6px; padding: 0 3px; }
+
+.rest-mate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 4px;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  font-size: 12px;
+  font-weight: 800;
+  color: #a7f3d0;
+}
+
+.rest-mate .sprite-ui { border-radius: 50%; }
+.rest-empty { font-size: 11.5px; color: #64748b; }
+
+
 /* 일시정지 스탯 */
 .pause-stats-grid {
   display: grid;

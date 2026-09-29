@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>야근 탈출: 오피스 서바이벌 (Office Escape Survivor)</title>
   <meta name="description" content="쏟아지는 업무와 상사들을 물리치고 10분 만에 정시 퇴근하라! 2D 로그라이크 탄막 서바이벌">
-  <link rel="stylesheet" href="css/style.css?v=20260929_160">
+  <link rel="stylesheet" href="css/style.css?v=20260929_170">
 </head>
 <body>
   <div id="app">
@@ -285,6 +285,35 @@
       </div>
     </div>
 
+    <!-- 스테이지 사이 탕비실 상점 -->
+    <div id="restShopModal" class="modal-overlay">
+      <div class="modal-window rest-window">
+        <div class="rest-head">
+          <div>
+            <span class="rest-kicker">BREAK TIME</span>
+            <h2 class="modal-title">탕비실 휴식</h2>
+            <p id="restNextTitle" class="rest-next"></p>
+          </div>
+          <div class="rest-wallet" title="이번 판 지갑 (판이 끝나면 은행으로 입금)">
+            <svg viewBox="0 0 24 24" fill="none" class="svg-icon"><circle cx="12" cy="12" r="9" fill="#fbbf24" stroke="#d97706" stroke-width="1.5"/><path d="M10 8v8M10 12h4.5M10 8h4a2 2 0 010 4M10 12l4.5 4" stroke="#78350f" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <b id="restCoins">0</b>
+          </div>
+        </div>
+        <div id="restOffers" class="rest-offers"></div>
+        <button id="btnRestReroll" class="rest-reroll">새로고침</button>
+        <div class="rest-section">
+          <span class="rest-label">보유 아이템</span>
+          <div id="restOwned" class="rest-owned"></div>
+        </div>
+        <div class="rest-section">
+          <span class="rest-label">함께하는 동료</span>
+          <div id="restCompanions" class="rest-owned"></div>
+        </div>
+        <button id="btnRestContinue" class="btn-primary">다음 스테이지 출근 ➔</button>
+      </div>
+    </div>
+
+
     <!-- 일시 정지 & 스탯 상세 정보 모달 -->
     <div id="pauseModal" class="modal-overlay">
       <div class="modal-window pause-window">
@@ -357,18 +386,19 @@
   </div>
 
   <!-- 스크립트 로드 순서 엄수 -->
-  <script src="js/sound.js?v=20260929_160"></script>
-  <script src="js/icons.js?v=20260929_160"></script>
-  <script src="assets/sprites/office_atlas.js?v=20260929_160"></script>
-  <script src="js/assets.js?v=20260929_160"></script>
-  <script src="js/data.js?v=20260929_160"></script>
-  <script src="js/save.js?v=20260929_160"></script>
-  <script src="js/map.js?v=20260929_160"></script>
-  <script src="js/props.js?v=20260929_160"></script>
-  <script src="js/drops.js?v=20260929_160"></script>
-  <script src="js/weapons.js?v=20260929_160"></script>
-  <script src="js/monsters.js?v=20260929_160"></script>
-  <script src="js/player.js?v=20260929_160"></script>
-  <script src="js/game.js?v=20260929_160"></script>
+  <script src="js/sound.js?v=20260929_170"></script>
+  <script src="js/icons.js?v=20260929_170"></script>
+  <script src="assets/sprites/office_atlas.js?v=20260929_170"></script>
+  <script src="js/assets.js?v=20260929_170"></script>
+  <script src="js/data.js?v=20260929_170"></script>
+  <script src="js/save.js?v=20260929_170"></script>
+  <script src="js/map.js?v=20260929_170"></script>
+  <script src="js/props.js?v=20260929_170"></script>
+  <script src="js/drops.js?v=20260929_170"></script>
+  <script src="js/weapons.js?v=20260929_170"></script>
+  <script src="js/monsters.js?v=20260929_170"></script>
+  <script src="js/player.js?v=20260929_170"></script>
+  <script src="js/run.js?v=20260929_170"></script>
+  <script src="js/game.js?v=20260929_170"></script>
 </body>
 </html>

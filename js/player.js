@@ -125,6 +125,24 @@ class Player {
       if (cur.goldMul) goldMul += cur.goldMul;
     });
 
+    // 탕비실 상점 아이템 (이번 판 동안 유지)
+    if (window.runMgr && window.runMgr.active) {
+      const b = window.runMgr.bonuses();
+      atkMul += b.atkMul;
+      speedMul += b.speedMul;
+      areaMul += b.areaMul;
+      cdReduc = Math.min(0.65, cdReduc + b.cdReduc);
+      magnetRange += b.magnet;
+      dmgReduc = Math.min(0.70, dmgReduc + b.dmgReduc);
+      hpRegen += b.hpRegen;
+      critRate += b.critRate;
+      xpMul += b.xpMul;
+      goldMul += b.goldMul;
+      dashCdReduc = Math.min(0.50, dashCdReduc + b.dashCdReduc);
+      maxHpBonus += b.hpMul;
+      revive += b.revive;
+    }
+
     // 새로 해금된 부활 횟수만 지급 (이미 사용한 부활이 다시 충전되지 않도록)
     if (revive > this.revivesGranted) {
       this.reviveCount += revive - this.revivesGranted;
