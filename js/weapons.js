@@ -76,6 +76,22 @@ class WeaponManager {
         }
       });
 
+      // 오피스 가구/기기 파괴 오브젝트 피격 판정
+      if (window.game && window.game.propMgr) {
+        window.game.propMgr.props.forEach(pr => {
+          if (!pr.isAlive || p.hitMonsters.includes(`prop_${pr.x}_${pr.y}`)) return;
+          const dist = Math.hypot(pr.x - p.x, pr.y - p.y);
+          if (dist <= pr.radius + p.radius) {
+            p.hitMonsters.push(`prop_${pr.x}_${pr.y}`);
+            pr.takeDamage(p.damage);
+            if (effectEngine) {
+              effectEngine.spawnHitSpark(p.x, p.y, p.color || '#fff');
+            }
+            p.pierce--;
+          }
+        });
+      }
+
       if (p.life <= 0 || p.pierce <= 0) {
         this.projectiles.splice(i, 1);
       }
@@ -95,6 +111,15 @@ class WeaponManager {
             m.takeDamage(pud.damage, false);
           }
         });
+
+        if (window.game && window.game.propMgr) {
+          window.game.propMgr.props.forEach(pr => {
+            if (!pr.isAlive) return;
+            if (Math.hypot(pr.x - pud.x, pr.y - pud.y) <= pud.radius + pr.radius) {
+              pr.takeDamage(pud.damage * 0.7);
+            }
+          });
+        }
       }
 
       if (pud.duration <= 0) {
@@ -121,6 +146,15 @@ class WeaponManager {
           }
         }
       });
+
+      if (window.game && window.game.propMgr) {
+        window.game.propMgr.props.forEach(pr => {
+          if (!pr.isAlive) return;
+          if (Math.hypot(pr.x - orb.x, pr.y - orb.y) <= pr.radius + orb.radius) {
+            pr.takeDamage(orb.damage * 0.5);
+          }
+        });
+      }
     });
 
     // 6. 결재 반려 도장 낙하 연출 업데이트
@@ -141,6 +175,15 @@ class WeaponManager {
             m.takeDamage(st.damage, true);
           }
         });
+
+        if (window.game && window.game.propMgr) {
+          window.game.propMgr.props.forEach(pr => {
+            if (!pr.isAlive) return;
+            if (Math.hypot(pr.x - st.x, pr.y - st.y) <= st.radius + pr.radius) {
+              pr.takeDamage(st.damage);
+            }
+          });
+        }
       }
 
       if (st.progress >= 1.8) {

@@ -23,9 +23,6 @@ class Monster {
     this.hitTimer = 0;
     this.animTimer = Math.random() * 10;
     this.attackTimer = 0;
-
-    // 복사기 원거리 토너 탄막 리스트
-    this.bullets = [];
   }
 
   takeDamage(amount, isCrit = false) {
@@ -90,7 +87,7 @@ class Monster {
       this.y += Math.sin(ang) * this.speed * 60 * dt;
     }
 
-    // 플레이어 접촉 공격 (0.6초 쿨타임)
+    // 플레이어 접촉 공격
     if (dist <= this.radius + player.radius) {
       player.takeDamage(this.atk);
     }
@@ -107,33 +104,47 @@ class Monster {
       }
     }
 
-    // [보스 꼰대 과장 / 부장님 / 대표이사] 특수 공격
+    // [보스 꼰대 과장 / 부장님 / 대표이사] 고유 탄막 및 특수 패턴
     if (this.isBoss) {
       this.attackTimer += dt;
       if (this.typeKey === 'boss_manager' && this.attackTimer >= 3.5) {
-        // 라떼는 말이야 음파 충격파
+        // 라떼는 말이야 음파 충격파 + 반려 도장 3연사
         this.attackTimer = 0;
         if (window.game && window.game.effectEngine) {
           window.game.effectEngine.spawnShockwave(this.x, this.y, 140, '#ff9900');
           window.game.effectEngine.spawnFloatingText(this.x, this.y - 35, '"라떼는 밤새웠어!"', '#ff9900');
         }
         if (dist <= 140) player.takeDamage(this.atk * 1.5);
+
+        // 부채꼴 3방향 반려 탄환
+        const baseAng = Math.atan2(player.y - this.y, player.x - this.x);
+        [-0.3, 0, 0.3].forEach(offset => {
+          const a = baseAng + offset;
+          window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(a) * 5, Math.sin(a) * 5, this.atk, '#ff5500');
+        });
       } else if (this.typeKey === 'boss_director' && this.attackTimer >= 4.0) {
-        // 결재판 투척 & 바닥 쾅
+        // 결재판 투척 & 주말출근 긴급 소집 폭격 장판 3개 생성
         this.attackTimer = 0;
         if (window.game && window.game.effectEngine) {
           window.game.effectEngine.screenShake(10, 0.35);
-          window.game.effectEngine.spawnShockwave(this.x, this.y, 200, '#e63946');
-          window.game.effectEngine.spawnFloatingText(this.x, this.y - 45, '"오늘 안에 다 해와!"', '#e63946');
+          window.game.effectEngine.spawnShockwave(this.x, this.y, 180, '#e63946');
+          window.game.effectEngine.spawnFloatingText(this.x, this.y - 45, '"주말에 다 나와!"', '#e63946');
         }
-        if (dist <= 200) player.takeDamage(this.atk * 1.8);
-      } else if (this.typeKey === 'boss_ceo' && this.attackTimer >= 3.0) {
-        // 심야 전사원 긴급 소집 탄막
+        if (dist <= 180) player.takeDamage(this.atk * 1.8);
+
+        // 플레이어 주변에 3개 폭격 장판 생성
+        for (let i = 0; i < 3; i++) {
+          const ox = (Math.random() - 0.5) * 160;
+          const oy = (Math.random() - 0.5) * 160;
+          window.game.monsterMgr.spawnWarningZone(player.x + ox, player.y + oy, 55, 1.2, this.atk * 2.0);
+        }
+      } else if (this.typeKey === 'boss_ceo' && this.attackTimer >= 2.6) {
+        // 대표이사 전방위 16방향 철야 야근 탄막 폭풍
         this.attackTimer = 0;
-        for (let b = 0; b < 12; b++) {
-          const ba = (b / 12) * Math.PI * 2;
+        for (let b = 0; b < 16; b++) {
+          const ba = (b / 16) * Math.PI * 2;
           if (window.game) {
-            window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(ba) * 5, Math.sin(ba) * 5, this.atk);
+            window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(ba) * 5.5, Math.sin(ba) * 5.5, this.atk, '#a855f7');
           }
         }
         if (window.game && window.game.effectEngine) {
@@ -159,147 +170,263 @@ class Monster {
     ctx.ellipse(0, this.radius * 0.8, this.radius * 0.8, this.radius * 0.35, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 피격 플래시
+    // 피격 시 백색 플래시
     if (this.hitTimer > 0) {
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (this.typeKey === 'paper') {
-      // 📄 펄럭이는 결재 서류 몬스터
-      const flap = Math.sin(this.animTimer) * 5;
-      ctx.fillStyle = '#f8fafc';
-      ctx.shadowColor = '#cbd5e1';
-      ctx.shadowBlur = 6;
-
-      ctx.beginPath();
-      ctx.roundRect(-10, -12 + flap, 20, 24, 2);
-      ctx.fill();
-
-      // 붉은 반려 도장 마크
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(-6, -4 + flap, 12, 4);
-
-      // 성난 눈
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(-5, -8 + flap, 3, 2);
-      ctx.fillRect(2, -8 + flap, 3, 2);
-    } else if (this.typeKey === 'slime') {
-      // 📊 엑셀 #REF! 녹색 큐브 슬라임
-      const squish = Math.sin(this.animTimer) * 2;
-      ctx.fillStyle = 'rgba(34, 197, 94, 0.85)';
-      ctx.strokeStyle = '#86efac';
-      ctx.lineWidth = 1.5;
-
-      ctx.beginPath();
-      ctx.roundRect(-this.radius, -this.radius + squish, this.radius * 2, this.radius * 2 - squish, 6);
-      ctx.fill();
-      ctx.stroke();
-
-      // 엑셀 격자선
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.beginPath();
-      ctx.moveTo(-this.radius + 4, 0); ctx.lineTo(this.radius - 4, 0);
-      ctx.moveTo(0, -this.radius + 4); ctx.lineTo(0, this.radius - 4);
-      ctx.stroke();
-
-      // #REF! 텍스트
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 9px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('#REF!', 0, squish);
-    } else if (this.typeKey === 'copier') {
-      // 🖨️ 용지 걸린 복사기 몬스터
-      ctx.fillStyle = '#334155';
-      ctx.strokeStyle = '#64748b';
-      ctx.lineWidth = 2;
-
-      ctx.beginPath();
-      ctx.roundRect(-18, -16, 36, 32, 4);
-      ctx.fill();
-      ctx.stroke();
-
-      // 스캐너 녹색 발광 램프
-      ctx.fillStyle = (Math.floor(Date.now() / 150) % 2 === 0) ? '#22c55e' : '#ef4444';
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 10;
-      ctx.fillRect(-12, -10, 24, 6);
-    } else if (this.typeKey === 'slack') {
-      // 💬 슬랙 멘션 알림 괴물
-      ctx.fillStyle = '#e11d48';
-      ctx.shadowColor = '#fb7185';
-      ctx.shadowBlur = 10;
-
-      ctx.beginPath();
       ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+      return;
+    }
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('@HERE', 0, 0);
-    } else if (this.typeKey === 'thief') {
-      // ☕ 탕비실 커피 도둑
-      ctx.fillStyle = '#78350f';
-      ctx.beginPath();
-      ctx.arc(0, -6, 12, 0, Math.PI * 2);
-      ctx.fill();
+    switch (this.typeKey) {
+      case 'paper':
+        this.renderPaper(ctx);
+        break;
+      case 'slime':
+        this.renderSlime(ctx);
+        break;
+      case 'copier':
+        this.renderCopier(ctx);
+        break;
+      case 'slack':
+        this.renderSlack(ctx);
+        break;
+      case 'thief':
+        this.renderThief(ctx);
+        break;
+      case 'boss_manager':
+        this.renderBossManager(ctx);
+        break;
+      case 'boss_director':
+        this.renderBossDirector(ctx);
+        break;
+      case 'boss_ceo':
+        this.renderBossCEO(ctx);
+        break;
+      default:
+        this.renderPaper(ctx);
+        break;
+    }
 
-      // 커피 머그잔
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(4, -4, 8, 10);
-    } else if (this.isBoss) {
-      // 👔 보스 캐릭터 렌더링 (대형 수트 & 아우라)
-      const isDirector = this.typeKey === 'boss_director';
-      const isCEO = this.typeKey === 'boss_ceo';
+    // 보스 전용 HP바 표시
+    if (this.isBoss) {
+      const barW = this.radius * 2.2;
+      const barH = 6;
+      const barY = -this.radius - 12;
 
-      ctx.shadowColor = this.color;
-      ctx.shadowBlur = 20;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(-barW / 2, barY, barW, barH);
 
-      // 보스 수트 바디
-      ctx.fillStyle = isCEO ? '#4c1d95' : isDirector ? '#7f1d1d' : '#78350f';
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = 3;
-
-      ctx.beginPath();
-      ctx.roundRect(-this.radius * 0.8, -this.radius * 1.1, this.radius * 1.6, this.radius * 2.0, 10);
-      ctx.fill();
-      ctx.stroke();
-
-      // 붉은 분노의 눈
-      ctx.fillStyle = '#ff0033';
-      ctx.fillRect(-10, -this.radius * 0.6, 6, 4);
-      ctx.fillRect(4, -this.radius * 0.6, 6, 4);
-
-      // 보스 이름 & 타이틀 상단 표시
+      ctx.fillStyle = '#ff2255';
+      ctx.shadowColor = '#ff2255';
+      ctx.shadowBlur = 6;
+      ctx.fillRect(-barW / 2, barY, barW * (this.hp / this.maxHp), barH);
       ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(10, 15, 26, 0.9)';
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(-75, -this.radius - 36, 150, 24, 6);
-      ctx.fill();
-      ctx.stroke();
 
-      ctx.fillStyle = '#ffd700';
-      ctx.font = 'bold 12px "Pretendard", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(this.name, 0, -this.radius - 24);
-
-      // 보스 HP 게이지 바
-      const hpRate = Math.max(0, this.hp / this.maxHp);
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(-60, -this.radius - 10, 120, 6);
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(-60, -this.radius - 10, 120 * hpRate, 6);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-barW / 2, barY, barW, barH);
     }
 
     ctx.restore();
+  }
+
+  // 1. 날아다니는 A4 서류 뭉치
+  renderPaper(ctx) {
+    const wobble = Math.sin(this.animTimer) * 3;
+    ctx.fillStyle = '#f8fafc';
+    ctx.shadowColor = '#94a3b8';
+    ctx.shadowBlur = 4;
+    ctx.fillRect(-8, -11 + wobble, 16, 22);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(-6, -7 + wobble, 12, 2);
+    ctx.fillRect(-6, -3 + wobble, 12, 2);
+    ctx.fillRect(-6, 1 + wobble, 8, 2);
+
+    // 붉은 반려 도장 마크
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillText('REJECT', -8, 8 + wobble);
+  }
+
+  // 2. 엑셀 수식 슬라임 (초록 젤리 + 격자무늬)
+  renderSlime(ctx) {
+    const squish = Math.sin(this.animTimer) * 0.15;
+    ctx.fillStyle = '#10b981';
+    ctx.shadowColor = '#10b981';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, this.radius * (1 + squish), this.radius * (1 - squish), 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 엑셀 셀 라인
+    ctx.strokeStyle = '#047857';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-this.radius * 0.6, 0);
+    ctx.lineTo(this.radius * 0.6, 0);
+    ctx.moveTo(0, -this.radius * 0.6);
+    ctx.lineTo(0, this.radius * 0.6);
+    ctx.stroke();
+
+    // 분노한 슬라임 눈
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-4, -3, 3, 0, Math.PI * 2);
+    ctx.arc(4, -3, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(-3.5, -3, 1.5, 0, Math.PI * 2);
+    ctx.arc(4.5, -3, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 3. 고장난 폭주 복사기
+  renderCopier(ctx) {
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(-14, -14, 28, 28);
+
+    // 스캐너 빛
+    ctx.fillStyle = '#38bdf8';
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(-10, -10, 20, 6);
+
+    // 경고등 (적색 점멸)
+    ctx.fillStyle = Math.sin(this.animTimer * 2) > 0 ? '#ef4444' : '#7f1d1d';
+    ctx.beginPath();
+    ctx.arc(8, -14, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 4. 슬랙 알림 유령 (@Channel 빨간 뱃지)
+  renderSlack(ctx) {
+    const floatY = Math.sin(this.animTimer) * 4;
+    ctx.fillStyle = 'rgba(238, 242, 255, 0.85)';
+    ctx.shadowColor = '#6366f1';
+    ctx.shadowBlur = 12;
+
+    ctx.beginPath();
+    ctx.arc(0, -4 + floatY, 12, Math.PI, 0);
+    ctx.lineTo(12, 8 + floatY);
+    ctx.lineTo(6, 4 + floatY);
+    ctx.lineTo(0, 8 + floatY);
+    ctx.lineTo(-6, 4 + floatY);
+    ctx.lineTo(-12, 8 + floatY);
+    ctx.closePath();
+    ctx.fill();
+
+    // 빨간색 @ 알림 뱃지
+    ctx.fillStyle = '#ef4444';
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(8, -8 + floatY, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillText('@', 5, -5 + floatY);
+  }
+
+  // 5. 간식 도둑 (월급 루팡)
+  renderThief(ctx) {
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.arc(0, -4, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 안대 / 마스크
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-10, -8, 20, 5);
+
+    // 훔친 탕비실 과자 봉지
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(-12, 2, 8, 10);
+  }
+
+  // 6. 03:00 보스: 꼰대 과장 (김과장)
+  renderBossManager(ctx) {
+    // 양복 몸체 (갈색 정장)
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(-16, -6, 32, 26);
+
+    // 머리 & 벗겨진 이마
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.arc(0, -16, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 안경
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-9, -19, 7, 5);
+    ctx.strokeRect(2, -19, 7, 5);
+
+    // '라떼는' 서류철
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(-22, -2, 10, 16);
+  }
+
+  // 7. 07:00 보스: 분노의 부장님 (박부장)
+  renderBossDirector(ctx) {
+    // 붉은 아우라
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 18;
+
+    // 네이비 정장
+    ctx.fillStyle = '#1e1b4b';
+    ctx.fillRect(-22, -8, 44, 34);
+
+    // 머리
+    ctx.fillStyle = '#fca5a5';
+    ctx.beginPath();
+    ctx.arc(0, -22, 16, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 붉게 충혈된 눈
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.arc(-5, -24, 3, 0, Math.PI * 2);
+    ctx.arc(5, -24, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 거대한 결재판
+    ctx.fillStyle = '#713f12';
+    ctx.fillRect(-30, -5, 14, 22);
+  }
+
+  // 8. 10:00 최종 보스: 대표이사 (CEO)
+  renderBossCEO(ctx) {
+    // 보라색 패왕의 오라
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 24;
+
+    // 프리미엄 블랙 턱시도 & 금장 단추
+    ctx.fillStyle = '#09090b';
+    ctx.fillRect(-26, -10, 52, 40);
+
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(-2, -4, 4, 4);
+    ctx.fillRect(-2, 6, 4, 4);
+
+    // 백발 머리
+    ctx.fillStyle = '#f1f5f9';
+    ctx.beginPath();
+    ctx.arc(0, -26, 18, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 금테 선글라스
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(-12, -29, 24, 6);
+
+    // 황금 만년필 & 사원 해고 통지서
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(-34, -8, 16, 26);
   }
 }
 
@@ -307,60 +434,59 @@ class MonsterManager {
   constructor() {
     this.monsters = [];
     this.enemyBullets = [];
+    this.warningZones = [];
     this.spawnTimer = 0;
-    this.elapsedTime = 0;
-    this.bossSpawned = { manager: false, director: false, ceo: false };
   }
 
   reset() {
     this.monsters = [];
     this.enemyBullets = [];
+    this.warningZones = [];
     this.spawnTimer = 0;
-    this.elapsedTime = 0;
-    this.bossSpawned = { manager: false, director: false, ceo: false };
-  }
-
-  spawnEnemyBullet(x, y, vx, vy, dmg) {
-    this.enemyBullets.push({
-      x, y, vx, vy,
-      damage: dmg,
-      radius: 6,
-      life: 4.0
-    });
   }
 
   spawnChildSlimes(x, y) {
     for (let i = 0; i < 2; i++) {
-      const child = new Monster('slime', x + (i === 0 ? -15 : 15), y, 0.65);
+      const child = new Monster('slime', x + (i === 0 ? -15 : 15), y, 0.6);
+      child.hp = Math.floor(child.maxHp * 0.4);
       this.monsters.push(child);
     }
   }
 
-  update(dt, player) {
-    this.elapsedTime += dt;
-    this.spawnTimer += dt;
+  spawnEnemyBullet(x, y, vx, vy, atk, color = '#38bdf8') {
+    this.enemyBullets.push({
+      x, y, vx, vy, atk, color,
+      radius: 6,
+      life: 5.0
+    });
+  }
 
-    // 1. 시간대별 몬스터 웨이브 스포너
-    const spawnInterval = Math.max(0.35, 1.2 - (this.elapsedTime / 600) * 0.85);
+  spawnWarningZone(x, y, radius, delay, dmg) {
+    this.warningZones.push({
+      x, y, radius, delay, maxDelay: delay, dmg
+    });
+  }
+
+  wipeAllNonBosses() {
+    this.monsters.forEach(m => {
+      if (!m.isBoss && m.isAlive) {
+        m.die();
+      }
+    });
+  }
+
+  update(dt, player, gameTime, effectEngine) {
+    // 1. 타임라인에 따른 몬스터 주기적 스폰
+    this.spawnTimer += dt;
+    const spawnInterval = Math.max(0.4, 1.8 - ((600 - gameTime) / 600) * 1.3);
 
     if (this.spawnTimer >= spawnInterval) {
       this.spawnTimer = 0;
-      this.spawnWave(player);
+      this.spawnWave(player, gameTime);
     }
 
-    // 2. 보스 시간별 스폰 체크 (2분, 5분, 10분)
-    if (this.elapsedTime >= 120 && !this.bossSpawned.manager) {
-      this.bossSpawned.manager = true;
-      this.spawnBoss('boss_manager', player);
-    }
-    if (this.elapsedTime >= 300 && !this.bossSpawned.director) {
-      this.bossSpawned.director = true;
-      this.spawnBoss('boss_director', player);
-    }
-    if (this.elapsedTime >= 580 && !this.bossSpawned.ceo) {
-      this.bossSpawned.ceo = true;
-      this.spawnBoss('boss_ceo', player);
-    }
+    // 2. 보스 시간대 체크 (03:00 김과장, 07:00 박부장, 10:00 대표이사)
+    this.checkBossTimeline(gameTime);
 
     // 3. 몬스터 업데이트
     for (let i = this.monsters.length - 1; i >= 0; i--) {
@@ -374,12 +500,15 @@ class MonsterManager {
     // 4. 적 탄막 업데이트
     for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
       const b = this.enemyBullets[i];
-      b.x += b.vx * dt * 60;
-      b.y += b.vy * dt * 60;
+      b.x += b.vx * 60 * dt;
+      b.y += b.vy * 60 * dt;
       b.life -= dt;
 
-      if (Math.hypot(player.x - b.x, player.y - b.y) <= player.radius + b.radius) {
-        player.takeDamage(b.damage);
+      // 플레이어 피격
+      const dist = Math.hypot(player.x - b.x, player.y - b.y);
+      if (dist <= player.radius + b.radius) {
+        player.takeDamage(b.atk);
+        if (effectEngine) effectEngine.spawnHitSpark(b.x, b.y, b.color);
         this.enemyBullets.splice(i, 1);
         continue;
       }
@@ -388,60 +517,139 @@ class MonsterManager {
         this.enemyBullets.splice(i, 1);
       }
     }
-  }
 
-  spawnWave(player) {
-    const types = ['paper'];
-    if (this.elapsedTime >= 60) types.push('slime');
-    if (this.elapsedTime >= 180) types.push('copier');
-    if (this.elapsedTime >= 300) types.push('slack');
-    if (this.elapsedTime >= 420) types.push('thief');
+    // 5. 바닥 경고 장판(Warning Zone) 업데이트
+    for (let i = this.warningZones.length - 1; i >= 0; i--) {
+      const wz = this.warningZones[i];
+      wz.delay -= dt;
 
-    const count = 2 + Math.min(6, Math.floor(this.elapsedTime / 90));
-    for (let i = 0; i < count; i++) {
-      const t = types[Math.floor(Math.random() * types.length)];
-      const ang = Math.random() * Math.PI * 2;
-      const dist = 500 + Math.random() * 200;
-      const mx = player.x + Math.cos(ang) * dist;
-      const my = player.y + Math.sin(ang) * dist;
+      if (wz.delay <= 0) {
+        // 폭발 발동!
+        if (effectEngine) {
+          effectEngine.screenShake(8, 0.3);
+          effectEngine.spawnShockwave(wz.x, wz.y, wz.radius * 1.5, '#ef4444');
+          effectEngine.spawnFloatingText(wz.x, wz.y - 20, '💥 야근 폭격!', '#ef4444');
+        }
+        if (window.soundEngine) window.soundEngine.playHit();
 
-      const scale = 1.0 + (this.elapsedTime / 600) * 0.8;
-      this.monsters.push(new Monster(t, mx, my, scale));
+        const dist = Math.hypot(player.x - wz.x, player.y - wz.y);
+        if (dist <= wz.radius + player.radius) {
+          player.takeDamage(wz.dmg);
+        }
+
+        this.warningZones.splice(i, 1);
+      }
     }
   }
 
-  spawnBoss(bossKey, player) {
+  checkBossTimeline(gameTime) {
+    const elapsed = 600 - gameTime;
+
+    // 3분(180초) 경과 시 꼰대 과장 출현
+    if (elapsed >= 180 && !this.boss1Spawned) {
+      this.boss1Spawned = true;
+      this.spawnBoss('boss_manager');
+    }
+
+    // 6분(360초) 경과 시 분노의 부장님 출현
+    if (elapsed >= 360 && !this.boss2Spawned) {
+      this.boss2Spawned = true;
+      this.spawnBoss('boss_director');
+    }
+
+    // 9분(540초) 경과 시 최종 보스 대표이사 출현
+    if (elapsed >= 540 && !this.boss3Spawned) {
+      this.boss3Spawned = true;
+      this.spawnBoss('boss_ceo');
+    }
+  }
+
+  spawnBoss(typeKey) {
     if (window.soundEngine) window.soundEngine.playBossAlert();
     if (window.game && window.game.effectEngine) {
-      window.game.effectEngine.screenShake(12, 0.6);
-      window.game.effectEngine.spawnFloatingText(player.x, player.y - 60, '🚨 [경고] 상사 몬스터 난입!', '#ff2255');
+      window.game.effectEngine.screenShake(15, 0.6);
+      window.game.effectEngine.spawnFloatingText(window.game.player.x, window.game.player.y - 60, '⚠️ 보스 등장!! ⚠️', '#ff0033');
     }
 
     const ang = Math.random() * Math.PI * 2;
-    const bx = player.x + Math.cos(ang) * 400;
-    const by = player.y + Math.sin(ang) * 400;
-    this.monsters.push(new Monster(bossKey, bx, by, 1.2));
+    const dist = 380;
+    const bx = window.game.player.x + Math.cos(ang) * dist;
+    const by = window.game.player.y + Math.sin(ang) * dist;
+
+    const boss = new Monster(typeKey, bx, by, 1.4);
+    this.monsters.push(boss);
+  }
+
+  spawnWave(player, gameTime) {
+    const elapsed = 600 - gameTime;
+    let pool = ['paper'];
+
+    if (elapsed > 40) pool.push('slime');
+    if (elapsed > 90) pool.push('copier');
+    if (elapsed > 150) pool.push('slack');
+    if (elapsed > 240) pool.push('thief');
+
+    const spawnCount = Math.min(18, 3 + Math.floor(elapsed / 30));
+    for (let i = 0; i < spawnCount; i++) {
+      const typeKey = pool[Math.floor(Math.random() * pool.length)];
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 420 + Math.random() * 80;
+      const mx = player.x + Math.cos(ang) * dist;
+      const my = player.y + Math.sin(ang) * dist;
+
+      this.monsters.push(new Monster(typeKey, mx, my));
+    }
   }
 
   render(ctx, camera) {
-    // 1. 몬스터 렌더링
+    // 1. 바닥 경고 장판 렌더링
+    this.warningZones.forEach(wz => {
+      const sx = wz.x - camera.x;
+      const sy = wz.y - camera.y;
+      const progress = 1 - (wz.delay / wz.maxDelay);
+
+      ctx.save();
+      ctx.translate(sx, sy);
+
+      // 붉은 경고 원
+      ctx.fillStyle = `rgba(239, 68, 68, ${0.15 + progress * 0.35})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, wz.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 차오르는 안쪽 원
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+      ctx.beginPath();
+      ctx.arc(0, 0, wz.radius * progress, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    });
+
+    // 2. 몬스터 렌더링
     this.monsters.forEach(m => m.render(ctx, camera));
 
-    // 2. 적 탄막 렌더링
+    // 3. 적 탄환 렌더링
     this.enemyBullets.forEach(b => {
       const sx = b.x - camera.x;
       const sy = b.y - camera.y;
 
       ctx.save();
-      ctx.fillStyle = '#ef4444';
-      ctx.shadowColor = '#ef4444';
+      ctx.translate(sx, sy);
+      ctx.fillStyle = b.color;
+      ctx.shadowColor = b.color;
       ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.arc(sx, sy, b.radius, 0, Math.PI * 2);
+      ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     });
   }
 }
 
+window.Monster = Monster;
 window.MonsterManager = MonsterManager;

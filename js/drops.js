@@ -1,4 +1,4 @@
-// Drops, XP Coffee Beans, Gold Receipts, Magnet Physics & Treasure Chests
+// Drops, XP Coffee Beans, Gold Receipts, Magnet Physics & Special Powerups
 
 class DropManager {
   constructor() {
@@ -13,11 +13,18 @@ class DropManager {
     this.drops.push({
       x: x + (Math.random() * 20 - 10),
       y: y + (Math.random() * 20 - 10),
-      type: type, // 'coffee_bean', 'super_coffee', 'receipt', 'aid_kit', 'chest'
+      type: type, // 'coffee_bean', 'super_coffee', 'receipt', 'aid_kit', 'chest', 'caffeine_bomb', 'magnet_clip'
       value: value,
-      radius: type === 'chest' ? 16 : 8,
+      radius: (type === 'chest' || type === 'caffeine_bomb' || type === 'magnet_clip') ? 16 : 8,
       isAttracted: false,
       rot: Math.random() * Math.PI * 2
+    });
+  }
+
+  // 화면 내 모든 드랍 아이템 강제 흡입
+  pullAllDrops() {
+    this.drops.forEach(d => {
+      d.isAttracted = true;
     });
   }
 
@@ -32,7 +39,7 @@ class DropManager {
       if (dist <= magnetRange || d.isAttracted) {
         d.isAttracted = true;
         const ang = Math.atan2(player.y - d.y, player.x - d.x);
-        const pullSpd = 12 * 60 * dt;
+        const pullSpd = 14 * 60 * dt;
         d.x += Math.cos(ang) * pullSpd;
         d.y += Math.sin(ang) * pullSpd;
       }
@@ -55,6 +62,25 @@ class DropManager {
             effectEngine.spawnFloatingText(player.x, player.y - 25, `+${heal} HP 회복`, '#00ffaa');
             effectEngine.spawnShockwave(player.x, player.y, 45, '#00ffaa');
           }
+        } else if (d.type === 'caffeine_bomb') {
+          // 카페인 폭탄: 화면 내 모든 일반 몬스터 일괄 처치!
+          if (window.soundEngine) window.soundEngine.playHit();
+          if (effectEngine) {
+            effectEngine.screenShake(12, 0.4);
+            effectEngine.spawnShockwave(player.x, player.y, 300, '#ffaa00');
+            effectEngine.spawnFloatingText(player.x, player.y - 35, '⚡ 카페인 폭탄 발동!', '#ffaa00');
+          }
+          if (window.game && window.game.monsterMgr) {
+            window.game.monsterMgr.wipeAllNonBosses();
+          }
+        } else if (d.type === 'magnet_clip') {
+          // 자석 클립: 맵 전체 드랍 아이템 즉시 끌어당김
+          if (window.soundEngine) window.soundEngine.playXP();
+          if (effectEngine) {
+            effectEngine.spawnShockwave(player.x, player.y, 120, '#38bdf8');
+            effectEngine.spawnFloatingText(player.x, player.y - 30, '🧲 전원 회수 자석!', '#38bdf8');
+          }
+          this.pullAllDrops();
         } else if (d.type === 'chest') {
           // 보스 상자: 초월 무기 진화 기회 부여!
           if (window.game) {
@@ -125,6 +151,40 @@ class DropManager {
         ctx.fillStyle = '#10b981';
         ctx.fillRect(-6, -2, 12, 4);
         ctx.fillRect(-2, -6, 4, 12);
+      } else if (d.type === 'caffeine_bomb') {
+        // 카페인 폭탄 (빛나는 주황 플라스크 캔)
+        ctx.shadowColor = '#ff8800';
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = '#ff3300';
+        ctx.beginPath();
+        ctx.roundRect(-9, -12, 18, 24, 6);
+        ctx.fill();
+
+        // 번개 마크
+        ctx.fillStyle = '#ffff00';
+        ctx.beginPath();
+        ctx.moveTo(2, -8);
+        ctx.lineTo(-4, 0);
+        ctx.lineTo(1, 0);
+        ctx.lineTo(-2, 8);
+        ctx.lineTo(4, -1);
+        ctx.lineTo(-1, -1);
+        ctx.closePath();
+        ctx.fill();
+      } else if (d.type === 'magnet_clip') {
+        // 대형 자석 클립 (메탈릭 실버 클립 + 자성 블루 오라)
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 12;
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-6, 8);
+        ctx.lineTo(-6, -6);
+        ctx.arc(0, -6, 6, Math.PI, 0);
+        ctx.lineTo(6, 6);
+        ctx.arc(2, 6, 4, 0, Math.PI);
+        ctx.lineTo(-2, -2);
+        ctx.stroke();
       } else if (d.type === 'chest') {
         // 보스 황금 서류가방 (Treasure Briefcase)
         ctx.shadowColor = '#ffd700';

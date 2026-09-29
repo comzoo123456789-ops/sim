@@ -5,63 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>야근 탈출: 오피스 서바이벌 (Office Escape Survivor)</title>
   <meta name="description" content="쏟아지는 업무와 상사들을 물리치고 10분 만에 정시 퇴근하라! 2D 로그라이크 탄막 서바이벌">
-  <link rel="stylesheet" href="css/style.css?v=20260929_101">
+  <link rel="stylesheet" href="css/style.css?v=20260929_102">
 </head>
 <body>
   <div id="app">
     <!-- 메인 게임 렌더 캔버스 -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- 인게임 HUD 오버레이 -->
+    <!-- 인게임 최상단 일체형 HUD -->
     <div id="gameHUD" class="game-hud">
-      <!-- 1. 상단 중앙 경험치(XP) 게이지 & 레벨 뱃지 -->
-      <div class="xp-bar-container">
-        <div class="level-badge" id="hudLevelBadge">Lv.1</div>
-        <div class="xp-bar-track">
-          <div id="hudXpFill" class="xp-bar-fill" style="width: 0%;"></div>
-        </div>
-        <div class="xp-bar-text" id="hudXpText">0 / 100 XP</div>
-      </div>
-
-      <!-- 2. 상단 좌우 정보 바 -->
-      <div class="hud-top-row">
-        <!-- 좌측: 플레이어 체력(HP) & 직급 -->
-        <div class="hud-player-card">
-          <div class="player-avatar-box">
-            <span id="hudPlayerAvatar" class="avatar-icon">🧑‍💻</span>
-          </div>
-          <div class="player-status-col">
-            <div class="player-name-row">
-              <span id="hudPlayerName" class="player-name">신입사원 이민우</span>
-              <span id="hudPlayerRank" class="player-rank">신입</span>
+      <!-- 1. 최상단 고정 네비게이션 HUD 바 -->
+      <div class="hud-top-bar">
+        <div class="hud-top-content">
+          <!-- 좌측: 플레이어 프로필 & 체력 -->
+          <div class="hud-player-card">
+            <div class="player-avatar-box">
+              <span id="hudPlayerAvatar" class="avatar-icon">🧑‍💻</span>
             </div>
-            <div class="hp-bar-track">
-              <div id="hudHpFill" class="hp-bar-fill" style="width: 100%;"></div>
-              <span id="hudHpText" class="hp-text">100 / 100</span>
+            <div class="player-status-col">
+              <div class="player-name-row">
+                <span id="hudPlayerName" class="player-name">신입사원 이민우</span>
+                <span id="hudPlayerRank" class="player-rank">신입</span>
+              </div>
+              <div class="hp-bar-track">
+                <div id="hudHpFill" class="hp-bar-fill" style="width: 100%;"></div>
+                <span id="hudHpText" class="hp-text">100 / 100</span>
+              </div>
             </div>
           </div>
+
+          <!-- 중앙: 심야 야근 탈출 타이머 -->
+          <div class="hud-timer-card">
+            <div class="timer-label">⏰ 탈출까지</div>
+            <div id="hudTimerText" class="timer-digits">10:00</div>
+          </div>
+
+          <!-- 우측: 처치 수 & 커피 코인 -->
+          <div class="hud-score-card">
+            <div class="score-pill">
+              <span class="pill-label">KILLS</span>
+              <span id="hudKillCount" class="pill-val">0</span>
+            </div>
+            <div class="score-pill gold">
+              <span class="pill-label">COIN</span>
+              <span id="hudGoldCount" class="pill-val">0</span>
+            </div>
+          </div>
         </div>
 
-        <!-- 중앙: 심야 야근 탈출 타이머 -->
-        <div class="hud-timer-card">
-          <div class="timer-label">⏰ 탈출까지</div>
-          <div id="hudTimerText" class="timer-digits">10:00</div>
-        </div>
-
-        <!-- 우측: 처치 수 & 커피 코인 -->
-        <div class="hud-score-card">
-          <div class="score-pill">
-            <span class="pill-label">KILLS</span>
-            <span id="hudKillCount" class="pill-val">0</span>
+        <!-- 일체형 상단 경험치(XP) 게이지 바 -->
+        <div class="xp-bar-container">
+          <div class="level-badge" id="hudLevelBadge">Lv.1</div>
+          <div class="xp-bar-track">
+            <div id="hudXpFill" class="xp-bar-fill" style="width: 0%;"></div>
           </div>
-          <div class="score-pill gold">
-            <span class="pill-label">COIN</span>
-            <span id="hudGoldCount" class="pill-val">0</span>
-          </div>
+          <div class="xp-bar-text" id="hudXpText">0 / 100 XP</div>
         </div>
       </div>
 
-      <!-- 3. 하단 장착 무기 및 패시브 슬롯 바 -->
+      <!-- 2. 하단 장착 무기 및 패시브 슬롯 바 -->
       <div class="hud-bottom-row">
         <div class="inventory-slots-deck">
           <div class="slot-group">
@@ -142,12 +144,13 @@
   </div>
 
   <!-- 스크립트 로드 -->
-  <script src="js/sound.js?v=20260929_101"></script>
-  <script src="js/data.js?v=20260929_101"></script>
-  <script src="js/drops.js?v=20260929_101"></script>
-  <script src="js/weapons.js?v=20260929_101"></script>
-  <script src="js/monsters.js?v=20260929_101"></script>
-  <script src="js/player.js?v=20260929_101"></script>
-  <script src="js/game.js?v=20260929_101"></script>
+  <script src="js/sound.js?v=20260929_102"></script>
+  <script src="js/data.js?v=20260929_102"></script>
+  <script src="js/props.js?v=20260929_102"></script>
+  <script src="js/drops.js?v=20260929_102"></script>
+  <script src="js/weapons.js?v=20260929_102"></script>
+  <script src="js/monsters.js?v=20260929_102"></script>
+  <script src="js/player.js?v=20260929_102"></script>
+  <script src="js/game.js?v=20260929_102"></script>
 </body>
 </html>

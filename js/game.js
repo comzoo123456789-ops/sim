@@ -148,6 +148,7 @@ class GameEngine {
     this.player = null;
     this.weaponMgr = new WeaponManager();
     this.monsterMgr = new MonsterManager();
+    this.propMgr = new OfficePropManager();
     this.dropMgr = new DropManager();
     this.effectEngine = new EffectEngine();
 
@@ -219,7 +220,6 @@ class GameEngine {
 
   // 모바일 다이내믹 가상 조이스틱 터치 컨트롤
   setupTouchControls() {
-    const joyContainer = document.getElementById('joystickContainer');
     const joyBase = document.getElementById('joystickBase');
     const joyStick = document.getElementById('joystickStick');
 
@@ -232,7 +232,6 @@ class GameEngine {
       if (this.state !== 'playing') return;
       if (touchId === null && e.changedTouches.length > 0) {
         const touch = e.changedTouches[0];
-        // 모달 영역 터치는 제외
         if (e.target.closest('.modal-window')) return;
 
         touchId = touch.identifier;
@@ -338,6 +337,7 @@ class GameEngine {
     this.player = new Player(charId);
     this.weaponMgr.reset();
     this.monsterMgr.reset();
+    this.propMgr.reset();
     this.dropMgr.reset();
     this.effectEngine.reset();
 
@@ -452,51 +452,72 @@ class GameEngine {
       }
     }
 
-    // 풀이 모자랄 경우 비상 보상 (골드/체력 회복)
-    while (choices.length < 3) {
+    // 기본 체력 회복권 (선택지 고갈 시)
+    if (choices.length === 0) {
       choices.push({
-        id: 'gold_bonus',
-        category: 'instant',
-        icon: '💰',
-        title: '특별 야근 수당 (+150 코인)',
-        typeText: '즉시 보상',
-        desc: '즉시 커피 코인 150을 획득하고 체력을 30% 회복합니다.'
+        id: 'heal',
+        category: 'heal',
+        icon: '🍖',
+        title: '야근 영양제 섭취',
+        typeText: '즉시 회복',
+        desc: '즉시 체력을 40% 회복하고 코인 +100을 획득합니다.'
       });
     }
 
-    return choices.slice(0, 3);
+    return choices;
   }
 
-  applyUpgrade(choice) {
-    if (choice.category === 'super_weapon') {
-      this.player.superWeapons.push(choice.id);
-      if (window.soundEngine) window.soundEngine.playEvolution();
-      this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 45, '🔥 초월 무기 각성!', '#ffd700');
-    } else if (choice.category === 'weapon') {
-      this.player.weapons[choice.id] = (this.player.weapons[choice.id] || 0) + 1;
-      if (window.soundEngine) window.soundEngine.playXP();
-    } else if (choice.category === 'passive') {
-      this.player.passives[choice.id] = (this.player.passives[choice.id] || 0) + 1;
-      this.player.recalculateStats();
-      if (window.soundEngine) window.soundEngine.playXP();
-    } else if (choice.category === 'instant') {
-      this.player.gold += 150;
-      this.player.hp = Math.min(this.player.maxHp, this.player.hp + Math.floor(this.player.maxHp * 0.3));
+  applyUpgrade(ch) {
+    if (window.soundEngine) window.soundEngine.playLevelUp();
+
+    if (ch.category === 'super_weapon') {
+      this.player.superWeapons.push(ch.id);
+      this.effectEngine.screenShake(12, 0.4);
+      this.effectEngine.spawnShockwave(this.player.x, this.player.y, 200, '#ffd700');
+      this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 40, '⚡ 초월 무기 각성! ⚡', '#ffd700');
+    } else if (ch.category === 'weapon') {
+      this.player.weapons[ch.id] = (this.player.weapons[ch.id] || 0) + 1;
+    } else if (ch.category === 'passive') {
+      this.player.passives[ch.id] = (this.player.passives[ch.id] || 0) + 1;
+      this.player.recalcStats();
+    } else if (ch.category === 'heal') {
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + this.player.maxHp * 0.4);
+      this.player.gold += 100;
     }
 
     this.updateHUD();
   }
 
   handleChestOpened() {
-    // 보스 상자 개봉 시 무조건 초월 무기 진화 기회 우선 제공
-    if (window.soundEngine) window.soundEngine.playEvolution();
-    this.triggerLevelUp();
+    // 보스 상자 개봉 시 무작위 초월 진화 또는 최고 레벨 업그레이드 즉시 증정
+    if (window.soundEngine) window.soundEngine.playLevelUp();
+    this.effectEngine.screenShake(10, 0.35);
+    this.effectEngine.spawnShockwave(this.player.x, this.player.y, 160, '#ffd700');
+    this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 45, '🎁 보스 황금 상자 획득!!', '#ffd700');
+
+    // 가능한 초월 무기 즉시 각성 또는 골드 +300
+    let evolved = false;
+    Object.entries(this.player.weapons).forEach(([wId, lv]) => {
+      if (evolved) return;
+      const wDef = window.GAME_DATA.WEAPONS[wId];
+      if (lv >= 8 && !this.player.superWeapons.includes(wDef.evolution)) {
+        this.player.superWeapons.push(wDef.evolution);
+        evolved = true;
+      }
+    });
+
+    if (!evolved) {
+      this.player.gold += 300;
+      this.player.hp = this.player.maxHp;
+      this.effectEngine.spawnFloatingText(this.player.x, this.player.y - 60, '+300 코인 & 체력 완전 회복!', '#00ffaa');
+    }
+
+    this.updateHUD();
   }
 
-  handleGameOver(isVictory) {
+  handleGameOver(isVictory = false) {
     this.state = isVictory ? 'victory' : 'game_over';
     const modal = document.getElementById('endGameModal');
-
     const titleEl = document.getElementById('endModalTitle');
     const subEl = document.getElementById('endModalSubtitle');
 
@@ -647,7 +668,7 @@ class GameEngine {
     // 3. 고정 오피스 프롭 배치 (책상, 듀얼 모니터, 복사기, 화분)
     for (let rx = 300; rx <= 2100; rx += 400) {
       for (let ry = 300; ry <= 2100; ry += 400) {
-        if (Math.abs(rx - 1200) < 150 && Math.abs(ry - 1200) < 150) continue; // 중앙 비상구 공간 비우기
+        if (Math.abs(rx - 1200) < 150 && Math.abs(ry - 1200) < 150) continue;
 
         const px = rx - camera.x;
         const py = ry - camera.y;
@@ -708,8 +729,13 @@ class GameEngine {
 
       // 2. 엔티티 업데이트
       this.player.update(dt, this.input);
+      this.propMgr.resolveCollisions(this.player);
+
       this.weaponMgr.update(dt, this.player, this.monsterMgr.monsters, this.effectEngine);
-      this.monsterMgr.update(dt, this.player);
+      this.monsterMgr.update(dt, this.player, this.gameTime, this.effectEngine);
+      this.monsterMgr.monsters.forEach(m => this.propMgr.resolveCollisions(m));
+
+      this.propMgr.update(dt);
       this.dropMgr.update(dt, this.player, this.effectEngine);
       this.effectEngine.update(dt);
 
@@ -733,6 +759,7 @@ class GameEngine {
 
     if (this.player) {
       this.renderOfficeMap(this.ctx, this.camera);
+      this.propMgr.render(this.ctx, this.camera);
       this.dropMgr.render(this.ctx, this.camera);
       this.weaponMgr.render(this.ctx, this.camera);
       this.monsterMgr.render(this.ctx, this.camera);
