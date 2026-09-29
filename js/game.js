@@ -399,7 +399,7 @@ class GameEngine {
         btnModeStage.classList.add('active');
         btnModeSurvival.classList.remove('active');
         const grid = document.getElementById('stageGridContainer');
-        if (grid) grid.style.display = 'grid';
+        if (grid) grid.style.display = 'flex';
         this.updateStageSelectedInfo();
         if (window.soundEngine) window.soundEngine.playClick();
       };
@@ -642,16 +642,21 @@ class GameEngine {
       const goldReward = st.goldReward || st.reward || 200;
 
       card.innerHTML = `
-        <div class="stage-card-header">
-          <span class="stage-id-badge">${st.id}</span>
-          <div class="stage-stars-row">${starIcons}</div>
+        <div class="stage-card-icon-box">
+          ${st.icon || window.getGameIcon('stage_open_office')}
         </div>
-        <div class="stage-card-title">${st.name}</div>
-        <div class="stage-card-desc">${st.desc}</div>
-        <div class="stage-card-meta">
-          <span class="stage-meta-item">${window.getGameIcon('timer_clock')} ${durM}:${durS}</span>
-          <span class="stage-meta-item">${window.getGameIcon('gold_coin')} +${goldReward}</span>
-          ${st.boss ? '<span class="stage-meta-boss">⚠️ 보스 출현</span>' : ''}
+        <div class="stage-card-body">
+          <div class="stage-card-header">
+            <div class="stage-id-pill">${st.id}</div>
+            <div class="stage-stars-row">${starIcons}</div>
+          </div>
+          <div class="stage-card-title">${st.name}</div>
+          <div class="stage-card-desc">${st.desc}</div>
+          <div class="stage-card-meta">
+            <span class="stage-meta-tag">${window.getGameIcon('timer_clock')} ${durM}:${durS}</span>
+            <span class="stage-meta-tag reward">${window.getGameIcon('gold_coin')} +${goldReward} 코인</span>
+            ${st.boss ? '<span class="stage-meta-tag boss">⚠️ 보스 출현</span>' : ''}
+          </div>
         </div>
         ${!isUnlocked ? '<div class="stage-lock-overlay">🔒 이전 결재선 승인 필요</div>' : ''}
       `;
