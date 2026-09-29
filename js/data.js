@@ -488,7 +488,7 @@ window.GAME_DATA = {
       color: '#f8f9fa',
       baseHp: 20,
       baseAtk: 8,
-      speed: 2.4,
+      speed: 2.2,
       radius: 14,
       exp: 10
     },
@@ -520,7 +520,7 @@ window.GAME_DATA = {
       color: '#e01e5a',
       baseHp: 60,
       baseAtk: 18,
-      speed: 3.4,
+      speed: 2.7,
       radius: 16,
       exp: 40
     },
@@ -530,7 +530,7 @@ window.GAME_DATA = {
       color: '#a0522d',
       baseHp: 120,
       baseAtk: 22,
-      speed: 2.6,
+      speed: 2.3,
       radius: 20,
       exp: 55
     },
@@ -550,7 +550,7 @@ window.GAME_DATA = {
       color: '#60a5fa',
       baseHp: 115,
       baseAtk: 18,
-      speed: 2.2,
+      speed: 2.0,
       radius: 18,
       exp: 45,
       ranged: true

@@ -278,7 +278,7 @@ class EffectEngine {
       }
 
       const cx = (viewW || ctx.canvas.width) / 2;
-      const cy = 135;
+      const cy = 250; // HUD(보스 체력바 · 동료 줄) 아래
 
       ctx.save();
       ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
@@ -383,7 +383,18 @@ class GameEngine {
     window.addEventListener('click', unlockAudio);
     window.addEventListener('touchstart', unlockAudio);
 
+    if (window.soundEngine) window.soundEngine.playBgm('lobby');
+    const soundBtn0 = document.getElementById('btnToggleSound');
+    if (soundBtn0 && window.soundEngine) soundBtn0.innerText = window.soundEngine.isMuted ? '🔇 사운드 OFF' : '🔊 사운드 ON';
+
     requestAnimationFrame(t => this.gameLoop(t));
+  }
+
+  // 로비 복귀 공통 처리 (BGM 전환 포함)
+  showLobby() {
+    document.getElementById('charSelectModal').classList.add('active');
+    this.state = 'char_select';
+    if (window.soundEngine) window.soundEngine.playBgm('lobby');
   }
 
   resizeCanvas() {
@@ -608,8 +619,7 @@ class GameEngine {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         document.getElementById('endGameModal').classList.remove('active');
         document.getElementById('stageClearModal').classList.remove('active');
-        document.getElementById('charSelectModal').classList.add('active');
-        this.state = 'char_select';
+        this.showLobby();
         this.updateLobbyGold();
         this.renderStageSelectGrid();
         this.renderShop();
@@ -628,8 +638,7 @@ class GameEngine {
         const nextStageId = SaveManager.nextStageId(this.currentStageId);
         if (!nextStageId) {
           this.run.end();
-          document.getElementById('charSelectModal').classList.add('active');
-          this.state = 'char_select';
+          this.showLobby();
           this.updateLobbyGold();
           this.renderStageSelectGrid();
           return;
@@ -668,8 +677,7 @@ class GameEngine {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         document.getElementById('stageClearModal').classList.remove('active');
         this.run.end();
-        document.getElementById('charSelectModal').classList.add('active');
-        this.state = 'char_select';
+        this.showLobby();
         this.updateLobbyGold();
         this.renderStageSelectGrid();
       };
@@ -682,6 +690,7 @@ class GameEngine {
       pauseBtn.onclick = () => {
         if (this.state === 'playing') {
           this.state = 'paused';
+          if (window.soundEngine) window.soundEngine.duckBgm(true);
           this.renderPauseStats();
           pauseModal.classList.add('active');
           if (window.soundEngine) window.soundEngine.playClick();
@@ -696,6 +705,7 @@ class GameEngine {
         if (this.state === 'paused') {
           pauseModal.classList.remove('active');
           this.state = 'playing';
+          if (window.soundEngine) window.soundEngine.duckBgm(false);
           if (window.soundEngine) window.soundEngine.playClick();
         }
       };
@@ -706,7 +716,7 @@ class GameEngine {
     if (soundBtn) {
       soundBtn.onclick = () => {
         if (window.soundEngine) {
-          window.soundEngine.isMuted = !window.soundEngine.isMuted;
+          window.soundEngine.setMuted(!window.soundEngine.isMuted);
           soundBtn.innerText = window.soundEngine.isMuted ? '🔇 사운드 OFF' : '🔊 사운드 ON';
           if (!window.soundEngine.isMuted) window.soundEngine.playClick();
         }
@@ -1139,6 +1149,7 @@ class GameEngine {
     this.run.rollOffers(this.selectedChapter);
     this.renderRestShop();
     document.getElementById('restShopModal').classList.add('active');
+    if (window.soundEngine) window.soundEngine.playBgm('lobby');
   }
 
   renderRestShop() {
@@ -1175,7 +1186,7 @@ class GameEngine {
             if (run.buy(idx, Object.keys(window.GAME_DATA.CHARACTERS), this.selectedCharId)) {
               if (window.soundEngine) window.soundEngine.playBuy();
             } else if (window.soundEngine) {
-              window.soundEngine.playHit();
+              window.soundEngine.playError();
             }
             this.renderRestShop();
           };
@@ -1229,6 +1240,11 @@ class GameEngine {
     }
 
     this.player = new Player(this.selectedCharId);
+    // 챕터별 맵 테마 (바닥 / 가구 구성 / 구역 안내)
+    const chapterNo = this.selectedMode === 'stage' ? parseInt(this.currentStageId.split('-')[0], 10) : 1;
+    const theme = OfficeMap.themeFor(chapterNo);
+    this.officeMap.setTheme(theme);
+    this.propMgr.theme = theme;
     this.weaponMgr.reset();
     this.monsterMgr.reset();
     this.propMgr.reset();
@@ -1244,6 +1260,12 @@ class GameEngine {
       const w = this.player.charData.initialWeapon;
       this.player.weapons[w] = Math.min(8, (this.player.weapons[w] || 1) + bonus.startWeaponLv);
     }
+
+    // 스테이지 BGM: 챕터마다 두 곡을 번갈아, 서바이벌은 전용 곡
+    this.stageBgm = this.selectedMode === 'stage'
+      ? (parseInt(this.currentStageId.split('-')[0], 10) % 2 === 1 ? 'stage' : 'stage2')
+      : 'survival';
+    if (window.soundEngine) window.soundEngine.playBgm(this.stageBgm);
 
     this.levelUpQueue = 0;
     this.state = 'playing';
@@ -1557,7 +1579,7 @@ class GameEngine {
     const walletGain = this.player.gold + Math.round(goldReward * 0.4);
     this.run.coins += walletGain;
 
-    if (window.soundEngine) window.soundEngine.playVictory();
+    if (window.soundEngine) { window.soundEngine.stopBgm(); window.soundEngine.playVictory(); }
 
     // UI 별점 렌더링
     const starContainer = document.getElementById('clearStarRating');
@@ -1621,7 +1643,7 @@ class GameEngine {
       titleEl.innerText = '💀 야근에 쓰러졌습니다...';
       titleEl.style.color = '#ff3355';
       subEl.innerText = '끝없는 결재 반려와 엑셀 오류를 버티지 못했습니다.';
-      if (window.soundEngine) window.soundEngine.playGameOver();
+      if (window.soundEngine) { window.soundEngine.stopBgm(); window.soundEngine.playGameOver(); }
     }
 
     // 영구 저장소에 골드 및 성과 동기화
@@ -1694,6 +1716,34 @@ class GameEngine {
     const cdRate = p.dashCooldown > 0 ? Math.min(100, Math.max(0, (p.dashCooldown / p.lastDashCooldown) * 100)) : 0;
     this.setHud('dashCooldownOverlay', 'dashH', `${cdRate.toFixed(0)}%`, (el, v) => { el.style.height = v; });
     this.setHud('btnMobileDash', 'dashCool', cdRate > 0, (el, v) => { el.classList.toggle('cooling', v); });
+
+    // 스테이지 번호 · 남은 시간 라벨
+    this.setHud('hudStageLabel', 'stageLabel', this.selectedMode === 'stage' ? `${this.currentStageId} · 탈출까지` : '서바이벌 · 막차까지', setText);
+
+    // 보스 체력바 (가장 먼저 등장한 생존 보스)
+    const boss = this.monsterMgr.monsters.find(m => m.isBoss && m.isAlive);
+    this.setHud('hudBossBar', 'bossOn', !!boss, (el, v) => { el.hidden = !v; });
+    if (boss) {
+      this.setHud('hudBossName', 'bossName', boss.name.replace(/\[[^\]]*\]\s*/, ''), setText);
+      this.setHud('hudBossFill', 'bossHp', `${Math.max(0, (boss.hp / boss.maxHp) * 100).toFixed(1)}%`, setWidth);
+    }
+
+    // 동료 · 아이템 줄: 구성이 바뀐 경우에만 재생성
+    const runSig = JSON.stringify([this.run.companions, this.run.items]);
+    if (this.hudCache.runRow !== runSig) {
+      this.hudCache.runRow = runSig;
+      const row = this.hudEl('hudRunRow');
+      if (row) {
+        const mates = this.run.companions.map(id => {
+          const c = window.GAME_DATA.CHARACTERS[id];
+          return `<span class="hud-mate" title="${c.name}">${window.assets.spriteHtml(`char_${c.sprite}_idle`, 20, 'head')}</span>`;
+        }).join('');
+        const items = Object.entries(this.run.items).filter(([, n]) => n > 0).map(([id, n]) =>
+          `<span class="hud-item" title="${RUN_ITEMS[id].name}">${window.assets.iconHtml(RUN_ITEMS[id].icon)}${n > 1 ? `<b>${n}</b>` : ''}</span>`).join('');
+        row.innerHTML = (mates ? `<div class="hud-run-group">${mates}</div>` : '') + (items ? `<div class="hud-run-group">${items}</div>` : '');
+        row.hidden = !(mates || items);
+      }
+    }
 
     // 무기 및 패시브 슬롯: 구성/레벨이 바뀐 경우에만 재생성
     const slotSig = JSON.stringify([p.weapons, p.passives, p.superWeapons]);

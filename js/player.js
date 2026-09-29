@@ -219,7 +219,7 @@ class Player {
     this.invincibleTimer = 0.45; // 0.45초 무적 시간
     this.hurtTimer = 0.25;
 
-    if (window.soundEngine) window.soundEngine.playHit();
+    if (window.soundEngine) window.soundEngine.playHurt();
     if (window.game && window.game.effectEngine) {
       window.game.effectEngine.spawnFloatingText(this.x, this.y - 25, `-${actual}`, '#ff3355');
       window.game.effectEngine.screenShake(5, 0.15);
@@ -269,7 +269,7 @@ class Player {
     this.dashVx = (dirX / len) * 11;
     this.dashVy = (dirY / len) * 11;
 
-    if (window.soundEngine) window.soundEngine.playTone(680, 'triangle', 0.12, 0.25, 0.01);
+    if (window.soundEngine) window.soundEngine.playDash();
     if (window.game && window.game.effectEngine) {
       window.game.effectEngine.spawnShockwave(this.x, this.y, 45, '#00f0ff');
       window.game.effectEngine.spawnPuff(this.x, this.y - 8, 70, '#7dd3fc', 0.5, 0.8);

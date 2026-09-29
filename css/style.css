@@ -2115,3 +2115,55 @@ html, body {
     font-size: 9.5px;
   }
 }
+
+/* ==========================================================================
+   10. 인게임 HUD 추가 요소 (보스 체력바 / 동료·아이템 줄)
+   ========================================================================== */
+/* 보스 체력바 */
+.hud-boss-bar {
+  max-width: 960px;
+  width: 100%;
+  margin: 2px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(40, 8, 16, 0.85);
+  border: 1px solid rgba(244, 63, 94, 0.55);
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.3);
+}
+
+.hud-boss-bar[hidden] { display: none; }
+.hud-boss-name { font-size: 11px; font-weight: 900; color: #fecdd3; white-space: nowrap; }
+.hud-boss-track { flex: 1; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.5); overflow: hidden; }
+.hud-boss-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #f43f5e, #fb923c); transition: width 0.15s ease-out; }
+
+/* 동료 · 아이템 줄 */
+.hud-run-row {
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.hud-run-row[hidden] { display: none; }
+
+.hud-run-group {
+  display: flex;
+  gap: 3px;
+  padding: 3px 6px;
+  border-radius: 9px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+}
+
+.hud-mate { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; border: 1.5px solid #34d399; display: flex; align-items: center; justify-content: center; background: #0b1220; }
+.hud-item { position: relative; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+.hud-item .svg-icon { width: 18px; height: 18px; }
+.hud-item b { position: absolute; right: -3px; bottom: -3px; font-size: 8px; line-height: 1; padding: 1px 2px; border-radius: 4px; background: var(--accent-cyan); color: #04121f; }
+
+/* 크레딧 (일시정지 화면) */
+.credits-line { font-size: 10px; color: #64748b; text-align: center; line-height: 1.5; }

@@ -9,6 +9,7 @@ class OfficeMap {
     this.maxChunks = 12;
     this.scale = 1;
     this.frame = 0;
+    this.theme = null;
 
     // 웹폰트 로드 전에 구운 청크(사인 글씨)는 폰트 로드 후 다시 그림
     if (document.fonts && document.fonts.ready) {
@@ -31,6 +32,18 @@ class OfficeMap {
     h = (h ^ (h >>> 13)) * 1274126177;
     h = h ^ (h >>> 16);
     return ((h >>> 0) % 10000) / 10000;
+  }
+
+  // 챕터 테마 변경 시 캐시된 바닥 청크를 다시 그림
+  setTheme(theme) {
+    if (theme !== this.theme) {
+      this.theme = theme;
+      this.chunks.clear();
+    }
+  }
+
+  get activeTheme() {
+    return this.theme || OfficeMap.THEMES[1];
   }
 
   setScale(scale) {
@@ -102,11 +115,14 @@ class OfficeMap {
     for (let x = tx0; x < rx + rw; x += T) {
       for (let y = ty0; y < ry + rh; y += T) {
         if (x < 0 || y < 0 || x >= this.size || y >= this.size) continue;
-        switch (OfficeMap.zoneAt(x, y)) {
-          case 'lobby': this.paintMarble(ctx, x, y, T); break;
-          case 'pantry': this.paintWood(ctx, x, y, T); break;
-          case 'server': this.paintRaisedFloor(ctx, x, y, T); break;
+        switch (this.activeTheme.floors[OfficeMap.zoneAt(x, y)]) {
+          case 'marble': this.paintMarble(ctx, x, y, T); break;
+          case 'wood': this.paintWood(ctx, x, y, T); break;
+          case 'raised': this.paintRaisedFloor(ctx, x, y, T); break;
           case 'exec': this.paintExecCarpet(ctx, x, y, T); break;
+          case 'concrete': this.paintConcrete(ctx, x, y, T); break;
+          case 'tile': this.paintVinylTile(ctx, x, y, T); break;
+          case 'clean': this.paintCleanRoom(ctx, x, y, T); break;
           default: this.paintCarpet(ctx, x, y, T); break;
         }
       }
@@ -124,7 +140,8 @@ class OfficeMap {
   // 오픈 오피스: 방향이 교차하는 카펫 타일
   paintCarpet(ctx, x, y, T) {
     const odd = ((x / T) + (y / T)) % 2 === 1;
-    ctx.fillStyle = odd ? '#1a2231' : '#1d2636';
+    const carpet = this.activeTheme.carpet || ['#1a2231', '#1d2636'];
+    ctx.fillStyle = odd ? carpet[0] : carpet[1];
     ctx.fillRect(x, y, T, T);
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.028)';
@@ -143,6 +160,61 @@ class OfficeMap {
 
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
+  }
+
+  // 물류센터: 콘크리트 바닥 + 황색 통로 라인
+  paintConcrete(ctx, x, y, T) {
+    const v = OfficeMap.rand(x, y, 71);
+    ctx.fillStyle = v < 0.5 ? '#343a43' : '#373d46';
+    ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    for (let i = 0; i < 22; i++) ctx.fillRect(x + OfficeMap.rand(x, y, i + 80) * T, y + OfficeMap.rand(x, y, i + 120) * T, 2, 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+    for (let i = 0; i < 12; i++) ctx.fillRect(x + OfficeMap.rand(x, y, i + 160) * T, y + OfficeMap.rand(x, y, i + 200) * T, 3, 1.5);
+    // 줄눈 (240px 마다 신축 이음)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    if (x % 240 === 0) ctx.fillRect(x, y, 1.5, T);
+    if (y % 240 === 0) ctx.fillRect(x, y, T, 1.5);
+    // 지게차 통로 황색 라인
+    if ((x + 120) % 480 === 0) {
+      ctx.fillStyle = 'rgba(250, 204, 21, 0.55)';
+      for (let d = 0; d < T; d += 20) ctx.fillRect(x - 3, y + d, 6, 12);
+    }
+  }
+
+  // 공공기관/연구동: 비닐 타일 (40px 격자)
+  paintVinylTile(ctx, x, y, T) {
+    for (let i = 0; i < 2; i++) {
+      for (let j = 0; j < 2; j++) {
+        const odd = (Math.floor(x / 40) + i + Math.floor(y / 40) + j) % 2 === 1;
+        ctx.fillStyle = odd ? '#39404d' : '#3d4452';
+        ctx.fillRect(x + i * 40, y + j * 40, 40, 40);
+      }
+    }
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + 40.5, y); ctx.lineTo(x + 40.5, y + T);
+    ctx.moveTo(x, y + 40.5); ctx.lineTo(x + T, y + 40.5);
+    ctx.stroke();
+    ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.fillRect(x + 2, y + 2, T - 4, 1);
+  }
+
+  // 연구소: 밝은 클린룸 바닥 (에폭시 + 은색 줄눈)
+  paintCleanRoom(ctx, x, y, T) {
+    ctx.fillStyle = '#4a5566';
+    ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = 'rgba(165, 243, 252, 0.04)';
+    ctx.fillRect(x + 4, y + 4, T - 8, T - 8);
+    ctx.strokeStyle = 'rgba(226, 232, 240, 0.16)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
+    if (OfficeMap.rand(x, y, 91) < 0.18) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+      for (let i = 14; i < T - 10; i += 9) ctx.fillRect(x + 14, y + i, T - 28, 2);
+    }
   }
 
   // 탕비실: 원목 플로어링
@@ -334,11 +406,12 @@ class OfficeMap {
 
   // 구역 안내 바닥 사인
   paintFloorSigns(ctx) {
+    const t = this.activeTheme.signs;
     const signs = [
-      { x: 600, y: 150, en: 'OPEN OFFICE', ko: '개발 · 디자인팀', color: '56, 189, 248' },
-      { x: 1800, y: 150, en: 'PANTRY', ko: '탕비실 · 라운지', color: '251, 191, 36' },
-      { x: 600, y: 2260, en: 'SERVER ROOM', ko: '전산 · 인프라실', color: '34, 211, 238' },
-      { x: 1800, y: 2260, en: 'EXECUTIVE', ko: '임원실 · 대회의실', color: '244, 114, 182' }
+      { x: 600, y: 150, en: t[0][0], ko: t[0][1], color: '56, 189, 248' },
+      { x: 1800, y: 150, en: t[1][0], ko: t[1][1], color: '251, 191, 36' },
+      { x: 600, y: 2260, en: t[2][0], ko: t[2][1], color: '34, 211, 238' },
+      { x: 1800, y: 2260, en: t[3][0], ko: t[3][1], color: '244, 114, 182' }
     ];
     signs.forEach(s => {
       ctx.save();
@@ -515,5 +588,133 @@ OfficeMap.MEETING_ROOMS = [
   { x: 400, y: 1700, w: 280, h: 200, label: 'NOC C · 관제실' },
   { x: 1700, y: 1700, w: 280, h: 200, label: 'BOARD D · 대회의실' }
 ];
+
+
+// ───────────────────────── 챕터별 맵 테마 ─────────────────────────
+// floors: 구역별 바닥 (carpet | wood | raised | exec | marble | concrete | tile | clean)
+// carpet: 카펫 2색, signs: 구역 안내 [영문, 한글], plans: 구역별 가구 조합 순환 목록, step: 가구 격자 간격
+OfficeMap.THEMES = {
+  1: {
+    name: 'startup',
+    floors: { office: 'carpet', pantry: 'wood', server: 'raised', exec: 'exec', lobby: 'marble' },
+    signs: [['OPEN OFFICE', '개발 · 디자인팀'], ['PANTRY', '탕비실 · 라운지'], ['SERVER ROOM', '전산 · 인프라실'], ['EXECUTIVE', '임원실 · 대회의실']],
+    plans: {
+      office: ['desk_pod', 'desk_pod_b', 'desk_l', 'desk_pod', 'partition_row', 'cabinet_row', 'desk_pod_b', 'printer_station'],
+      pantry: ['bar_table', 'lounge', 'fridge_row', 'bar_table', 'recycle', 'plant_palm'],
+      server: ['server_row', 'control_desk', 'server_row', 'archive', 'server_row'],
+      exec: ['exec_desk', 'visitor_set', 'exec_shelf', 'plant_big', 'exec_desk']
+    }
+  },
+  2: { // 증권사: 긴 트레이딩 데스크 줄, 리서치센터, 백오피스, 임원층
+    name: 'finance',
+    floors: { office: 'carpet', pantry: 'carpet', server: 'raised', exec: 'exec', lobby: 'marble' },
+    carpet: ['#1a2036', '#1d243c'],
+    signs: [['TRADING FLOOR', '트레이딩룸 · 주식운용'], ['RESEARCH CENTER', '리서치센터'], ['BACK OFFICE', '결제 · 전산 백오피스'], ['EXECUTIVE', '임원실 · IB본부']],
+    step: [300, 170],
+    plans: {
+      office: ['trading_row'],
+      pantry: ['desk_pod', 'cabinet_row', 'desk_pod_b', 'booth'],
+      server: ['server_row', 'control_desk', 'archive'],
+      exec: ['exec_desk', 'sofa_u', 'exec_shelf', 'plant_big']
+    }
+  },
+  3: { // 광고대행사: 오픈 벤치 + 미팅 부스 + 라운지
+    name: 'agency',
+    floors: { office: 'wood', pantry: 'wood', server: 'carpet', exec: 'tile', lobby: 'concrete' },
+    carpet: ['#2a1f33', '#2e2338'],
+    signs: [['CREATIVE STUDIO', '크리에이티브 스튜디오'], ['LOUNGE', '브레인스토밍 라운지'], ['EDIT SUITE', '영상 편집실'], ['CLIENT ROOM', 'PT룸 · 광고주 미팅']],
+    plans: {
+      office: ['desk_pod', 'booth', 'desk_standing_set', 'desk_pod_b', 'plant_palm', 'booth'],
+      pantry: ['sofa_u', 'bar_table', 'plant_big', 'lounge', 'booth'],
+      server: ['desk_l', 'control_desk', 'booth', 'desk_l'],
+      exec: ['meeting_set', 'visitor_set', 'plant_palm', 'exec_shelf']
+    }
+  },
+  4: { // SI 개발사: 개발자 좌석 + 대형 서버실
+    name: 'si',
+    floors: { office: 'carpet', pantry: 'raised', server: 'raised', exec: 'carpet', lobby: 'tile' },
+    carpet: ['#1b2330', '#1e2735'],
+    signs: [['DEV FLOOR', '개발 1팀 · 2팀'], ['DATA CENTER', 'DB · 스토리지'], ['NOC', '장애 관제실'], ['WAR ROOM', 'PM실 · 오픈 워룸']],
+    plans: {
+      office: ['desk_pod', 'desk_pod_b', 'desk_pod', 'desk_l', 'recycle'],
+      pantry: ['server_row', 'server_row', 'archive', 'server_row'],
+      server: ['control_desk', 'server_row', 'control_desk', 'server_row'],
+      exec: ['meeting_set', 'desk_pod', 'printer_station', 'desk_pod_b']
+    }
+  },
+  5: { // 공기업: 민원 창구 + 대기석 + 캐비닛 줄
+    name: 'public',
+    floors: { office: 'tile', pantry: 'tile', server: 'carpet', exec: 'exec', lobby: 'marble' },
+    carpet: ['#232a24', '#262e27'],
+    signs: [['CIVIL SERVICE', '민원실 · 종합안내'], ['ARCHIVE', '문서고 · 기록관'], ['GENERAL AFFAIRS', '총무팀 · 비품창고'], ['BOARD', '이사회 · 사장실']],
+    step: [260, 200],
+    plans: {
+      office: ['service_counter', 'waiting_chairs', 'service_counter', 'waiting_chairs', 'plant_big'],
+      pantry: ['cabinet_row', 'cabinet_row', 'archive', 'cabinet_row'],
+      server: ['desk_pod', 'printer_station', 'pallet_boxes', 'desk_pod_b'],
+      exec: ['exec_desk', 'meeting_set', 'sofa_u', 'plant_big']
+    }
+  },
+  6: { // 대기업 본사: 넓은 좌석 + 임원층 확장
+    name: 'conglomerate',
+    floors: { office: 'carpet', pantry: 'marble', server: 'raised', exec: 'exec', lobby: 'marble' },
+    carpet: ['#1c2233', '#1f2638'],
+    signs: [['STRATEGY OFFICE', '전략기획실'], ['CAFE LOUNGE', '사내 카페'], ['DT CENTER', 'DT추진 · AI랩'], ['C-SUITE', '경영진 · 비서실']],
+    plans: {
+      office: ['desk_l', 'desk_pod', 'partition_row', 'desk_l', 'desk_pod_b'],
+      pantry: ['bar_table', 'sofa_u', 'bar_table', 'plant_palm', 'lounge'],
+      server: ['server_row', 'lab_bench', 'control_desk'],
+      exec: ['exec_desk', 'sofa_u', 'exec_desk', 'exec_shelf', 'plant_big']
+    }
+  },
+  7: { // 정부청사: 사무 좌석 줄 + 캐비닛 + 민원 창구
+    name: 'government',
+    floors: { office: 'tile', pantry: 'carpet', server: 'tile', exec: 'exec', lobby: 'marble' },
+    carpet: ['#1f2a2a', '#223030'],
+    signs: [['POLICY BUREAU', '정책실 · 예산실'], ['BRIEFING', '대변인실 · 기자실'], ['RECORDS', '국감 자료실'], ['MINISTER', '장관실 · 차관실']],
+    plans: {
+      office: ['desk_pod', 'desk_pod', 'cabinet_row', 'desk_pod_b', 'cabinet_row'],
+      pantry: ['waiting_chairs', 'meeting_set', 'waiting_chairs', 'plant_big'],
+      server: ['cabinet_row', 'archive', 'pallet_boxes', 'printer_station'],
+      exec: ['exec_desk', 'sofa_u', 'exec_shelf']
+    }
+  },
+  8: { // 물류센터: 랙 통로 + 컨베이어 + 포장대
+    name: 'logistics',
+    floors: { office: 'concrete', pantry: 'concrete', server: 'concrete', exec: 'tile', lobby: 'concrete' },
+    signs: [['STORAGE RACKS', '보관 랙 A~D열'], ['SORTING', '분류 · 컨베이어'], ['PACKING', '포장 · 출고장'], ['CONTROL ROOM', '센터장실 · 배차 관제']],
+    step: [260, 190],
+    plans: {
+      office: ['rack_row'],
+      pantry: ['conveyor', 'pallet_boxes', 'conveyor', 'pallet_boxes'],
+      server: ['packing_station', 'pallet_boxes', 'packing_station', 'rack_row'],
+      exec: ['control_desk', 'desk_pod', 'cabinet_row']
+    }
+  },
+  9: { // R&D 연구소: 실험대 섬 + 기록 데스크 + 장비 구역
+    name: 'lab',
+    floors: { office: 'clean', pantry: 'clean', server: 'raised', exec: 'tile', lobby: 'tile' },
+    signs: [['LAB A', '재료 실험실'], ['CLEAN ROOM', '클린룸'], ['AI LAB', 'AI 연구소 · 장비실'], ['CTO OFFICE', '연구소장 · CTO실']],
+    plans: {
+      office: ['lab_bench', 'lab_bench', 'desk_standing_set', 'lab_bench'],
+      pantry: ['lab_bench', 'booth', 'lab_bench', 'cabinet_row'],
+      server: ['server_row', 'control_desk', 'server_row'],
+      exec: ['exec_desk', 'meeting_set', 'plant_big', 'visitor_set']
+    }
+  },
+  10: { // 그룹 본관 최상층: 리셉션 + U자 소파 라운지 + 이사회실
+    name: 'chairman',
+    floors: { office: 'marble', pantry: 'exec', server: 'marble', exec: 'exec', lobby: 'marble' },
+    signs: [['GRAND LOBBY', '본관 그랜드 로비'], ['VIP LOUNGE', '임원 전용 라운지'], ['SECRETARIAT', '회장 비서실'], ['CHAIRMAN', '회장실']],
+    plans: {
+      office: ['sofa_u', 'plant_big', 'reception', 'tree', 'sofa_u'],
+      pantry: ['sofa_u', 'bar_table', 'tree', 'lounge'],
+      server: ['exec_desk', 'cabinet_row', 'exec_desk', 'plant_palm'],
+      exec: ['exec_desk', 'sofa_u', 'exec_shelf', 'tree']
+    }
+  }
+};
+
+OfficeMap.themeFor = chapter => OfficeMap.THEMES[chapter] || OfficeMap.THEMES[1];
 
 window.OfficeMap = OfficeMap;

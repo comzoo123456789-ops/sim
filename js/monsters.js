@@ -62,6 +62,12 @@ class Monster {
         if (this.typeKey === 'boss_ceo') window.saveMgr.checkAchievement('ach_boss_ceo', true);
       }
 
+      // 마지막 보스 처치 시 스테이지 BGM 복귀
+      if (this.isBoss && window.soundEngine && window.game.stageBgm &&
+        !window.game.monsterMgr.monsters.some(m => m !== this && m.isBoss && m.isAlive)) {
+        window.soundEngine.playBgm(window.game.stageBgm);
+      }
+
       // 처치 이펙트
       const fx = window.game.effectEngine;
       if (fx) {
@@ -119,8 +125,10 @@ class Monster {
     if (dist > 5) {
       const ang = Math.atan2(player.y - this.y, player.x - this.x);
       if (Math.abs(player.x - this.x) > 4) this.facing = player.x < this.x ? -1 : 1;
-      this.x += Math.cos(ang) * this.speed * 60 * dt;
-      this.y += Math.sin(ang) * this.speed * 60 * dt;
+      // 일반 몬스터는 캐릭터 기본 속도의 82%를 넘지 않음 (항상 도망칠 여지 확보)
+      const spd = this.isBoss ? this.speed : Math.min(this.speed, player.charData.speed * Monster.SPEED_CAP);
+      this.x += Math.cos(ang) * spd * 60 * dt;
+      this.y += Math.sin(ang) * spd * 60 * dt;
 
       // 장애물 및 기물 물리 충돌 해결
       if (this.typeKey !== 'slack' && window.game && window.game.propMgr) {
@@ -287,6 +295,27 @@ class Monster {
     if (!a || !a.atlasReady()) return false;
     const flash = this.hitTimer > 0 ? 0.8 : 0;
 
+    // 보스 3종: Kenney Modular Characters 합성 스프라이트 (걷기 3프레임 + 공격 포즈)
+    if (this.isBoss) {
+      const short = this.typeKey.replace('boss_', '');
+      if (!a.hasSprite(`boss_${short}_walk0`)) return false;
+      const aura = { manager: '#f59e0b', director: '#ef4444', ceo: '#a855f7' }[short];
+      const pulse = (Math.sin(this.animTimer * 0.9) + 1) / 2;
+      a.draw(ctx, 'fx_glow', 0, -this.radius * 1.2, this.radius * 5, this.radius * 5, { color: aura, alpha: 0.35 + pulse * 0.25, blend: 'lighter' });
+      ctx.strokeStyle = aura;
+      ctx.globalAlpha = 0.5 + pulse * 0.4;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, this.radius * 0.85, this.radius * 1.25, this.radius * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      const attacking = this.attackTimer < 0.45;
+      const cycle = [0, 1, 0, 2][Math.floor(this.animTimer * 0.9) % 4];
+      const scale = (this.radius * 4.4) / 230;
+      this.spriteTall = true;
+      return a.drawSprite(ctx, `boss_${short}_${attacking ? 'attack' : 'walk' + cycle}`, 0, this.radius * 0.85, scale, { flip: this.facing < 0, flash });
+    }
+
     if (this.sprite) {
       const frame = Math.floor(this.animTimer * 1.1) % 8;
       const scale = (this.radius * 3.6) / 128;
@@ -316,7 +345,7 @@ class Monster {
     if (this.isBoss) {
       const barW = this.radius * 2.2;
       const barH = 6;
-      const barY = -this.radius - 12;
+      const barY = this.spriteTall ? -this.radius * 3.75 : -this.radius - 12;
 
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(-barW / 2, barY, barW, barH);
@@ -1048,7 +1077,7 @@ class MonsterManager {
         effectEngine.spawnEventBanner(`⚠️ [결재선 보스 출현] ${bDef ? bDef.name : '상사 등장'}!`, bDef ? bDef.title : '결재판을 지키세요!', '#ff2255');
         effectEngine.screenShake(12, 0.5);
       }
-      if (window.soundEngine) window.soundEngine.playBossAlert();
+      if (window.soundEngine) { window.soundEngine.playBossAlert(); window.soundEngine.playBgm('boss'); }
 
       const ang = Math.random() * Math.PI * 2;
       const boss = this.applyDifficulty(new Monster(bKey, player.x + Math.cos(ang) * 260, player.y + Math.sin(ang) * 260));
@@ -1093,7 +1122,7 @@ class MonsterManager {
         const ang = Math.random() * Math.PI * 2;
         const dist = 340 + Math.random() * 80;
         const thief = new Monster('thief', player.x + Math.cos(ang) * dist, player.y + Math.sin(ang) * dist, 1.1);
-        thief.speed *= 1.25;
+        thief.speed *= 1.1;
         this.monsters.push(thief);
       }
     }
@@ -1127,7 +1156,7 @@ class MonsterManager {
   }
 
   spawnBoss(typeKey) {
-    if (window.soundEngine) window.soundEngine.playBossAlert();
+    if (window.soundEngine) { window.soundEngine.playBossAlert(); window.soundEngine.playBgm('boss'); }
     if (window.game && window.game.effectEngine) {
       window.game.effectEngine.screenShake(15, 0.6);
       window.game.effectEngine.spawnFloatingText(window.game.player.x, window.game.player.y - 60, '⚠️ 보스 등장!! ⚠️', '#ff0033');
@@ -1253,6 +1282,7 @@ class MonsterManager {
 }
 
 MonsterManager.MAX_MONSTERS = 160;
+Monster.SPEED_CAP = 0.82;
 
 window.Monster = Monster;
 window.MonsterManager = MonsterManager;

@@ -349,6 +349,7 @@ class OfficeObstacle {
     this.back = opts.back || [];   // 본체보다 먼저 그리는 스프라이트 (의자 등 뒤쪽)
     this.front = opts.front || []; // 본체 위에 그리는 스프라이트
     this.flat = type === 'meeting_wall';
+    this.vector = opts.vector || null; // 스프라이트 사이에 그리는 벡터 가구 (창고 랙 / 컨베이어)
     // partition, meeting_wall, desk_cluster, server_rack, cafe_table, exec_desk, meeting_table, counter, plant
     this.type = type;
     this.seed = Math.floor(x * 7 + y * 13);
@@ -381,7 +382,17 @@ class OfficeObstacle {
       ctx.beginPath();
       ctx.ellipse(this.x + this.width / 2 - camera.x, this.baseline - 4 - camera.y, this.width * 0.55, 10, 0, 0, Math.PI * 2);
       ctx.fill();
-      if (this.drawSprites(ctx, camera, this.back, alpha) && this.drawSprites(ctx, camera, this.front, alpha)) return;
+      if (this.drawSprites(ctx, camera, this.back, alpha)) {
+        if (this.vector) {
+          ctx.save();
+          ctx.globalAlpha *= alpha;
+          ctx.translate(this.x - camera.x, this.y - camera.y);
+          if (this.vector === 'rack') this.renderRack(ctx, this.width, this.height);
+          else if (this.vector === 'conveyor') this.renderConveyor(ctx, this.width, this.height);
+          ctx.restore();
+        }
+        if (this.drawSprites(ctx, camera, this.front, alpha)) return;
+      }
     }
     if (this.back.length) this.drawSprites(ctx, camera, this.back, alpha);
 
@@ -632,6 +643,45 @@ class OfficeObstacle {
     }
   }
 
+  // 물류센터 보관 랙 (주황 빔 + 회색 기둥 3단)
+  renderRack(ctx, w, h) {
+    const top = -118;
+    ctx.fillStyle = '#475569';
+    [0, w / 2 - 3, w - 6].forEach(px => ctx.fillRect(px, top, 6, h - top));
+    [h - 4, -32, -70, -108].forEach(py => {
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(0, py, w, 6);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.fillRect(0, py + 6, w, 2);
+    });
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(3, top); ctx.lineTo(w / 2, h);
+    ctx.moveTo(w - 3, top); ctx.lineTo(w / 2, h);
+    ctx.stroke();
+  }
+
+  // 컨베이어 벨트 (롤러 애니메이션)
+  renderConveyor(ctx, w, h) {
+    const t = performance.now() / 1000;
+    ctx.fillStyle = '#1f2937';
+    ctx.fillRect(0, -10, w, h + 6);
+    ctx.fillStyle = '#374151';
+    ctx.fillRect(0, -10, w, 5);
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(4, -4, w - 8, h - 4);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 2;
+    const off = (t * 40) % 16;
+    ctx.beginPath();
+    for (let px = 6 + off; px < w - 6; px += 16) { ctx.moveTo(px, -2); ctx.lineTo(px, h - 6); }
+    ctx.stroke();
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(0, h - 2, w, 3);
+    for (let px = 0; px < w; px += 18) { ctx.fillStyle = '#111827'; ctx.fillRect(px + 9, h - 2, 9, 3); }
+  }
+
   // 사무실 화분
   renderPlant(ctx, w, h) {
     const cx = w / 2;
@@ -712,7 +762,28 @@ class OfficePropManager {
       plant_big: { w: 40, h: 20, front: [['plant_broadleaf', 0, 4, 0.58]] },
       plant_palm: { w: 40, h: 20, front: [['plant_palm', 0, 4, 0.58]] },
       umbrella: { w: 26, h: 16, front: [['stand_umbrella', 0, 4, 0.45]] },
-      reception: { w: 136, h: 34, back: [['chair_task', 0, -36, 0.48]], front: [['counter_reception_curved', 0, 6, 0.9], ['monitor_single_off', -20, -44, 0.28]] }
+      reception: { w: 136, h: 34, back: [['chair_task', 0, -36, 0.48]], front: [['counter_reception_curved', 0, 6, 0.9], ['monitor_single_off', -20, -44, 0.28]] },
+      // 증권사 트레이딩 데스크 (긴 줄 + 1인 2모니터)
+      trading_row: { w: 300, h: 34, back: [['chair_task', -100, -40, 0.46], ['chair_task', 0, -40, 0.46], ['chair_task', 100, -40, 0.46]],
+        front: [['desk_straight', -100, 6, 0.78], ['desk_straight', 0, 6, 0.78], ['desk_straight', 100, 6, 0.78],
+          ['monitor_single_off', -118, -42, 0.26], ['monitor_single_off', -82, -42, 0.26], ['monitor_single_off', -18, -42, 0.26],
+          ['monitor_single_off', 18, -42, 0.26], ['monitor_single_off', 82, -42, 0.26], ['monitor_single_off', 118, -42, 0.26]] },
+      // 광고대행사 미팅 부스
+      booth: { w: 124, h: 30, back: [['partition_fabric', -44, -2, 0.44], ['partition_fabric', 44, -2, 0.44]], front: [['chair_meeting', -18, 4, 0.4], ['chair_meeting', 18, 4, 0.4, true]] },
+      desk_standing_set: { w: 92, h: 28, front: [['desk_standing', 0, 4, 0.62], ['laptop_open_off', 0, -42, 0.24]] },
+      meeting_set: { w: 150, h: 40, back: [['chair_meeting', -44, -44, 0.4], ['chair_meeting', 0, -46, 0.4], ['chair_meeting', 44, -44, 0.4, true]], front: [['desk_modesty_panel', 0, 6, 0.85], ['papers_stack', -22, -46, 0.2], ['mug', 24, -44, 0.16]] },
+      // 공공기관 민원 창구 + 대기석
+      service_counter: { w: 250, h: 30, back: [['chair_task', -60, -42, 0.46], ['chair_task', 60, -42, 0.46]], front: [['credenza_low', -60, 4, 0.7], ['credenza_low', 60, 4, 0.7], ['monitor_single_off', -60, -46, 0.25], ['monitor_single_off', 60, -46, 0.25], ['papers_stack', -20, -44, 0.18]] },
+      waiting_chairs: { w: 200, h: 22, front: [['chair_visitor', -75, 2, 0.46], ['chair_visitor', -25, 2, 0.46], ['chair_visitor', 25, 2, 0.46], ['chair_visitor', 75, 2, 0.46]] },
+      pallet_boxes: { w: 100, h: 28, front: [['archive_box', -24, 2, 0.4], ['archive_box', 22, 2, 0.4], ['archive_box', 0, -26, 0.38]] },
+      // 물류센터 보관 랙 / 컨베이어 / 포장대
+      rack_row: { w: 232, h: 26, vector: 'rack', front: [['archive_box', -80, -24, 0.28], ['archive_box', -28, -24, 0.28], ['archive_box', 60, -24, 0.28], ['archive_box', -54, -62, 0.28], ['archive_box', 30, -62, 0.28], ['archive_box', 84, -62, 0.28], ['archive_box', -84, -100, 0.28], ['archive_box', 4, -100, 0.28]] },
+      conveyor: { w: 270, h: 30, vector: 'conveyor', front: [['archive_box', -70, -6, 0.3], ['archive_box', 30, -6, 0.3], ['folder_closed', 90, -8, 0.2]] },
+      packing_station: { w: 140, h: 30, front: [['desk_standing', 0, 4, 0.66], ['archive_box', -22, -42, 0.24], ['papers_stack', 24, -40, 0.18], ['bin_waste', 64, 2, 0.36]] },
+      // 연구소 실험대 섬
+      lab_bench: { w: 180, h: 32, back: [['stool_high', -40, -32, 0.4], ['stool_high', 40, -32, 0.4]], front: [['desk_standing', -44, 4, 0.62], ['desk_standing', 44, 4, 0.62], ['water_bottle', -58, -44, 0.18], ['pen_cup', -30, -44, 0.17], ['monitor_single_off', 50, -44, 0.24]] },
+      // 회장실/라운지 U자 소파
+      sofa_u: { w: 156, h: 40, back: [['chair_visitor', -46, -36, 0.48], ['chair_visitor', 0, -40, 0.48], ['chair_visitor', 46, -36, 0.48, true]], front: [['desk_modesty_panel', 0, 6, 0.5], ['mug', -8, -26, 0.14], ['plant_palm', 76, 4, 0.5]] }
     };
   }
 
@@ -726,7 +797,7 @@ class OfficePropManager {
     if (this.overlapsRoom(x, y, t.w, t.h) || this.overlapsObstacle(x, y, t.w, t.h, pad)) return false;
     if (x < 1520 && x + t.w > 880 && y < 1520 && y + t.h > 880 && name !== 'reception' && !OfficePropManager.LOBBY_DECOR.includes(name)) return false;
     const toWorld = arr => (arr || []).map(([key, dx, dy, s, flip]) => ({ key, x: cx + dx, y: by + dy, s, flip: !!flip }));
-    this.obstacles.push(new OfficeObstacle(x, y, t.w, t.h, 'composite', { back: toWorld(t.back), front: toWorld(t.front) }));
+    this.obstacles.push(new OfficeObstacle(x, y, t.w, t.h, 'composite', { back: toWorld(t.back), front: toWorld(t.front), vector: t.vector }));
     return true;
   }
 
@@ -749,16 +820,13 @@ class OfficePropManager {
     });
 
     // 2. 구역별 가구 조합 (격자 슬롯 + 약간의 흔들림으로 자연스럽게)
-    const zonePlans = {
-      office: ['desk_pod', 'desk_pod_b', 'desk_l', 'desk_pod', 'partition_row', 'cabinet_row', 'desk_pod_b', 'printer_station'],
-      pantry: ['bar_table', 'lounge', 'fridge_row', 'bar_table', 'recycle', 'plant_palm'],
-      server: ['server_row', 'control_desk', 'server_row', 'archive', 'server_row'],
-      exec: ['exec_desk', 'visitor_set', 'exec_shelf', 'plant_big', 'exec_desk']
-    };
+    const theme = this.theme || OfficeMap.THEMES[1];
+    const zonePlans = theme.plans;
+    const [stepX, stepY] = theme.step || [240, 210];
     let n = 0;
-    for (let gy = 260; gy <= 2200; gy += 210) {
-      for (let gx = 200; gx <= 2200; gx += 240) {
-        const cx = gx + ((gy / 210) % 2) * 90 + jitter();
+    for (let gy = 260; gy <= 2200; gy += stepY) {
+      for (let gx = 200; gx <= 2200; gx += stepX) {
+        const cx = gx + (Math.round((gy - 260) / stepY) % 2) * Math.round(stepX * 0.37) + jitter();
         const by = gy + jitter();
         const zone = OfficeMap.zoneAt(cx, by);
         const plan = zonePlans[zone];

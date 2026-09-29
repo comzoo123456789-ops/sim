@@ -308,7 +308,7 @@ class CompanionManager {
         fx.spawnFlash(r.x, r.y - 20, 'fx_magic', '#34d399', 140, 0.7, { spin: 3 });
         fx.spawnEmote(r.x, r.y, 'heart', c);
         fx.spawnFloatingText(r.x, r.y - 60, `🤝 ${window.GAME_DATA.CHARACTERS[r.charId].name} 합류!`, '#34d399');
-        if (window.soundEngine) window.soundEngine.playLevelUp();
+        if (window.soundEngine) window.soundEngine.playRescue();
         this.rescue = null;
       } else if (r.timer <= 0) {
         fx.spawnPuff(r.x, r.y - 10, 60, '#94a3b8', 0.6, 0.7);

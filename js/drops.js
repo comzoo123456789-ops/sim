@@ -53,7 +53,7 @@ class DropManager {
         } else if (d.type === 'receipt') {
           const actualGold = Math.floor(d.value * (player.stats.goldMul || 1.0));
           player.gold += actualGold;
-          if (window.soundEngine) window.soundEngine.playXP();
+          if (window.soundEngine) window.soundEngine.playCoin();
           if (effectEngine) effectEngine.spawnFloatingText(player.x, player.y - 20, `+${actualGold} 코인`, '#ffd700');
           if (effectEngine) effectEngine.spawnFlash(player.x, player.y - 10, 'fx_spark', '#ffd700', 34, 0.2);
         } else if (d.type === 'aid_kit') {

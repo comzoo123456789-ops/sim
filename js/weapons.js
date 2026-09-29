@@ -180,7 +180,7 @@ class WeaponManager {
       if (p.isBomb) {
         p.bombDist -= Math.hypot(p.vx * dt * 60, p.vy * dt * 60);
         if (p.bombDist <= 0 || p.life <= 0) {
-          if (window.soundEngine) window.soundEngine.playDrink();
+          if (window.soundEngine) window.soundEngine.playExplosion();
           if (effectEngine) {
             effectEngine.spawnShockwave(p.x, p.y, p.area, p.isSuper ? '#ea580c' : '#c2410c');
             effectEngine.spawnExplosion(p.x, p.y, p.area * 1.1, 0.4);
@@ -482,7 +482,7 @@ class WeaponManager {
       }
     } else if (wId === 'laser') {
       // 🔦 PT 레이저 포인터 (고출력 관통 그린 빔)
-      if (window.soundEngine) window.soundEngine.playTone(880, 'sawtooth', 0.12, 0.2, 0.02);
+      if (window.soundEngine) window.soundEngine.playLaser();
       const count = stats.projectiles;
 
       for (let i = 0; i < count; i++) {
@@ -626,7 +626,7 @@ class WeaponManager {
       }
     } else if (sId === 'super_laser') {
       // 🌟 [PT 결재 올패스 홀로그램 빔] 360도 4방향 회전 무한 관통 홀로그램
-      if (window.soundEngine) window.soundEngine.playTone(1100, 'sawtooth', 0.15, 0.25, 0.02);
+      if (window.soundEngine) window.soundEngine.playLaser();
       for (let i = 0; i < 4; i++) {
         const ang = (i / 4) * Math.PI * 2;
         this.addProjectile(player, {
