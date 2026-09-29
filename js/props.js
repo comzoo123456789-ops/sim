@@ -79,6 +79,14 @@ class OfficeProp {
       }
     }
 
+    if (window.saveMgr) {
+      window.saveMgr.data.totalPropsDestroyed = (window.saveMgr.data.totalPropsDestroyed || 0) + 1;
+      if (window.saveMgr.data.totalPropsDestroyed >= 20) {
+        window.saveMgr.checkAchievement('ach_props_20', true);
+      }
+      window.saveMgr.save();
+    }
+
     // 아이템 드랍
     if (window.game && window.game.dropMgr) {
       switch (this.type) {

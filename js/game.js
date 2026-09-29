@@ -316,7 +316,86 @@ class GameEngine {
       this.updateLobbyGold();
       this.renderShop();
       this.renderAchievements();
+      this.renderBestiary();
     };
+
+    // 일시정지 버튼
+    const pauseModal = document.getElementById('pauseModal');
+    const pauseBtn = document.getElementById('btnPauseGame');
+    if (pauseBtn) {
+      pauseBtn.onclick = () => {
+        if (this.state === 'playing') {
+          this.state = 'paused';
+          this.renderPauseStats();
+          pauseModal.classList.add('active');
+          if (window.soundEngine) window.soundEngine.playClick();
+        }
+      };
+    }
+
+    // 일시정지 해제 (재개)
+    const resumeBtn = document.getElementById('btnResumeGame');
+    if (resumeBtn) {
+      resumeBtn.onclick = () => {
+        if (this.state === 'paused') {
+          pauseModal.classList.remove('active');
+          this.state = 'playing';
+          if (window.soundEngine) window.soundEngine.playClick();
+        }
+      };
+    }
+
+    // 사운드 토글 버튼
+    const soundBtn = document.getElementById('btnToggleSound');
+    if (soundBtn) {
+      soundBtn.onclick = () => {
+        if (window.soundEngine) {
+          window.soundEngine.isMuted = !window.soundEngine.isMuted;
+          soundBtn.innerText = window.soundEngine.isMuted ? '🔇 사운드 OFF' : '🔊 사운드 ON';
+          if (!window.soundEngine.isMuted) window.soundEngine.playClick();
+        }
+      };
+    }
+
+    // 야근 포기 (항복 및 로비 귀환)
+    const surrenderBtn = document.getElementById('btnSurrenderGame');
+    if (surrenderBtn) {
+      surrenderBtn.onclick = () => {
+        if (this.state === 'paused') {
+          pauseModal.classList.remove('active');
+          this.handleGameOver(false);
+        }
+      };
+    }
+  }
+
+  renderPauseStats() {
+    const grid = document.getElementById('pauseStatsGrid');
+    if (!grid || !this.player) return;
+
+    const s = this.player.stats;
+    const statsList = [
+      { label: '현재 체력', val: `${Math.ceil(this.player.hp)} / ${this.player.maxHp}`, icon: '❤️' },
+      { label: '공격력 배율', val: `x${s.atkMul.toFixed(2)}`, icon: '⚔️' },
+      { label: '이동 속도', val: `x${s.speedMul.toFixed(2)}`, icon: '👟' },
+      { label: '쿨타임 감소', val: `-${Math.round(s.cdReduc * 100)}%`, icon: '⚡' },
+      { label: '공격 범위', val: `+${Math.round((s.areaMul - 1) * 100)}%`, icon: '🎯' },
+      { label: '자석 흡입', val: `${s.magnetRange}px`, icon: '🧲' },
+      { label: '받는 피해 감소', val: `${Math.round(s.dmgReduc * 100)}%`, icon: '🛡️' },
+      { label: '초당 HP 재생', val: `+${s.hpRegen.toFixed(1)}/초`, icon: '🌿' },
+      { label: '치명타 확률', val: `${Math.round(s.critRate * 100)}%`, icon: '💥' },
+      { label: '부활 기회', val: `${this.player.reviveCount}회`, icon: '🏖️' }
+    ];
+
+    grid.innerHTML = statsList.map(item => `
+      <div class="pause-stat-card">
+        <span class="pause-stat-icon">${item.icon}</span>
+        <div class="pause-stat-col">
+          <span class="pause-stat-label">${item.label}</span>
+          <b class="pause-stat-val">${item.val}</b>
+        </div>
+      </div>
+    `).join('');
   }
 
   setupLobbyTabs() {
@@ -457,16 +536,31 @@ class GameEngine {
     if (!list) return;
     list.innerHTML = '';
 
+    const unlocked = window.saveMgr ? (window.saveMgr.data.unlockedBestiary || []) : [];
+
     window.GAME_DATA.BESTIARY.forEach(b => {
+      const isUnlocked = unlocked.includes(b.id);
       const card = document.createElement('div');
-      card.className = 'bestiary-card';
-      card.innerHTML = `
-        <div class="bestiary-card-info">
-          <div class="bestiary-title">${b.icon} ${b.name} <small style="color:#00f0ff;font-size:11px;">[${b.type}]</small></div>
-          <div class="bestiary-desc">${b.desc}</div>
-          <div class="bestiary-strategy">💡 공략법: ${b.strategy}</div>
-        </div>
-      `;
+      card.className = 'bestiary-card' + (isUnlocked ? ' unlocked' : ' locked');
+
+      if (isUnlocked) {
+        card.innerHTML = `
+          <div class="bestiary-card-info">
+            <div class="bestiary-title">${b.icon} ${b.name} <small style="color:#00f0ff;font-size:11px;">[${b.type}]</small></div>
+            <div class="bestiary-desc">${b.desc}</div>
+            <div class="bestiary-strategy">💡 공략법: ${b.strategy}</div>
+          </div>
+          <div class="ach-badge" style="background:rgba(0,240,255,0.15);color:#00f0ff;border:1px solid rgba(0,240,255,0.3);">해금됨</div>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="bestiary-card-info">
+            <div class="bestiary-title">🔒 ??? <small style="color:#64748b;font-size:11px;">[미확인 업무 괴물]</small></div>
+            <div class="bestiary-desc" style="color:#64748b;">이 몬스터를 처치하여 사내 업무 도감을 해금하세요.</div>
+          </div>
+          <div class="ach-badge" style="background:rgba(100,116,139,0.2);color:#94a3b8;">미처치</div>
+        `;
+      }
       list.appendChild(card);
     });
   }

@@ -40,7 +40,7 @@
             <div id="hudTimerText" class="timer-digits">10:00</div>
           </div>
 
-          <!-- 우측: 처치 수 & 커피 코인 -->
+          <!-- 우측: 처치 수 & 커피 코인 & 일시정지 -->
           <div class="hud-score-card">
             <div class="score-pill">
               <span class="pill-label">KILLS</span>
@@ -50,6 +50,7 @@
               <span class="pill-label">COIN</span>
               <span id="hudGoldCount" class="pill-val">0</span>
             </div>
+            <button id="btnPauseGame" class="hud-icon-btn" title="일시정지">⏸️</button>
           </div>
         </div>
 
@@ -133,6 +134,24 @@
           <p class="modal-subtitle">원하는 무기나 복지 패시브 카드를 선택하여 스펙을 강화하세요.</p>
         </div>
         <div id="upgradeCardDeck" class="upgrade-card-deck"></div>
+      </div>
+    </div>
+
+    <!-- 일시 정지 & 스탯 상세 정보 모달 -->
+    <div id="pauseModal" class="modal-overlay">
+      <div class="modal-window pause-window">
+        <div class="modal-header">
+          <h2 class="modal-title">☕ 잠시 숨 고르기 (일시정지)</h2>
+          <p class="modal-subtitle">현재 사원의 실시간 스탯 및 업무 역량 상태입니다.</p>
+        </div>
+        <div class="pause-stats-grid" id="pauseStatsGrid"></div>
+        <div class="modal-footer-column">
+          <button id="btnResumeGame" class="btn-primary">업무 계속하기 (재개) ▶</button>
+          <div class="modal-footer-row">
+            <button id="btnToggleSound" class="btn-secondary">🔊 사운드 ON</button>
+            <button id="btnSurrenderGame" class="btn-secondary danger">야근 포기 (로비) 🚪</button>
+          </div>
+        </div>
       </div>
     </div>
 

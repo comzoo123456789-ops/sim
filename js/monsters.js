@@ -48,6 +48,14 @@ class Monster {
     if (window.game) {
       window.game.player.kills++;
 
+      // 도감 해금 및 보스 업적 체크
+      if (window.saveMgr) {
+        window.saveMgr.unlockBestiary(this.typeKey);
+        if (this.typeKey === 'boss_manager') window.saveMgr.checkAchievement('ach_boss_manager', true);
+        if (this.typeKey === 'boss_director') window.saveMgr.checkAchievement('ach_boss_director', true);
+        if (this.typeKey === 'boss_ceo') window.saveMgr.checkAchievement('ach_boss_ceo', true);
+      }
+
       // 경험치 커피콩 & 골드 영수증 드랍
       if (this.isBoss) {
         // 보스는 황금 서류가방(보물상자) + 대량의 황금 원두 드랍
