@@ -34,7 +34,7 @@ window.MERCENARY_SPRITES.kyle.src = 'assets/portraits/kyle.jpg';
 window.MERCENARY_SPRITES.roland.src = 'assets/portraits/roland.jpg';
 window.MERCENARY_SPRITES.ceria.src = 'assets/portraits/ceria.jpg';
 
-// 검정색 배경 사각형을 투명 알파 채널로 자동 변환하는 오프스클린 캔버스 가공 유틸리티
+// 검정색 배경 사각형을 투명 알파 채널로 자동 변환하는 고성능 오프스클린 캔버스 가공 유틸리티
 function makeSpriteTransparent(img) {
   if (!img || !img.complete || img.naturalWidth === 0) return img;
   if (img._transparentCanvas) return img._transparentCanvas;
@@ -52,9 +52,15 @@ function makeSpriteTransparent(img) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      // 검정색 외곽 배경 제거 (r, g, b가 모두 32 이하의 어두운 영역일 때 투명화)
-      if (r <= 32 && g <= 32 && b <= 32) {
+      const maxVal = Math.max(r, g, b);
+      
+      // JPG 압축 노이즈 포함 어두운 배경 완벽 투명화
+      if (maxVal < 60) {
         data[i + 3] = 0;
+      } else if (maxVal < 90 && Math.abs(r - g) < 18 && Math.abs(g - b) < 18) {
+        // 어두운 회색/검정 테두리 그라디언트 페더링
+        const alphaRatio = (maxVal - 60) / (90 - 60);
+        data[i + 3] = Math.floor(alphaRatio * 255);
       }
     }
     ctx.putImageData(imgData, 0, 0);
@@ -857,13 +863,7 @@ class Player {
 
     ctx.save();
 
-    // 1. 발 밑 부드러운 다크 타원형 그림자
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-    ctx.beginPath();
-    ctx.ellipse(sx, sy + 22, 22, 9, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 2. 고화질 3등신 다크 판타지 캐릭터 스프라이트 액션 렌더링
+    // 1. 캐릭터 스프라이트 및 접지 렌더링
     ctx.save();
     const isFacingLeft = Math.cos(this.angle) < 0;
     ctx.translate(sx, sy);
@@ -871,9 +871,9 @@ class Player {
       ctx.scale(-1, 1);
     }
 
-    // 1. 발 아래 접지 그림자 (둥둥 떠다님 모션 완벽 제거)
+    // 발 바로 아래 밀착 접지 그림자 (0픽셀 단단한 착지)
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.beginPath();
     ctx.ellipse(0, 2, 22, 7, 0, 0, Math.PI * 2);
     ctx.fill();

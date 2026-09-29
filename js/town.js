@@ -218,6 +218,7 @@ class TownManager {
   // 마을 NPC 및 허수아비 렌더링 (원형 이모지 버튼 제거 -> 다크 판타지 인터랙티브 스테이션 & 비겹침 스마트 배지)
   renderNPCs(ctx, camera, player = null) {
     const curPlayer = player || (window.game && window.game.player);
+    const time = Date.now() * 0.003;
 
     this.npcs.forEach(npc => {
       const sx = npc.x - camera.x;
@@ -318,7 +319,7 @@ class TownManager {
       const nameW = ctx.measureText(npc.name).width;
 
       ctx.fillStyle = 'rgba(10, 6, 16, 0.85)';
-      ctx.strokeStyle = isNearby ? ringColor : 'rgba(255, 255, 255, 0.25)';
+      ctx.strokeStyle = isNearby ? '#ffd700' : 'rgba(255, 255, 255, 0.25)';
       ctx.lineWidth = isNearby ? 1.5 : 1;
       ctx.beginPath();
       ctx.roundRect(sx - nameW/2 - 8, badgeY - 14, nameW + 16, 18, 4);

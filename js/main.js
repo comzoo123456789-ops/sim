@@ -2392,11 +2392,6 @@ class GameEngine {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(petDef.icon, px, py);
-
-    ctx.font = 'bold 10px "Rajdhani", sans-serif';
-    ctx.fillStyle = petDef.color;
-    ctx.shadowBlur = 4;
-    ctx.fillText(petDef.name, px, py - 18);
     ctx.restore();
   }
 
