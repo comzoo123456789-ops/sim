@@ -251,11 +251,11 @@ class OfficeProp {
     ctx.fillStyle = '#f59e0b';
     ctx.shadowColor = '#f59e0b';
     ctx.shadowBlur = 4;
-    ctx.fillRect(-w / 2 + 6, 8, 10, 4); // 금액 표시창
+    ctx.fillRect(-w / 2 + 6, 8, 10, 4);
     ctx.shadowBlur = 0;
 
     ctx.fillStyle = '#020617';
-    ctx.fillRect(-w / 2 + 6, 16, w - 12, 12); // 캔 배출구
+    ctx.fillRect(-w / 2 + 6, 16, w - 12, 12);
   }
 
   renderCopier(ctx) {
@@ -364,13 +364,27 @@ class OfficeObstacle {
       ctx.moveTo(10, 0);
       ctx.lineTo(this.width - 10, this.height);
       ctx.stroke();
-    } else {
-      // 책상 군집
+    } else if (this.type === 'desk_cluster') {
+      // 원목 오피스 책상
       ctx.fillStyle = '#334155';
-      ctx.fillRect(0, 0, this.width, this.height);
-      ctx.strokeStyle = '#64748b';
+      ctx.strokeStyle = '#475569';
       ctx.lineWidth = 2;
-      ctx.strokeRect(0, 0, this.width, this.height);
+      ctx.beginPath();
+      ctx.roundRect(0, 0, this.width, this.height, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // 듀얼 모니터 (푸른 화면 발광)
+      ctx.fillStyle = '#38bdf8';
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 8;
+      ctx.fillRect(15, 8, 30, 14);
+      ctx.fillRect(55, 8, 30, 14);
+
+      // 키보드
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(30, 32, 40, 12);
     }
 
     ctx.restore();
@@ -405,8 +419,7 @@ class OfficePropManager {
       }
     }
 
-    // 2. 오피스 파티션 및 회의실 벽 배치
-    // 회의실 4개 (A, B, C, D 룸)
+    // 2. 오피스 회의실 4개 (A, B, C, D 룸)
     const rooms = [
       { x: 400, y: 400, w: 280, h: 200, type: 'meeting_wall' },
       { x: 1700, y: 400, w: 280, h: 200, type: 'meeting_wall' },
@@ -415,19 +428,26 @@ class OfficePropManager {
     ];
 
     rooms.forEach(r => {
-      // 상하좌우 벽 (입구 뚫림)
-      this.obstacles.push(new OfficeObstacle(r.x, r.y, r.w, 16, r.type)); // 상
-      this.obstacles.push(new OfficeObstacle(r.x, r.y, 16, r.h, r.type)); // 좌
-      this.obstacles.push(new OfficeObstacle(r.x + r.w - 16, r.y, 16, r.h, r.type)); // 우
-      this.obstacles.push(new OfficeObstacle(r.x, r.y + r.h - 16, r.w * 0.6, 16, r.type)); // 하단(출입구 제외)
+      this.obstacles.push(new OfficeObstacle(r.x, r.y, r.w, 16, r.type)); // 상단 벽
+      this.obstacles.push(new OfficeObstacle(r.x, r.y, 16, r.h, r.type)); // 좌측 벽
+      this.obstacles.push(new OfficeObstacle(r.x + r.w - 16, r.y, 16, r.h, r.type)); // 우측 벽
+      this.obstacles.push(new OfficeObstacle(r.x, r.y + r.h - 16, r.w * 0.6, 16, r.type)); // 하단 벽(출입문 오픈)
     });
 
-    // 중앙 파티션 기둥들
+    // 3. 중앙 파티션 기둥들
     for (let x = 600; x <= 1800; x += 400) {
       for (let y = 600; y <= 1800; y += 400) {
         if (Math.hypot(x - 1200, y - 1200) > 200) {
           this.obstacles.push(new OfficeObstacle(x - 40, y - 6, 80, 12, 'partition'));
         }
+      }
+    }
+
+    // 4. 고정 오피스 책상 군집 (물리 충돌 적용)
+    for (let rx = 300; rx <= 2100; rx += 400) {
+      for (let ry = 300; ry <= 2100; ry += 400) {
+        if (Math.abs(rx - 1200) < 150 && Math.abs(ry - 1200) < 150) continue;
+        this.obstacles.push(new OfficeObstacle(rx - 50, ry - 30, 100, 60, 'desk_cluster'));
       }
     }
   }
@@ -436,10 +456,11 @@ class OfficePropManager {
     this.props.forEach(p => p.update(dt));
   }
 
-  // 충돌 해결 (플레이어 및 몬스터가 벽에 걸리지 않고 미끄러지도록 처리)
+  // 충돌 해결 (플레이어 및 모든 지상 몬스터가 벽과 기물에 완벽하게 가로막힘)
   resolveCollisions(entity) {
     const r = entity.radius || 16;
 
+    // 1. 벽, 파티션, 책상 장애물 충돌 검사
     this.obstacles.forEach(obs => {
       const nearestX = Math.max(obs.x, Math.min(entity.x, obs.x + obs.width));
       const nearestY = Math.max(obs.y, Math.min(entity.y, obs.y + obs.height));
@@ -453,13 +474,34 @@ class OfficePropManager {
         entity.y += (distY / dist) * overlap;
       }
     });
+
+    // 2. 살아있는 기물(정수기, 자판기, 복사기, 캐비닛) 충돌 검사
+    this.props.forEach(p => {
+      if (!p.isAlive) return;
+      const minX = p.x - p.width / 2;
+      const maxX = p.x + p.width / 2;
+      const minY = p.y - p.height / 2;
+      const maxY = p.y + p.height / 2;
+
+      const nearestX = Math.max(minX, Math.min(entity.x, maxX));
+      const nearestY = Math.max(minY, Math.min(entity.y, maxY));
+      const distX = entity.x - nearestX;
+      const distY = entity.y - nearestY;
+      const dist = Math.hypot(distX, distY);
+
+      if (dist < r && dist > 0) {
+        const overlap = r - dist;
+        entity.x += (distX / dist) * overlap;
+        entity.y += (distY / dist) * overlap;
+      }
+    });
   }
 
   render(ctx, camera) {
-    const viewL = camera.x - 100;
-    const viewR = camera.x + window.innerWidth + 100;
-    const viewT = camera.y - 100;
-    const viewB = camera.y + window.innerHeight + 100;
+    const viewL = camera.x - 120;
+    const viewR = camera.x + window.innerWidth + 120;
+    const viewT = camera.y - 120;
+    const viewB = camera.y + window.innerHeight + 120;
 
     // 장애물 렌더링
     this.obstacles.forEach(obs => {

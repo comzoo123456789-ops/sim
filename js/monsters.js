@@ -79,12 +79,17 @@ class Monster {
     if (this.hitTimer > 0) this.hitTimer -= dt;
     this.animTimer += dt * 8;
 
-    // 플레이어를 향해 추적 이동
+    // 플레이어를 향해 추적 이동 (슬랙 유령은 벽을 통과하는 부유형, 나머지 모든 몬스터는 벽과 기물에 걸림)
     const dist = Math.hypot(player.x - this.x, player.y - this.y);
     if (dist > 5) {
       const ang = Math.atan2(player.y - this.y, player.x - this.x);
       this.x += Math.cos(ang) * this.speed * 60 * dt;
       this.y += Math.sin(ang) * this.speed * 60 * dt;
+
+      // 장애물 및 기물 물리 충돌 해결
+      if (this.typeKey !== 'slack' && window.game && window.game.propMgr) {
+        window.game.propMgr.resolveCollisions(this);
+      }
     }
 
     // 플레이어 접촉 공격
