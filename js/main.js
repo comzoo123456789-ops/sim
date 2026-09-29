@@ -1849,20 +1849,21 @@ class GameEngine {
     alert(`[${item.rarityName}] ${item.name}을(를) 획득했습니다!`);
   }
 
-  // --- 1~100층 자유 선택 모달 (원하는 층 바로 확인 가능!) ---
+  // --- 1~100층 10대 테마 구역 분할 깔끔한 선택 모달 ---
   openFloorSelectModal() {
     this.toggleModal('floorSelect');
     const container = document.getElementById('floorSelectList');
     container.innerHTML = '';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '12px';
 
     if (this.player.isTowerDestroyed) {
       const nmHeader = document.createElement('div');
-      nmHeader.style.gridColumn = '1 / -1';
       nmHeader.style.padding = '10px';
       nmHeader.style.background = 'rgba(255, 30, 60, 0.18)';
       nmHeader.style.border = '1px solid #ff1a40';
       nmHeader.style.borderRadius = '8px';
-      nmHeader.style.marginBottom = '8px';
       nmHeader.style.textAlign = 'center';
       nmHeader.innerHTML = `
         <span style="color:#ffd700;font-weight:900;">💀 [무한 악몽 심연] 101F~ 무한 난이도 모드 해금됨</span>
@@ -1875,18 +1876,107 @@ class GameEngine {
       container.appendChild(nmHeader);
     }
 
-    // 1층부터 100층까지 전부 해금하여 버튼 생성!
-    for (let f = 1; f <= 100; f++) {
-      const btn = document.createElement('button');
-      btn.className = 'floor-select-btn' + (f % 10 === 0 ? ' boss-floor' : '');
-      const bossTag = ZONE_BOSSES[f] ? ` [${ZONE_BOSSES[f].name}]` : '';
-      btn.innerHTML = `<span>${f}F</span><small style="display:block;font-size:10px;">${f % 10 === 0 ? '👹 보스' + bossTag : '일반'}</small>`;
-      btn.onclick = () => {
-        this.closeAllModals();
-        this.enterDungeon(f);
-      };
-      container.appendChild(btn);
+    // 10대 테마 구역 탭 바 생성
+    const tabContainer = document.createElement('div');
+    tabContainer.style.display = 'flex';
+    tabContainer.style.overflowX = 'auto';
+    tabContainer.style.gap = '6px';
+    tabContainer.style.paddingBottom = '6px';
+
+    const contentArea = document.createElement('div');
+    contentArea.id = 'zoneFloorGridArea';
+
+    const curFloor = this.player.currentFloor || 1;
+    let activeZoneIdx = Math.min(9, Math.floor((curFloor - 1) / 10));
+
+    const renderZoneFloors = (zoneIdx) => {
+      activeZoneIdx = zoneIdx;
+      tabContainer.querySelectorAll('.zone-tab-btn').forEach((tb, i) => {
+        if (i === zoneIdx) {
+          tb.style.background = '#e67300';
+          tb.style.color = '#fff';
+          tb.style.borderColor = '#ffd700';
+        } else {
+          tb.style.background = 'rgba(25, 14, 38, 0.85)';
+          tb.style.color = '#cfc0e6';
+          tb.style.borderColor = 'rgba(255, 215, 0, 0.2)';
+        }
+      });
+
+      const theme = window.DUNGEON_THEMES ? window.DUNGEON_THEMES[zoneIdx] : null;
+      const startF = zoneIdx * 10 + 1;
+      const endF = (zoneIdx + 1) * 10;
+
+      contentArea.innerHTML = '';
+
+      // 구역 헤더 카드
+      const headerBox = document.createElement('div');
+      headerBox.style.background = 'rgba(20, 10, 30, 0.9)';
+      headerBox.style.border = `1px solid ${theme ? theme.color : '#e67300'}`;
+      headerBox.style.borderRadius = '8px';
+      headerBox.style.padding = '10px 14px';
+      headerBox.style.marginBottom = '10px';
+      headerBox.style.display = 'flex';
+      headerBox.style.justifyContent = 'space-between';
+      headerBox.style.alignItems = 'center';
+
+      const bossInfo = window.ZONE_BOSSES ? window.ZONE_BOSSES[endF] : null;
+      headerBox.innerHTML = `
+        <div>
+          <h4 style="margin:0;color:${theme ? theme.color : '#ffd700'};font-family:var(--font-title);">${startF}~${endF}F: ${theme ? theme.name : ''}</h4>
+          <small style="color:#a496bd;">10층 보스: <b style="color:#ff6622;">${bossInfo ? bossInfo.name : '구역 수호자'}</b> (${bossInfo ? bossInfo.title : ''})</small>
+        </div>
+      `;
+      contentArea.appendChild(headerBox);
+
+      // 10개 층 콤팩트 버튼 그리드
+      const grid = document.createElement('div');
+      grid.style.display = 'grid';
+      grid.style.gridTemplateColumns = 'repeat(5, 1fr)';
+      grid.style.gap = '8px';
+
+      for (let f = startF; f <= endF; f++) {
+        const isBoss = (f % 10 === 0);
+        const btn = document.createElement('button');
+        btn.className = 'floor-select-btn' + (isBoss ? ' boss-floor' : '');
+        btn.style.padding = '10px 6px';
+        btn.style.textAlign = 'center';
+
+        btn.innerHTML = `
+          <span style="font-size:15px;font-weight:bold;display:block;">${f}F</span>
+          <small style="display:block;font-size:10px;margin-top:2px;color:${isBoss ? '#ffd700' : '#8899aa'};">${isBoss ? '👹 구역 보스' : '일반 던전'}</small>
+        `;
+        btn.onclick = () => {
+          this.closeAllModals();
+          this.enterDungeon(f);
+        };
+        grid.appendChild(btn);
+      }
+      contentArea.appendChild(grid);
+    };
+
+    // 10대 구역 탭 버튼들 생성
+    if (window.DUNGEON_THEMES) {
+      window.DUNGEON_THEMES.forEach((th, idx) => {
+        const tBtn = document.createElement('button');
+        tBtn.className = 'zone-tab-btn';
+        tBtn.style.padding = '6px 12px';
+        tBtn.style.borderRadius = '6px';
+        tBtn.style.fontSize = '11px';
+        tBtn.style.whiteSpace = 'nowrap';
+        tBtn.style.cursor = 'pointer';
+        tBtn.style.border = '1px solid rgba(255, 215, 0, 0.2)';
+        tBtn.innerText = `${th.minF}~${th.maxF}F`;
+        tBtn.onclick = () => renderZoneFloors(idx);
+        tabContainer.appendChild(tBtn);
+      });
     }
+
+    container.appendChild(tabContainer);
+    container.appendChild(contentArea);
+
+    // 초기 활성 구역 렌더링
+    renderZoneFloors(activeZoneIdx);
   }
 
   selectJobForCreation(job) {

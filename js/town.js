@@ -227,20 +227,11 @@ class TownManager {
 
       ctx.save();
 
-      // 1. 발 밑 은은한 다크 룬 링
-      const ringColor = npc.id === 'portal' ? 'rgba(160, 68, 255, 0.65)'
-        : npc.id === 'blacksmith' ? 'rgba(230, 115, 0, 0.65)'
-        : npc.id === 'shop' ? 'rgba(46, 184, 92, 0.65)'
-        : npc.id === 'research' ? 'rgba(0, 240, 255, 0.65)'
-        : npc.id === 'mercenary' ? 'rgba(255, 215, 0, 0.65)'
-        : 'rgba(166, 124, 82, 0.65)';
-
-      const time = Date.now() * 0.003;
-      ctx.strokeStyle = ringColor;
-      ctx.lineWidth = isNearby ? 2.5 : 1.5;
+      // 1. 발 밑 은은한 그림자 타원
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
       ctx.beginPath();
       ctx.ellipse(sx, sy + 12, npc.radius * 0.9, npc.radius * 0.45, 0, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.fill();
 
       // 2. 오브젝트별 전용 다크 판타지 비주얼
       if (npc.id === 'portal') {
@@ -267,29 +258,18 @@ class TownManager {
           const nY = sy - nH + 12;
 
           ctx.save();
-          // 아치형 클리핑 & 100% 선명 렌더링
+          // 아치형 클리핑 & 100% 선명 렌더링 (외곽 테두리 stroke 띠 삭제!)
           ctx.beginPath();
           ctx.roundRect(nX, nY, nW, nH, [12, 12, 6, 6]);
           ctx.clip();
           ctx.drawImage(npcImg, nX, nY, nW, nH);
 
-          // 발밑 블렌딩
+          // 발밑 은은한 디밍
           const nGrad = ctx.createLinearGradient(0, nY + nH * 0.7, 0, nY + nH);
           nGrad.addColorStop(0, 'rgba(0,0,0,0)');
           nGrad.addColorStop(1, 'rgba(10,5,20,0.65)');
           ctx.fillStyle = nGrad;
           ctx.fillRect(nX, nY, nW, nH);
-          ctx.restore();
-
-          // NPC 고유 림라이트 오라 테두리
-          ctx.save();
-          ctx.strokeStyle = ringColor;
-          ctx.lineWidth = isNearby ? 2.5 : 1.5;
-          ctx.shadowColor = ringColor;
-          ctx.shadowBlur = isNearby ? 14 : 6;
-          ctx.beginPath();
-          ctx.roundRect(nX, nY, nW, nH, [12, 12, 6, 6]);
-          ctx.stroke();
           ctx.restore();
         } else {
           ctx.fillStyle = npc.color || '#e67300';
@@ -298,16 +278,38 @@ class TownManager {
           ctx.fill();
         }
       } else if (npc.id === 'dummy') {
-        // 훈련용 허수아비
-        ctx.fillStyle = '#5c3a21';
-        ctx.fillRect(sx - 4, sy - 16, 8, 28);
-        ctx.fillStyle = '#8b5a2b';
+        // 다크 판타지 고화질 훈련용 허수아비
+        ctx.save();
+        ctx.translate(sx, sy);
+        
+        // 피격 흔들림 미세 애니메이션
+        const hitShake = (this.dummyData.lastHitTime && Date.now() - this.dummyData.lastHitTime < 250) ? Math.sin(Date.now() * 0.08) * 3 : 0;
+        ctx.rotate(hitShake * 0.05);
+
+        // 지지대 나무 목봉
+        ctx.fillStyle = '#3a2416';
+        ctx.fillRect(-5, -28, 10, 40);
+        ctx.fillRect(-18, -18, 36, 6);
+
+        // 짚으로 엮은 타겟 몸통 바디
+        ctx.fillStyle = '#a88246';
         ctx.beginPath();
-        ctx.arc(sx, sy - 6, 12, 0, Math.PI * 2);
+        ctx.roundRect(-14, -32, 28, 34, 8);
         ctx.fill();
-        ctx.strokeStyle = '#ffd700';
+        ctx.strokeStyle = '#6b5028';
         ctx.lineWidth = 1.5;
         ctx.stroke();
+
+        // 붉은 타겟 표적 십자가 (Crosshair)
+        ctx.strokeStyle = '#e63946';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, -15, 8, 0, Math.PI * 2);
+        ctx.moveTo(-10, -15); ctx.lineTo(10, -15);
+        ctx.moveTo(0, -25); ctx.lineTo(0, -5);
+        ctx.stroke();
+
+        ctx.restore();
       }
 
       // 3. 네임태그: 깔끔하고 세련된 다크 판타지 배지 (NPC 머리 위 배치)

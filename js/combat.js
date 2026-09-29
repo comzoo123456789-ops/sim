@@ -34,6 +34,37 @@ window.MERCENARY_SPRITES.kyle.src = 'assets/portraits/kyle.jpg';
 window.MERCENARY_SPRITES.roland.src = 'assets/portraits/roland.jpg';
 window.MERCENARY_SPRITES.ceria.src = 'assets/portraits/ceria.jpg';
 
+// 검정색 배경 사각형을 투명 알파 채널로 자동 변환하는 오프스클린 캔버스 가공 유틸리티
+function makeSpriteTransparent(img) {
+  if (!img || !img.complete || img.naturalWidth === 0) return img;
+  if (img._transparentCanvas) return img._transparentCanvas;
+
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      // 검정색 외곽 배경 제거 (r, g, b가 모두 32 이하의 어두운 영역일 때 투명화)
+      if (r <= 32 && g <= 32 && b <= 32) {
+        data[i + 3] = 0;
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    img._transparentCanvas = canvas;
+    return canvas;
+  } catch (e) {
+    return img;
+  }
+}
+
 class Player {
   constructor(charData) {
     this.charData = charData;
@@ -884,9 +915,10 @@ class Player {
       const sprX = -sprW / 2;
       const sprY = -sprH + 6;
 
+      const transparentSpr = makeSpriteTransparent(rawImg);
       ctx.save();
-      // 노란 띠나 상자 라인 없이 온전히 캐릭터 본연의 모습만 렌더링
-      ctx.drawImage(rawImg, sprX, sprY, sprW, sprH);
+      // 검은색 테두리 상자 없이 오롯이 투명화된 캐릭터 모습만 렌더링
+      ctx.drawImage(transparentSpr, sprX, sprY, sprW, sprH);
       ctx.restore();
 
       // 공격 액션 시 팔과 검을 휘두르는 시원한 검기 호(Slash Arc) 이펙트
@@ -1118,23 +1150,12 @@ class Mercenary {
       ctx.clip();
       ctx.drawImage(mImg, mX, mY, mW, mH);
 
-      // 발밑 블렌딩
+      // 발밑 은은한 블렌딩
       const bg = ctx.createLinearGradient(0, mY + mH * 0.7, 0, mY + mH);
       bg.addColorStop(0, 'rgba(0,0,0,0)');
       bg.addColorStop(1, 'rgba(10,5,20,0.65)');
       ctx.fillStyle = bg;
       ctx.fillRect(mX, mY, mW, mH);
-      ctx.restore();
-
-      // 동료 테두리 오라
-      ctx.save();
-      ctx.strokeStyle = mColor;
-      ctx.lineWidth = 2;
-      ctx.shadowColor = mColor;
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.roundRect(mX, mY, mW, mH, [12, 12, 6, 6]);
-      ctx.stroke();
       ctx.restore();
     } else {
       ctx.fillStyle = mColor;
@@ -1143,30 +1164,13 @@ class Mercenary {
       ctx.fill();
     }
 
-    // 3. 동료 이름 & 역할 태그 (상단 배치)
-    const mName = `[동료] ${this.name} (${this.role})`;
-    ctx.font = 'bold 11px "Rajdhani", sans-serif';
-    const tagW = ctx.measureText(mName).width;
-    ctx.fillStyle = 'rgba(10, 5, 20, 0.88)';
-    ctx.strokeStyle = mColor;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(sx - tagW / 2 - 5, sy - 66, tagW + 10, 15, 3);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(mName, sx, sy - 58);
-
-    // 4. 동료 생명력 게이지 바
-    const barW = 38;
-    const barH = 4;
-    ctx.fillStyle = '#110a18';
-    ctx.fillRect(sx - barW / 2, sy - 48, barW, barH);
+    // 3. 미니 콤팩트 체력 게이지 바만 표시 (화면 가리는 긴 floating 이름표 완벽 삭제!)
+    const barW = 32;
+    const barH = 3;
+    ctx.fillStyle = 'rgba(10, 5, 20, 0.85)';
+    ctx.fillRect(sx - barW / 2, sy - 56, barW, barH);
     ctx.fillStyle = '#00ffaa';
-    ctx.fillRect(sx - barW / 2, sy - 48, barW * Math.max(0, this.hp / this.maxHp), barH);
+    ctx.fillRect(sx - barW / 2, sy - 56, barW * Math.max(0, this.hp / this.maxHp), barH);
 
     ctx.restore();
   }
