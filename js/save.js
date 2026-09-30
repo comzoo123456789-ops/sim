@@ -151,6 +151,33 @@ class SaveManager {
     return null;
   }
 
+  // 로비에서 보여 줄 스테이지: 마지막으로 플레이한 스테이지 → 없으면 가장 멀리 깬 다음 스테이지
+  // (테스트 전체 해금 중에도 해금 목록이 아니라 실제 진행 기준)
+  progressStageId() {
+    const last = this.data.lastStageId;
+    if (last && this.isStageUnlocked(last)) return last;
+    const key = id => { const [c, s] = id.split('-').map(Number); return c * 100 + s; };
+    const cleared = (this.data.clearedStages || []).slice().sort((a, b) => key(a) - key(b));
+    if (!cleared.length) return '1-1';
+    const furthest = cleared[cleared.length - 1];
+    return SaveManager.nextStageId(furthest) || furthest;
+  }
+
+  // 챕터 안에서 아직 안 깬 첫 스테이지 (다 깼으면 마지막 스테이지)
+  firstUnclearedIn(ch) {
+    for (let s = 1; s <= 10; s++) {
+      const id = `${ch}-${s}`;
+      if (!(this.data.clearedStages || []).includes(id)) return this.isStageUnlocked(id) ? id : `${ch}-1`;
+    }
+    return `${ch}-10`;
+  }
+
+  setLastStage(stageId) {
+    if (this.data.lastStageId === stageId) return;
+    this.data.lastStageId = stageId;
+    this.save();
+  }
+
   isChapterUnlocked(ch) {
     return this.isStageUnlocked(`${ch}-1`);
   }

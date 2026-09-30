@@ -373,6 +373,7 @@ class GameEngine {
     this.renderAchievements();
     this.renderBestiary();
     this.updateLobbyGold();
+    this.scrollToSelectedStage();
     if (window.account) window.account.start();
 
     // 오디오 잠금 해제 리스너
@@ -572,19 +573,8 @@ class GameEngine {
     if (btnChapterPrev) btnChapterPrev.onclick = () => this.changeChapter(-1);
     if (btnChapterNext) btnChapterNext.onclick = () => this.changeChapter(1);
 
-    // 로비 첫 진입: 가장 최근에 열린 스테이지를 선택
-    if (window.saveMgr) {
-      const unlocked = window.saveMgr.data.unlockedStages || ['1-1'];
-      const latest = unlocked.slice().sort((a, b) => {
-        const [ac, as] = a.split('-').map(Number);
-        const [bc, bs] = b.split('-').map(Number);
-        return ac * 100 + as - (bc * 100 + bs);
-      }).pop();
-      if (latest && this.getStageById(latest)) {
-        this.selectedStageId = latest;
-        this.selectedChapter = parseInt(latest.split('-')[0], 10);
-      }
-    }
+    // 로비 첫 진입: 마지막으로 플레이한(진행 중인) 스테이지를 선택
+    this.selectProgressStage();
 
     // 2. 스테이지 시작 버튼
     const btnStartSelectedStage = document.getElementById('btnStartSelectedStage');
@@ -817,7 +807,9 @@ class GameEngine {
 
   // 클라우드 저장을 불러온 뒤 로비 전체 다시 그리기
   refreshLobby() {
+    this.selectProgressStage();
     this.renderStageSelectGrid();
+    this.scrollToSelectedStage();
     this.renderCharSelectGrid();
     this.renderShop();
     this.renderAchievements();
@@ -847,6 +839,26 @@ class GameEngine {
   }
 
   // 챕터 선택 (잠긴 챕터는 이동 불가)
+  // 선택된 스테이지 카드가 보이도록 목록 스크롤
+  scrollToSelectedStage() {
+    requestAnimationFrame(() => {
+      const card = document.querySelector('.stage-card.selected');
+      const body = document.querySelector('.lobby-body');
+      if (!card || !body) return;
+      const top = card.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop;
+      body.scrollTop = Math.max(0, top - body.clientHeight * 0.35);
+    });
+  }
+
+  selectProgressStage() {
+    if (!window.saveMgr) return;
+    const id = window.saveMgr.progressStageId();
+    if (id && this.getStageById(id)) {
+      this.selectedStageId = id;
+      this.selectedChapter = parseInt(id.split('-')[0], 10);
+    }
+  }
+
   changeChapter(delta) {
     const next = (this.selectedChapter || 1) + delta;
     if (next < 1 || next > SaveManager.MAX_CHAPTER) return;
@@ -856,8 +868,9 @@ class GameEngine {
     }
     this.selectedChapter = next;
     const ch = this.getChapter(next);
-    const unlocked = ch.stages.filter(st => !window.saveMgr || window.saveMgr.isStageUnlocked(st.id));
-    this.selectedStageId = (unlocked[unlocked.length - 1] || ch.stages[0]).id;
+    const last = window.saveMgr && window.saveMgr.data.lastStageId;
+    this.selectedStageId = last && last.split('-')[0] === String(next) ? last
+      : window.saveMgr ? window.saveMgr.firstUnclearedIn(next) : ch.stages[0].id;
     this.renderStageSelectGrid();
     const body = document.querySelector('.lobby-body');
     if (body) body.scrollTop = 0;
@@ -1250,6 +1263,12 @@ class GameEngine {
     this.selectedCharId = charId || 'intern';
     this.selectedMode = mode || 'stage';
     this.currentStageId = stageId || this.selectedStageId || '1-1';
+    if (this.selectedMode === 'stage') {
+      // 새로고침해도 이 스테이지에서 로비가 열리도록 기록
+      this.selectedStageId = this.currentStageId;
+      this.selectedChapter = parseInt(this.currentStageId.split('-')[0], 10);
+      if (window.saveMgr) window.saveMgr.setLastStage(this.currentStageId);
+    }
 
     if (this.selectedMode === 'stage') {
       this.currentStage = this.getStageById(this.currentStageId) || this.getChapter(1).stages[0];
