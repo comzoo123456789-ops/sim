@@ -663,7 +663,7 @@ class GameEngine {
     if (btnRestReroll) {
       btnRestReroll.onclick = () => {
         const cost = this.run.rerollCost(this.selectedChapter);
-        if (this.run.coins < cost) { if (window.soundEngine) window.soundEngine.playHit(); return; }
+        if (!this.run.canReroll(this.selectedChapter)) { if (window.soundEngine) window.soundEngine.playHit(); return; }
         this.run.coins -= cost;
         this.run.rerolls++;
         this.run.rollOffers(this.selectedChapter);
@@ -1164,8 +1164,7 @@ class GameEngine {
   openRestShop(nextStageId) {
     this.restNextStageId = nextStageId;
     this.state = 'rest_shop';
-    this.run.rerolls = 0;
-    this.run.rollOffers(this.selectedChapter);
+    this.run.openShop(this.selectedChapter);
     this.renderRestShop();
     document.getElementById('restShopModal').classList.add('active');
     if (window.soundEngine) window.soundEngine.playBgm('lobby');
@@ -1190,14 +1189,15 @@ class GameEngine {
         const def = RUN_ITEMS[o.id];
         const owned = run.count(o.id);
         const card = document.createElement('div');
-        card.className = `rest-item rarity-${def.rarity} ${o.sold ? 'sold' : ''} ${!o.sold && run.coins < o.price ? 'poor' : ''}`;
+        const locked = !o.sold && run.buysLeft <= 0;
+        card.className = `rest-item rarity-${def.rarity} ${o.sold ? 'sold' : ''} ${!o.sold && (run.coins < o.price || locked) ? 'poor' : ''}`;
         card.innerHTML = `
           <span class="rest-rarity">${rarityLabel[def.rarity]}</span>
           <div class="rest-item-icon">${window.assets.iconHtml(def.icon)}</div>
           <div class="rest-item-name">${def.name}</div>
           <div class="rest-item-desc">${def.desc}</div>
-          <div class="rest-item-owned">${def.max > 1 ? `보유 ${owned}/${def.max}` : (owned ? '보유 중' : '1개 한정')}</div>
-          <button class="rest-buy">${o.sold ? '구매 완료' : `${coinIcon}${o.price.toLocaleString()}`}</button>
+          <div class="rest-item-owned">${def.consumable ? `다음 스테이지 ${run.hires.length}/${CompanionManager.MAX}명` : def.max > 1 ? `보유 ${owned}/${def.max}` : (owned ? '보유 중' : '1개 한정')}</div>
+          <button class="rest-buy">${o.sold ? '구매 완료' : locked ? '구매 끝' : `${coinIcon}${o.price.toLocaleString()}`}</button>
         `;
         if (!o.sold) {
           card.querySelector('.rest-buy').onclick = (e) => {
@@ -1218,21 +1218,23 @@ class GameEngine {
     const reroll = document.getElementById('btnRestReroll');
     if (reroll) {
       const cost = run.rerollCost(ch);
-      reroll.innerHTML = `새로고침 ${coinIcon}${cost}`;
-      reroll.classList.toggle('poor', run.coins < cost);
+      const left = RunManager.REROLLS_PER_SHOP - run.rerolls;
+      reroll.innerHTML = left > 0 ? `새로고침 ${coinIcon}${cost} <small>(${left}회 남음)</small>` : '새로고침 끝';
+      reroll.classList.toggle('poor', !run.canReroll(ch));
     }
+    set('restBuysLeft', `이번 휴식 구매 <b>${run.buysLeft}/${RunManager.BUYS_PER_SHOP}</b>`);
 
     // 보유 아이템 & 동료
     const ownedIds = Object.keys(run.items).filter(id => run.items[id] > 0);
     set('restOwned', ownedIds.length
       ? ownedIds.map(id => `<span class="rest-chip" title="${RUN_ITEMS[id].name}: ${RUN_ITEMS[id].desc}">${window.assets.iconHtml(RUN_ITEMS[id].icon)}${run.items[id] > 1 ? `<b>×${run.items[id]}</b>` : ''}</span>`).join('')
       : '<span class="rest-empty">아직 없음</span>');
-    set('restCompanions', run.companions.length
-      ? run.companions.map(id => {
+    set('restCompanions', run.hires.length
+      ? run.hires.map(id => {
         const c = window.GAME_DATA.CHARACTERS[id];
         return `<span class="rest-mate">${window.assets.spriteHtml(`char_${c.sprite}_idle`, 26, 'head')}${c.name.split(' ').pop()}</span>`;
       }).join('')
-      : `<span class="rest-empty">스테이지 중 갇힌 동료를 구출하면 합류합니다 (최대 ${CompanionManager.MAX}명)</span>`);
+      : `<span class="rest-empty">구출한 동료는 스테이지가 끝나면 퇴근해요. 인턴 추천서로 다음 스테이지 지원을 부를 수 있어요.</span>`);
   }
 
 
@@ -1280,6 +1282,7 @@ class GameEngine {
     this.effectEngine.reset();
 
     this.monsterMgr.setStage(this.currentStage);
+    if (this.selectedMode === 'stage') this.run.beginStage();
     this.companionMgr.setup(this.player, this.run.companions, this.currentStage);
 
     // 이전 스테이지 빌드 이어받기 (챕터 한 판)
@@ -1610,6 +1613,7 @@ class GameEngine {
 
     // 빌드 저장 (다음 스테이지로 이어짐)
     this.run.saveCarry(this.player);
+    this.run.finishStage();
 
     // 이번 판 코인 + 클리어 보너스 일부 → 탕비실 지갑 (다음 스테이지 상점에서 사용)
     const walletGain = this.player.gold + Math.round(goldReward * 0.4);

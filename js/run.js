@@ -17,7 +17,7 @@ const RUN_ITEMS = {
   monitor: { name: '듀얼 모니터', icon: 'monitor', rarity: 'common', max: 3, desc: '대시 쿨타임 -10%', bonus: { dashCdReduc: 0.10 } },
   vip_badge: { name: 'VIP 사원증', icon: 'lanyard', rarity: 'rare', max: 1, desc: '쓰러져도 1회 부활', bonus: { revive: 1 } },
   overtime_pay: { name: '야근 수당 봉투', icon: 'cash', rarity: 'rare', max: 2, desc: '스테이지 시작 시 레벨업 카드 +1장', bonus: { startLevels: 1 } },
-  referral: { name: '인턴 추천서', icon: 'briefcase', rarity: 'rare', max: 2, desc: '즉시 동료 사원 1명 합류', bonus: {}, instant: 'companion' },
+  referral: { name: '인턴 추천서', icon: 'briefcase', rarity: 'rare', max: 3, desc: '다음 스테이지 동안 동료 사원 1명 지원', bonus: {}, instant: 'companion', consumable: true },
   laptop: { name: '법인 노트북 지급', icon: 'pc_tower', rarity: 'epic', max: 1, desc: '다음 스테이지에서 기본 무기 +2레벨', bonus: { startWeaponLv: 2 } },
   corp_card: { name: '무제한 법인카드', icon: 'receipt', rarity: 'epic', max: 1, desc: '공격력 +20% · 코인 +20%', bonus: { atkMul: 0.2, goldMul: 0.2 } },
   clinic: { name: '사내 의무실 VIP', icon: 'aid_kit', rarity: 'epic', max: 1, desc: '초당 회복 +2 · 받는 피해 -10%', bonus: { hpRegen: 2, dmgReduc: 0.1 } }
@@ -34,8 +34,10 @@ class RunManager {
     this.active = false;
     this.items = {};      // { itemId: count }
     this.coins = 0;       // 탕비실 지갑 (한 판 동안만 유지)
-    this.companions = []; // 합류한 동료 charId 목록
+    this.companions = []; // 이번 스테이지에 함께하는 동료 charId 목록 (스테이지가 끝나면 퇴근)
+    this.hires = [];      // 인턴 추천서로 다음 스테이지에 지원 올 동료
     this.rerolls = 0;
+    this.buysLeft = 0;    // 이번 탕비실 방문에서 남은 구매 횟수
     this.offers = [];
     this.carry = null;          // 다음 스테이지로 이어지는 빌드 (레벨 / 무기 / 패시브)
     this.pendingWeaponLv = 0;   // 법인 노트북: 다음 스테이지 시작 시 1회 적용
@@ -111,10 +113,21 @@ class RunManager {
     return Math.round(15 * (1 + this.rerolls) * this.priceScale(chapter) / 5) * 5;
   }
 
+  // 탕비실 방문 시작: 구매 · 새로고침 횟수 초기화
+  openShop(chapter) {
+    this.rerolls = 0;
+    this.buysLeft = RunManager.BUYS_PER_SHOP;
+    this.rollOffers(chapter);
+  }
+
+  canReroll(chapter) {
+    return this.rerolls < RunManager.REROLLS_PER_SHOP && this.coins >= this.rerollCost(chapter);
+  }
+
   // 상점 진열 4칸 (등급 가중치, 최대치 도달 아이템 제외, 중복 없음)
   rollOffers(chapter) {
     const pool = Object.keys(RUN_ITEMS).filter(id => this.count(id) < RUN_ITEMS[id].max &&
-      !(id === 'referral' && this.companions.length >= CompanionManager.MAX));
+      !(id === 'referral' && this.hires.length >= CompanionManager.MAX));
     const offers = [];
     for (let i = 0; i < 4 && pool.length; i++) {
       const total = pool.reduce((s, id) => s + RUN_RARITY_WEIGHT[RUN_ITEMS[id].rarity], 0);
@@ -129,23 +142,38 @@ class RunManager {
 
   buy(offerIdx, allCharIds, selectedCharId) {
     const o = this.offers[offerIdx];
-    if (!o || o.sold || this.coins < o.price) return false;
+    if (!o || o.sold || this.coins < o.price || this.buysLeft <= 0) return false;
     this.coins -= o.price;
+    this.buysLeft--;
     o.sold = true;
-    this.items[o.id] = this.count(o.id) + 1;
+    if (!RUN_ITEMS[o.id].consumable) this.items[o.id] = this.count(o.id) + 1;
     if (RUN_ITEMS[o.id].bonus.startWeaponLv) this.pendingWeaponLv += RUN_ITEMS[o.id].bonus.startWeaponLv;
     if (RUN_ITEMS[o.id].instant === 'companion') this.recruitRandom(allCharIds, selectedCharId);
     return true;
   }
 
   recruitRandom(allCharIds, selectedCharId) {
-    const candidates = allCharIds.filter(id => id !== selectedCharId && !this.companions.includes(id));
-    if (!candidates.length || this.companions.length >= CompanionManager.MAX) return null;
+    const candidates = allCharIds.filter(id => id !== selectedCharId && !this.hires.includes(id));
+    if (!candidates.length || this.hires.length >= CompanionManager.MAX) return null;
     const id = candidates[Math.floor(Math.random() * candidates.length)];
-    this.companions.push(id);
+    this.hires.push(id);
     return id;
   }
+
+  // 스테이지 시작: 추천서로 부른 동료만 함께 출근 (재도전해도 같은 인원)
+  beginStage() {
+    this.companions = this.hires.slice();
+  }
+
+  // 스테이지 클리어: 구출 · 지원 동료 모두 퇴근
+  finishStage() {
+    this.companions = [];
+    this.hires = [];
+  }
 }
+
+RunManager.BUYS_PER_SHOP = 2;
+RunManager.REROLLS_PER_SHOP = 2;
 
 // ─────────────────────────── 동료 사원 ───────────────────────────
 // 동료별 전투 방식: 캐릭터의 기본 무기를 약하게 사용, 팀장은 회복 담당
@@ -305,7 +333,7 @@ class CompanionManager {
       if (game.propMgr.overlapsObstacle(x - 30, y - 30, 60, 60, 10)) continue;
       this.rescue = { charId: candidates[Math.floor(Math.random() * candidates.length)], x, y, timer: 30, progress: 0, anim: 0 };
       const name = window.GAME_DATA.CHARACTERS[this.rescue.charId].name;
-      game.effectEngine.spawnEventBanner(`[구조 요청] 야근에 갇힌 동료 발견!`, `${name} 곁에 잠시 머물러 구출하세요 (30초)`, '#34d399');
+      game.effectEngine.spawnEventBanner(`[구조 요청] 야근에 갇힌 동료 발견!`, `${name} 곁에 머물러 구출하면 이번 스테이지 동안 함께 싸워요 (30초)`, '#34d399');
       if (window.soundEngine) window.soundEngine.playBossAlert();
       return;
     }
