@@ -837,7 +837,7 @@ window.GAME_DATA = {
       name: '탕비실 믹스커피 도둑',
       type: '돌진형 엘리트',
       icon: window.assets.spriteHtml('mon_thief_walk0', 30) || window.getGameIcon('thief'),
-      desc: '회사 간식을 싹쓸이하는 월급 루팡. 튼튼한 맷집으로 정면 돌파해 옵니다.',
+      desc: '복면을 쓴 믹스커피 스틱이 탕비실 간식을 자루째 훔쳐 달아납니다. 튼튼한 맷집으로 정면 돌파해 옵니다.',
       strategy: '결재 반려 도장으로 강하게 스턴 및 압살 데미지를 넣으세요.'
     },
     {
@@ -853,7 +853,7 @@ window.GAME_DATA = {
       name: 'AI 자동화 로봇',
       type: '원거리 몬스터',
       icon: window.assets.spriteHtml('char_robot_idle', 30, 'head'),
-      desc: '업무 자동화를 위해 도입된 로봇. 주기적으로 레이저를 발사합니다. (4장부터 출현)',
+      desc: '모니터 머리에 사무용 의자 바퀴를 단 자동화 로봇. 주기적으로 레이저를 발사합니다. (4장부터 출현)',
       strategy: '레이저 발사 직후 대시로 파고들어 근접 처치하세요.'
     },
     {
@@ -1226,6 +1226,13 @@ window.GAME_DATA = {
     st.expMul = 1;
     st.eliteChance = k >= 5 ? 0.01 : 0;
   });
+
+  // 몬스터 · 보스 아이콘을 새 몬스터 아트로 (도감 · 목록 공통)
+  if (window.MonsterArt) {
+    const artIcon = key => (window.MonsterArt.has(key) ? window.MonsterArt.iconHtml(key, 36) : null);
+    Object.keys(D.MONSTERS).forEach(key => { D.MONSTERS[key].icon = artIcon(key) || D.MONSTERS[key].icon; });
+    D.BESTIARY.forEach(b => { b.icon = artIcon(b.id) || b.icon; });
+  }
 
   // 챕터 1 메타 정보 보강
   D.CHAPTERS.ch1.number = 1;

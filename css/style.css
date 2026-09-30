@@ -1820,7 +1820,9 @@ html, body {
   flex-shrink: 0;
 }
 
-.bestiary-card.locked .bestiary-icon .svg-icon { filter: brightness(0) invert(1) opacity(0.18); }
+.bestiary-card.locked .bestiary-icon .svg-icon,
+.bestiary-card.locked .bestiary-icon .mon-art-icon { filter: brightness(0) invert(1) opacity(0.18); }
+.mon-art-icon { display: block; object-fit: contain; }
 .bestiary-name { font-size: 13px; font-weight: 800; color: #fff; line-height: 1.3; }
 .bestiary-type { font-size: 10.5px; font-weight: 700; color: var(--brand); }
 .bestiary-card.boss .bestiary-type { color: #fda4af; }
@@ -2167,3 +2169,148 @@ html, body {
 
 /* 크레딧 (일시정지 화면) */
 .credits-line { font-size: 10px; color: #64748b; text-align: center; line-height: 1.5; }
+
+/* ==========================================================================
+   10. 계정 · 클라우드 저장
+   ========================================================================== */
+.lobby-top-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+.account-badge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 128px;
+  padding: 6px 11px 6px 8px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #bae6fd;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.account-badge .svg-icon { width: 17px; height: 17px; flex-shrink: 0; }
+.account-badge-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-badge:active { transform: scale(0.97); }
+.account-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid #0b111d;
+  background: #64748b;
+  display: none;
+}
+.account-badge:not([data-status="guest"]) .account-dot { display: block; }
+.account-badge[data-status="synced"] .account-dot { background: #34d399; }
+.account-badge[data-status="pending"] .account-dot,
+.account-badge[data-status="syncing"] .account-dot { background: #fbbf24; }
+.account-badge[data-status="offline"] .account-dot,
+.account-badge[data-status="error"] .account-dot { background: #f43f5e; }
+
+.modal-overlay.account-overlay { z-index: 300; }
+.account-window > div { display: flex; flex-direction: column; gap: 14px; }
+.account-window [hidden] { display: none !important; }
+
+.account-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-strong);
+}
+.account-tab {
+  padding: 9px 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-main);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.account-tab.active { background: rgba(56, 189, 248, 0.16); color: #e0f2fe; }
+
+.account-form { display: flex; flex-direction: column; gap: 10px; }
+.account-field { display: flex; flex-direction: column; gap: 5px; }
+.account-field span { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.account-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: rgba(2, 6, 14, 0.6);
+  color: #fff;
+  font-family: var(--font-main);
+  font-size: 16px; /* iOS 확대 방지 */
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.account-field input:focus { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18); }
+.account-error {
+  font-size: 13px;
+  color: #fda4af;
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.btn-primary:disabled { opacity: 0.6; cursor: wait; }
+
+.account-sync-status { font-size: 13px; margin-top: 4px; color: #6ee7b7; }
+.account-sync-status[data-status="pending"],
+.account-sync-status[data-status="syncing"] { color: #fcd34d; }
+.account-sync-status[data-status="offline"],
+.account-sync-status[data-status="error"] { color: #fda4af; }
+
+.account-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-strong);
+}
+.acc-sum-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text-muted); }
+.acc-sum-row b { color: #f1f5f9; font-weight: 800; }
+
+.account-choose { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.account-choice { display: flex; flex-direction: column; gap: 8px; }
+.account-choice h3 { font-size: 14px; font-weight: 900; color: #cbd5e1; }
+.account-choice.cloud h3 { color: #7dd3fc; }
+@media (min-width: 520px) { .account-choose { grid-template-columns: 1fr 1fr; } }
+
+.account-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 96px);
+  transform: translate(-50%, 20px);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #e0f2fe;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 400;
+}
+.account-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-width: 380px) {
+  .account-badge { max-width: 92px; padding: 6px 9px 6px 7px; font-size: 12px; }
+  .brand-sub { display: none; }
+}

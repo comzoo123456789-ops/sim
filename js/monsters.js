@@ -298,6 +298,41 @@ class Monster {
 
   // 아틀라스 스프라이트 렌더 (없으면 false → 벡터 렌더로 폴백)
   renderSprite(ctx) {
+    // 새 몬스터 아트 (사무실에 깃든 괴물들): 몬스터 7종 + 보스 3종
+    const art = window.MonsterArt;
+    if (art && art.has(this.typeKey)) {
+      const flash = this.hitTimer > 0 ? 0.85 : 0;
+      const feet = this.radius * 0.8; // 발밑 그림자 중심
+      if (this.isBoss) {
+        const short = this.typeKey.replace('boss_', '');
+        const aura = { manager: '#f59e0b', director: '#ef4444', ceo: '#a855f7' }[short];
+        const pulse = (Math.sin(this.animTimer * 0.9) + 1) / 2;
+        if (window.assets && window.assets.atlasReady()) {
+          window.assets.draw(ctx, 'fx_glow', 0, -this.radius * 0.9, this.radius * 3.4, this.radius * 3.4, { color: aura, alpha: 0.3 + pulse * 0.25, blend: 'lighter' });
+        }
+        ctx.strokeStyle = aura;
+        ctx.globalAlpha = 0.5 + pulse * 0.4;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, this.radius * 0.8, this.radius * 1.25, this.radius * 0.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        this.spriteTall = 'art';
+        const frame = [0, 1, 2, 3][Math.floor(this.animTimer * 0.9) % 4];
+        ctx.translate(0, feet);
+        const ok = art.draw(ctx, this.typeKey, frame, this.radius * 2.4, { flip: this.facing < 0, flash, attack: this.attackTimer < 0.45 });
+        ctx.translate(0, -feet);
+        return ok;
+      }
+      const frame = Math.floor(this.animTimer * 0.8) % 4;
+      ctx.translate(0, feet);
+      const ok = art.draw(ctx, this.typeKey, frame, this.radius * 3.2, {
+        flip: this.facing < 0, flash, alpha: this.typeKey === 'slack' ? 0.94 : 1
+      });
+      ctx.translate(0, -feet);
+      return ok;
+    }
+
     const a = window.assets;
     if (!a || !a.atlasReady()) return false;
     const flash = this.hitTimer > 0 ? 0.8 : 0;
@@ -362,7 +397,7 @@ class Monster {
     if (this.isBoss) {
       const barW = this.radius * 2.2;
       const barH = 6;
-      const barY = this.spriteTall ? -this.radius * 3.75 : -this.radius - 12;
+      const barY = this.spriteTall === 'art' ? -this.radius * 1.7 - 12 : this.spriteTall ? -this.radius * 3.75 : -this.radius - 12;
 
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(-barW / 2, barY, barW, barH);

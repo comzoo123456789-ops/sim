@@ -26,8 +26,10 @@ class SaveManager {
       clearedStages: [],
       totalRuns: 0,
       totalKills: 0,
-      totalPropsDestroyed: 0
+      totalPropsDestroyed: 0,
+      updatedAt: 0 // 마지막으로 진행이 바뀐 시각 (클라우드 저장과 비교)
     };
+    this.defaults = JSON.parse(JSON.stringify(this.data));
 
     this.load();
     this.applyTestUnlock();
@@ -44,7 +46,7 @@ class SaveManager {
         for (let st = 1; st <= 10; st++) all.push(`${ch}-${st}`);
       }
       this.data.unlockedStages = all;
-      this.save();
+      this.save(false);
     } catch (e) {
       console.warn('test unlock failed', e);
     }
@@ -53,34 +55,59 @@ class SaveManager {
   load() {
     try {
       const raw = localStorage.getItem(this.STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        this.data = {
-          ...this.data,
-          ...parsed,
-          upgrades: { ...this.data.upgrades, ...(parsed.upgrades || {}) },
-          achievements: { ...this.data.achievements, ...(parsed.achievements || {}) },
-          highScore: { ...this.data.highScore, ...(parsed.highScore || {}) },
-          unlockedStages: parsed.unlockedStages || ['1-1'],
-          stageStars: parsed.stageStars || {},
-          clearedStages: parsed.clearedStages || []
-        };
-        // 구버전 세이브: 누적 획득량이 없으면 현재 잔액으로 시작
-        if (!parsed.totalGoldEarned) {
-          this.data.totalGoldEarned = this.data.totalGold || 0;
-        }
-      }
+      if (raw) this.applyData(JSON.parse(raw));
     } catch (e) {
       console.warn('Save load failed, using defaults', e);
     }
   }
 
-  save() {
+  // 저장 데이터를 기본값 위에 덮어 적용 (로컬 불러오기 · 클라우드 불러오기 공통)
+  applyData(parsed) {
+    const base = JSON.parse(JSON.stringify(this.defaults));
+    this.data = {
+      ...base,
+      ...parsed,
+      upgrades: { ...base.upgrades, ...(parsed.upgrades || {}) },
+      achievements: { ...(parsed.achievements || {}) },
+      highScore: { ...base.highScore, ...(parsed.highScore || {}) },
+      unlockedBestiary: parsed.unlockedBestiary || base.unlockedBestiary,
+      unlockedStages: parsed.unlockedStages || ['1-1'],
+      stageStars: parsed.stageStars || {},
+      clearedStages: parsed.clearedStages || []
+    };
+    // 구버전 세이브: 누적 획득량이 없으면 현재 잔액으로 시작
+    if (!parsed.totalGoldEarned) {
+      this.data.totalGoldEarned = this.data.totalGold || 0;
+    }
+  }
+
+  // touch=false: 진행이 바뀐 게 아니라 표시용 보정만 한 경우 (시각 유지, 업로드 안 함)
+  save(touch = true) {
+    if (touch) this.data.updatedAt = Date.now();
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
     } catch (e) {
       console.warn('Save write failed', e);
     }
+    if (touch && window.account) window.account.scheduleUpload();
+  }
+
+  // 진행 요약 (계정 저장 선택 화면용)
+  static summary(data) {
+    const d = data || {};
+    const stars = Object.values(d.stageStars || {}).reduce((n, v) => n + (v || 0), 0);
+    return {
+      cleared: (d.clearedStages || []).length,
+      stars,
+      gold: d.totalGold || 0,
+      runs: d.totalRuns || 0,
+      updatedAt: d.updatedAt || 0
+    };
+  }
+
+  static hasProgress(data) {
+    const s = SaveManager.summary(data);
+    return s.cleared > 0 || s.runs > 0 || s.gold > 0;
   }
 
   isStageUnlocked(stageId) {

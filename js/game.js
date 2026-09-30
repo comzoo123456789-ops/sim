@@ -373,6 +373,7 @@ class GameEngine {
     this.renderAchievements();
     this.renderBestiary();
     this.updateLobbyGold();
+    if (window.account) window.account.start();
 
     // 오디오 잠금 해제 리스너
     const unlockAudio = () => {
@@ -812,6 +813,16 @@ class GameEngine {
         if (window.soundEngine) window.soundEngine.playClick();
       };
     });
+  }
+
+  // 클라우드 저장을 불러온 뒤 로비 전체 다시 그리기
+  refreshLobby() {
+    this.renderStageSelectGrid();
+    this.renderCharSelectGrid();
+    this.renderShop();
+    this.renderAchievements();
+    this.renderBestiary();
+    this.updateLobbyGold();
   }
 
   updateLobbyGold() {
