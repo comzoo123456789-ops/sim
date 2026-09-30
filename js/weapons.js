@@ -76,60 +76,49 @@ class WeaponManager {
     return stats;
   }
 
+  // 궤도 무기 동기화: 법인카드 / 포스트잇 / 명함 (보유 레벨에 맞춰 개수·반경·속도 갱신)
   syncOrbitals(player) {
-    const hasSuperCard = player.superWeapons.includes('super_card');
-    const cardLv = player.weapons['card'] || 0;
-
-    if (!hasSuperCard && cardLv === 0) {
-      if (this.orbitals.length > 0) this.orbitals = [];
-      return;
-    }
-
-    let targetCount = 2;
-    let targetRadius = 65;
-    let targetSpeed = 3.2;
-    let targetDmg = 16;
-    let isSuper = false;
-
-    if (hasSuperCard) {
-      const sDef = window.GAME_DATA.SUPER_WEAPONS.super_card;
-      targetCount = sDef.count || 8;
-      targetRadius = (sDef.orbitRadius || 95) * player.stats.areaMul;
-      targetSpeed = sDef.orbitSpeed || 7.5;
-      targetDmg = Math.floor(sDef.baseDmg * player.stats.atkMul);
-      isSuper = true;
-    } else if (cardLv > 0) {
-      const stats = this.getWeaponStats('card', cardLv);
-      targetCount = stats.count;
-      targetRadius = stats.orbitRadius * player.stats.areaMul;
-      targetSpeed = stats.orbitSpeed;
-      targetDmg = Math.floor(stats.baseDmg * player.stats.atkMul);
-    }
-
-    // 카드 개수 또는 슈퍼 모드가 변경되었을 때만 재배치 (각도 재분배)
-    if (this.orbitals.length !== targetCount || (this.orbitals[0] && this.orbitals[0].isSuper !== isSuper)) {
-      this.orbitals = [];
-      for (let i = 0; i < targetCount; i++) {
-        this.orbitals.push({
-          angle: (i / targetCount) * Math.PI * 2,
-          orbitRadius: targetRadius,
-          speed: targetSpeed,
-          damage: targetDmg,
-          radius: isSuper ? 16 : 12,
-          isSuper: isSuper,
-          x: player.x,
-          y: player.y,
-          hitTimer: 0
-        });
+    const groups = [];
+    WeaponManager.ORBITAL_IDS.forEach(id => {
+      const isSuper = id === 'card' && player.superWeapons.includes('super_card');
+      const lv = player.weapons[id] || 0;
+      if (!isSuper && lv === 0) return;
+      let stats;
+      if (isSuper) {
+        const sDef = window.GAME_DATA.SUPER_WEAPONS.super_card;
+        stats = { count: sDef.count, orbitRadius: sDef.orbitRadius, orbitSpeed: sDef.orbitSpeed, baseDmg: sDef.baseDmg };
+      } else {
+        stats = this.getWeaponStats(id, lv);
       }
-    } else {
-      // 개수가 동일할 때는 회전 위치를 보존하며 스탯만 부드럽게 갱신
-      this.orbitals.forEach(orb => {
-        orb.orbitRadius = targetRadius;
-        orb.speed = targetSpeed;
-        orb.damage = targetDmg;
+      groups.push({ id, isSuper, count: stats.count, radius: stats.orbitRadius * player.stats.areaMul, speed: stats.orbitSpeed, damage: Math.floor(stats.baseDmg * player.stats.atkMul) });
+    });
+
+    this.orbitalGroups = this.orbitalGroups || {};
+    const next = [];
+    groups.forEach(g => {
+      let list = this.orbitalGroups[g.id];
+      // 개수 / 초월 여부가 바뀌면 각도 재분배, 아니면 회전 위치 유지
+      if (!list || list.length !== g.count || (list[0] && list[0].isSuper !== g.isSuper)) {
+        const phase = list && list[0] ? list[0].angle : 0;
+        list = [];
+        for (let i = 0; i < g.count; i++) {
+          list.push({ kind: g.id, angle: phase + (i / g.count) * Math.PI * 2, x: player.x, y: player.y, hitTimer: 0, isSuper: g.isSuper, spin: 0 });
+        }
+        this.orbitalGroups[g.id] = list;
+      }
+      const cfg = WeaponManager.ORBITAL_KIND[g.id];
+      list.forEach(orb => {
+        orb.orbitRadius = g.radius;
+        orb.speed = g.speed * (cfg.dir || 1);
+        orb.damage = g.damage;
+        orb.radius = g.isSuper ? 16 : cfg.radius;
+        orb.hitCd = cfg.hitCd;
+        orb.knock = cfg.knock;
       });
-    }
+      next.push(...list);
+    });
+    Object.keys(this.orbitalGroups).forEach(id => { if (!groups.some(g => g.id === id)) delete this.orbitalGroups[id]; });
+    this.orbitals = next;
   }
 
   update(dt, player, monsters, effectEngine) {
@@ -139,7 +128,8 @@ class WeaponManager {
     // 1. 플레이어가 보유한 각 무기의 쿨타임 및 자동 발사
     Object.entries(player.weapons).forEach(([wId, level]) => {
       if (player.superWeapons.includes(`super_${wId}`)) return;
-      if (wId === 'card') return; // 카드는 syncOrbitals로 상시 회전
+      const wDef0 = window.GAME_DATA.WEAPONS[wId];
+      if (wDef0 && wDef0.type === 'orbital') return; // 궤도 무기는 syncOrbitals로 상시 회전
 
       const stats = this.getWeaponStats(wId, level);
       if (!stats) return;
@@ -272,6 +262,7 @@ class WeaponManager {
       if (orb.hitTimer > 0) orb.hitTimer -= dt;
 
       orb.angle += orb.speed * dt;
+      orb.spin += dt * 9;
       orb.x = player.x + Math.cos(orb.angle) * orb.orbitRadius;
       orb.y = player.y + Math.sin(orb.angle) * orb.orbitRadius;
 
@@ -279,11 +270,13 @@ class WeaponManager {
         if (!m.isAlive) return;
         if (Math.hypot(m.x - orb.x, m.y - orb.y) <= m.radius + orb.radius) {
           if (orb.hitTimer <= 0) {
-            orb.hitTimer = 0.18;
+            orb.hitTimer = orb.hitCd || 0.18;
             const hit = this.rollCrit(orb.damage, player);
             m.takeDamage(hit.dmg, hit.isCrit);
-            m.x += Math.cos(orb.angle) * 15;
-            m.y += Math.sin(orb.angle) * 15;
+            // 궤도 바깥 방향으로 밀쳐내기 (보스는 약하게)
+            const kb = (orb.knock || 15) * (m.isBoss ? 0.2 : 1);
+            m.x += Math.cos(orb.angle) * kb;
+            m.y += Math.sin(orb.angle) * kb;
             if (window.soundEngine) window.soundEngine.playCard();
             if (effectEngine) effectEngine.spawnHitSpark(orb.x, orb.y, orb.isSuper ? '#ffd700' : '#38bdf8');
           }
@@ -824,10 +817,47 @@ class WeaponManager {
       ctx.restore();
     });
 
-    // 3. 법인카드 쉴드 렌더링
+    // 3. 궤도 무기 렌더링 (법인카드 / 포스트잇 / 명함)
     this.orbitals.forEach(orb => {
       const sx = orb.x - camera.x;
       const sy = orb.y - camera.y;
+
+      if (orb.kind === 'postit') {
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(orb.angle * 1.5);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(-7, -5, 15, 15);
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(-8, -8, 16, 16);
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(-8, -8, 16, 4);
+        ctx.fillStyle = 'rgba(120, 53, 15, 0.45)';
+        ctx.fillRect(-5, -1, 10, 1.5);
+        ctx.fillRect(-5, 3, 7, 1.5);
+        ctx.restore();
+        return;
+      }
+      if (orb.kind === 'namecard') {
+        if (window.assets) window.assets.draw(ctx, 'fx_slash', sx, sy, 60, 60, { color: '#e2e8f0', alpha: 0.35, rot: orb.angle + Math.PI, blend: 'lighter' });
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(orb.spin);
+        ctx.fillStyle = '#f8fafc';
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(-15, -9, 30, 18, 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(-15, -9, 7, 18);
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(-4, -4, 14, 2);
+        ctx.fillRect(-4, 1, 10, 1.5);
+        ctx.restore();
+        return;
+      }
 
       ctx.save();
       ctx.translate(sx, sy);
@@ -892,5 +922,13 @@ class WeaponManager {
     });
   }
 }
+
+// 궤도 무기 목록과 종류별 특성 (충돌 반경 / 타격 간격 / 밀쳐내기 / 회전 방향)
+WeaponManager.ORBITAL_IDS = ['card', 'postit', 'namecard'];
+WeaponManager.ORBITAL_KIND = {
+  card: { radius: 12, hitCd: 0.18, knock: 15, dir: 1 },
+  postit: { radius: 9, hitCd: 0.12, knock: 5, dir: -1 },
+  namecard: { radius: 13, hitCd: 0.25, knock: 30, dir: 1 }
+};
 
 window.WeaponManager = WeaponManager;

@@ -608,7 +608,8 @@ class GameEngine {
     if (btnRestartGame) {
       btnRestartGame.onclick = (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
-        this.startGame(this.selectedCharId, this.currentStageId, this.selectedMode);
+        const retryRun = this.selectedMode === 'stage' && this.run.active;
+        this.startGame(this.selectedCharId, this.currentStageId, this.selectedMode, retryRun);
       };
     }
 
@@ -619,6 +620,7 @@ class GameEngine {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         document.getElementById('endGameModal').classList.remove('active');
         document.getElementById('stageClearModal').classList.remove('active');
+        this.run.end();
         this.showLobby();
         this.updateLobbyGold();
         this.renderStageSelectGrid();
@@ -645,6 +647,12 @@ class GameEngine {
         }
         this.selectedStageId = nextStageId;
         this.selectedChapter = parseInt(nextStageId.split('-')[0], 10);
+        // 챕터 마지막 스테이지 클리어 → 이번 판 정산 후 다음 챕터는 새 판으로 시작
+        if (this.currentStageId.endsWith('-10')) {
+          this.run.end();
+          this.startGame(this.selectedCharId, nextStageId, 'stage');
+          return;
+        }
         this.openRestShop(nextStageId);
       };
     }
@@ -1263,12 +1271,17 @@ class GameEngine {
     this.monsterMgr.setStage(this.currentStage);
     this.companionMgr.setup(this.player, this.run.companions, this.currentStage);
 
-    // 탕비실 아이템 시작 보너스
+    // 이전 스테이지 빌드 이어받기 (챕터 한 판)
+    const carried = continueRun && this.run.applyCarry(this.player);
+
+    // 탕비실 아이템 시작 보너스 (법인 노트북은 구매 후 1회)
     const bonus = this.run.bonuses();
-    if (bonus.startWeaponLv) {
+    if (this.run.pendingWeaponLv) {
       const w = this.player.charData.initialWeapon;
-      this.player.weapons[w] = Math.min(8, (this.player.weapons[w] || 1) + bonus.startWeaponLv);
+      this.player.weapons[w] = Math.min(8, (this.player.weapons[w] || 1) + this.run.pendingWeaponLv);
+      this.run.pendingWeaponLv = 0;
     }
+    this.carriedBuild = !!carried;
 
     // 스테이지 BGM: 챕터마다 두 곡을 번갈아, 서바이벌은 전용 곡
     this.stageBgm = this.selectedMode === 'stage'
@@ -1584,6 +1597,9 @@ class GameEngine {
       window.saveMgr.save();
     }
 
+    // 빌드 저장 (다음 스테이지로 이어짐)
+    this.run.saveCarry(this.player);
+
     // 이번 판 코인 + 클리어 보너스 일부 → 탕비실 지갑 (다음 스테이지 상점에서 사용)
     const walletGain = this.player.gold + Math.round(goldReward * 0.4);
     this.run.coins += walletGain;
@@ -1604,7 +1620,9 @@ class GameEngine {
 
     const stageTitle = this.currentStage ? this.stageDisplayName(this.currentStage) : '스테이지';
     const subEl = document.getElementById('stageClearSubtitle');
-    if (subEl) subEl.innerText = `[${this.currentStageId}] ${stageTitle} 결재 승인 완료! (${stars}성 획득)`;
+    const chapterEnd = this.currentStageId.endsWith('-10');
+    if (subEl) subEl.innerText = `[${this.currentStageId}] ${stageTitle} 결재 승인 완료! (${stars}성)\n` +
+      (chapterEnd ? '챕터 정복! 다음 챕터는 Lv.1부터 새로 시작합니다.' : `Lv.${this.player.level} · 무기와 복지가 다음 스테이지로 이어집니다.`);
 
     const totalDur = this.currentStage ? this.currentStage.duration : 60;
     const durM = Math.floor(totalDur / 60).toString().padStart(2, '0');
@@ -1656,7 +1674,7 @@ class GameEngine {
     }
 
     // 영구 저장소에 골드 및 성과 동기화
-    const walletLeft = this.run.end();
+    const walletLeft = this.selectedMode === 'stage' ? 0 : this.run.end();
     if (window.saveMgr) {
       window.saveMgr.addGold(this.player.gold);
       window.saveMgr.data.totalRuns = (window.saveMgr.data.totalRuns || 0) + 1;

@@ -20,7 +20,7 @@ class Player {
     // 레벨 및 경험치
     this.level = 1;
     this.exp = 0;
-    this.nextExp = 25;
+    this.nextExp = Player.expForLevel(1);
     this.gold = 0;
     this.kills = 0;
 
@@ -190,7 +190,7 @@ class Player {
     while (this.exp >= this.nextExp) {
       this.exp -= this.nextExp;
       this.level++;
-      this.nextExp = Math.floor(this.nextExp * 1.35 + 15);
+      this.nextExp = Player.expForLevel(this.level);
       levelUpsGained++;
     }
 
@@ -685,6 +685,9 @@ class Player {
     ctx.restore();
   }
 }
+
+// 레벨 L → L+1 필요 경험치: 130에서 시작해 완만하게 증가 (챕터 한 판에 Lv 40~50 도달 목표)
+Player.expForLevel = level => Math.floor(130 + 40 * (level - 1) + Math.pow(level - 1, 2));
 
 Player.SPRITE_SCALE = 0.56; // 128px 프레임 → 약 72px
 

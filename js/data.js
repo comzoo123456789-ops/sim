@@ -174,13 +174,13 @@ window.GAME_DATA = {
       partnerPassive: 'headphone',
       levels: [
         { dmg: 16, count: 2, orbitRadius: 65, orbitSpeed: 3.2, desc: '회전하는 법인카드 2장 생성' },
-        { dmg: 22, count: 2, orbitRadius: 65, orbitSpeed: 3.5, desc: '타격 피해량 증가 (+6)' },
-        { dmg: 22, count: 3, orbitRadius: 70, orbitSpeed: 3.8, desc: '카드 개수 +1' },
-        { dmg: 26, count: 3, orbitRadius: 70, orbitSpeed: 4.5, desc: '회전 속도 및 피해량 증가' },
-        { dmg: 26, count: 4, orbitRadius: 78, orbitSpeed: 4.8, desc: '카드 개수 +1 & 회전 반경 증가' },
-        { dmg: 34, count: 4, orbitRadius: 78, orbitSpeed: 5.2, desc: '피해량 및 회전 속도 증가' },
-        { dmg: 38, count: 5, orbitRadius: 85, orbitSpeed: 5.8, desc: '카드 개수 5장 & 초고속 회전' },
-        { dmg: 50, count: 6, orbitRadius: 90, orbitSpeed: 6.5, desc: '최대 레벨! (6장 황금 실드 결계)' }
+        { dmg: 22, count: 3, orbitRadius: 68, orbitSpeed: 3.5, desc: '카드 +1장 & 피해량 증가' },
+        { dmg: 22, count: 4, orbitRadius: 72, orbitSpeed: 3.8, desc: '카드 +1장 (4장)' },
+        { dmg: 26, count: 4, orbitRadius: 74, orbitSpeed: 4.5, desc: '회전 속도 및 피해량 증가' },
+        { dmg: 26, count: 5, orbitRadius: 80, orbitSpeed: 4.8, desc: '카드 +1장 & 회전 반경 증가' },
+        { dmg: 34, count: 6, orbitRadius: 84, orbitSpeed: 5.2, desc: '카드 +1장 (6장) & 피해량 증가' },
+        { dmg: 38, count: 7, orbitRadius: 88, orbitSpeed: 5.8, desc: '카드 7장 & 초고속 회전' },
+        { dmg: 50, count: 8, orbitRadius: 94, orbitSpeed: 6.5, desc: '최대 레벨! (8장 황금 실드 결계)' }
       ]
     },
     shredder: {
@@ -256,6 +256,52 @@ window.GAME_DATA = {
         { dmg: 72, cooldown: 1.1, area: 115, projectiles: 3, desc: '텀블러 3개 동시 투척' },
         { dmg: 105, cooldown: 0.9, area: 140, projectiles: 3, desc: '최대 레벨! (3중 화산 폭발 텀블러)' }
       ]
+    },
+    postit: {
+      id: 'postit',
+      name: '포스트잇 폭풍',
+      icon: window.assets.iconHtml('memo'),
+      desc: '몸 가까이에서 포스트잇이 빠르게 회전하며 달라붙는 적을 연속 타격합니다.',
+      type: 'orbital',
+      baseDmg: 9,
+      cooldown: 0.5,
+      count: 3,
+      orbitRadius: 44,
+      orbitSpeed: 5.5,
+      color: '#fde047',
+      levels: [
+        { dmg: 9, count: 3, orbitRadius: 44, orbitSpeed: 5.5, desc: '포스트잇 3장이 몸 주위를 고속 회전' },
+        { dmg: 12, count: 3, orbitRadius: 44, orbitSpeed: 6.0, desc: '피해량 증가 (+3)' },
+        { dmg: 12, count: 4, orbitRadius: 46, orbitSpeed: 6.2, desc: '포스트잇 +1장' },
+        { dmg: 15, count: 5, orbitRadius: 48, orbitSpeed: 6.6, desc: '포스트잇 +1장 & 피해량 증가' },
+        { dmg: 18, count: 5, orbitRadius: 50, orbitSpeed: 7.0, desc: '회전 속도 & 피해량 증가' },
+        { dmg: 18, count: 6, orbitRadius: 52, orbitSpeed: 7.4, desc: '포스트잇 +1장 (6장)' },
+        { dmg: 22, count: 7, orbitRadius: 54, orbitSpeed: 7.8, desc: '포스트잇 7장 & 피해량 증가' },
+        { dmg: 30, count: 8, orbitRadius: 56, orbitSpeed: 8.4, desc: '최대 레벨! (8장 포스트잇 회오리)' }
+      ]
+    },
+    namecard: {
+      id: 'namecard',
+      name: '명함 부메랑',
+      icon: window.assets.iconHtml('id_card'),
+      desc: '넓은 궤도로 명함이 크게 돌며 부딪힌 적을 멀리 튕겨냅니다.',
+      type: 'orbital',
+      baseDmg: 30,
+      cooldown: 0.5,
+      count: 1,
+      orbitRadius: 125,
+      orbitSpeed: 2.2,
+      color: '#e2e8f0',
+      levels: [
+        { dmg: 30, count: 1, orbitRadius: 125, orbitSpeed: 2.2, desc: '명함 1장이 넓은 궤도를 회전' },
+        { dmg: 40, count: 1, orbitRadius: 130, orbitSpeed: 2.4, desc: '피해량 증가 (+10)' },
+        { dmg: 40, count: 2, orbitRadius: 135, orbitSpeed: 2.5, desc: '명함 +1장' },
+        { dmg: 50, count: 2, orbitRadius: 140, orbitSpeed: 2.7, desc: '피해량 & 궤도 증가' },
+        { dmg: 55, count: 3, orbitRadius: 145, orbitSpeed: 2.8, desc: '명함 +1장 (3장)' },
+        { dmg: 65, count: 3, orbitRadius: 152, orbitSpeed: 3.0, desc: '피해량 & 회전 속도 증가' },
+        { dmg: 75, count: 4, orbitRadius: 158, orbitSpeed: 3.2, desc: '명함 +1장 (4장)' },
+        { dmg: 95, count: 4, orbitRadius: 165, orbitSpeed: 3.4, desc: '최대 레벨! (4장 VIP 명함 부메랑)' }
+      ]
     }
   },
 
@@ -311,11 +357,11 @@ window.GAME_DATA = {
       id: 'super_card',
       name: '🔥 [블랙 무한한도 플래티넘 실드]',
       icon: window.getGameIcon('super_card'),
-      desc: '빛나는 8장의 블랙카드가 절대 방어벽을 두르며 충격파를 뿜어냅니다!',
+      desc: '빛나는 12장의 블랙카드가 절대 방어벽을 두르며 충격파를 뿜어냅니다!',
       type: 'super_orbital',
       baseDmg: 75,
       cooldown: 0.5,
-      count: 8,
+      count: 12,
       orbitRadius: 95,
       orbitSpeed: 7.5,
       color: '#ffd700'
@@ -490,7 +536,7 @@ window.GAME_DATA = {
       baseAtk: 8,
       speed: 2.2,
       radius: 14,
-      exp: 10
+      exp: 4
     },
     slime: {
       name: '엑셀 #REF! 오류 슬라임',
@@ -500,7 +546,7 @@ window.GAME_DATA = {
       baseAtk: 12,
       speed: 1.8,
       radius: 18,
-      exp: 20,
+      exp: 8,
       splitsOnDeath: true
     },
     copier: {
@@ -511,7 +557,7 @@ window.GAME_DATA = {
       baseAtk: 16,
       speed: 1.3,
       radius: 22,
-      exp: 35,
+      exp: 14,
       ranged: true
     },
     slack: {
@@ -522,7 +568,7 @@ window.GAME_DATA = {
       baseAtk: 18,
       speed: 2.7,
       radius: 16,
-      exp: 40
+      exp: 16
     },
     thief: {
       name: '탕비실 믹스커피 도둑',
@@ -532,7 +578,7 @@ window.GAME_DATA = {
       baseAtk: 22,
       speed: 2.3,
       radius: 20,
-      exp: 55
+      exp: 22
     },
     zombie: {
       name: '야근 좀비 동료',
@@ -542,7 +588,7 @@ window.GAME_DATA = {
       baseAtk: 16,
       speed: 1.9,
       radius: 18,
-      exp: 32
+      exp: 13
     },
     robot: {
       name: 'AI 자동화 로봇',
@@ -552,7 +598,7 @@ window.GAME_DATA = {
       baseAtk: 18,
       speed: 2.0,
       radius: 18,
-      exp: 45,
+      exp: 18,
       ranged: true
     },
     // 보스 3종
@@ -1163,14 +1209,22 @@ window.GAME_DATA = {
           reward: Math.round(BASE_REWARD[k] * (1 + 0.35 * (ch - 1)) / 10) * 10,
           goldReward: Math.round(BASE_REWARD[k] * (1 + 0.35 * (ch - 1)) / 10) * 10,
           monsters: [...def.pool, focus, focus],
-          hpMul: +(1 + 0.55 * (ch - 1) + 0.05 * (s - 1) * (1 + 0.3 * (ch - 1))).toFixed(2),
-          atkMul: +(1 + 0.18 * (ch - 1) + 0.02 * (s - 1)).toFixed(2),
+          hpMul: +((1 + 0.55 * (ch - 1)) * (1 + 0.16 * (s - 1))).toFixed(2),
+          atkMul: +((1 + 0.18 * (ch - 1)) * (1 + 0.05 * (s - 1))).toFixed(2),
           expMul: +(1 + 0.12 * (ch - 1)).toFixed(2),
           eliteChance: +(0.015 * (ch - 1)).toFixed(3),
           icon: icon(THEME_ICON[k])
         };
       })
     };
+  });
+
+  // 챕터 1도 스테이지마다 강해짐 (빌드가 다음 스테이지로 이어지므로)
+  D.CHAPTERS.ch1.stages.forEach((st, k) => {
+    st.hpMul = +(1 + 0.16 * k).toFixed(2);
+    st.atkMul = +(1 + 0.05 * k).toFixed(2);
+    st.expMul = 1;
+    st.eliteChance = k >= 5 ? 0.01 : 0;
   });
 
   // 챕터 1 메타 정보 보강

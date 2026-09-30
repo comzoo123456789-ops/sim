@@ -97,7 +97,7 @@ class OfficeProp {
           // 냉음료 (체력 40 회복)
           window.game.dropMgr.spawnDrop(this.x, this.y, 'aid_kit', 1);
           if (Math.random() < 0.5) {
-            window.game.dropMgr.spawnDrop(this.x + 10, this.y, 'super_coffee', 25);
+            window.game.dropMgr.spawnDrop(this.x + 10, this.y, 'super_coffee', 12);
           }
           break;
 
@@ -107,15 +107,15 @@ class OfficeProp {
             window.game.dropMgr.spawnDrop(this.x, this.y, 'caffeine_bomb', 1);
           } else {
             window.game.dropMgr.spawnDrop(this.x, this.y, 'receipt', 150);
-            window.game.dropMgr.spawnDrop(this.x + 12, this.y, 'super_coffee', 40);
+            window.game.dropMgr.spawnDrop(this.x + 12, this.y, 'super_coffee', 15);
           }
           break;
 
         case 'copier':
           // 대량 황금 커피콩 (+400 XP)
-          window.game.dropMgr.spawnDrop(this.x, this.y, 'super_coffee', 80);
-          window.game.dropMgr.spawnDrop(this.x - 10, this.y, 'coffee_bean', 30);
-          window.game.dropMgr.spawnDrop(this.x + 10, this.y, 'coffee_bean', 30);
+          window.game.dropMgr.spawnDrop(this.x, this.y, 'super_coffee', 25);
+          window.game.dropMgr.spawnDrop(this.x - 10, this.y, 'coffee_bean', 12);
+          window.game.dropMgr.spawnDrop(this.x + 10, this.y, 'coffee_bean', 12);
           break;
 
         case 'cabinet':
@@ -124,7 +124,7 @@ class OfficeProp {
             window.game.dropMgr.spawnDrop(this.x, this.y, 'magnet_clip', 1);
           } else {
             window.game.dropMgr.spawnDrop(this.x, this.y, 'receipt', 80);
-            window.game.dropMgr.spawnDrop(this.x + 10, this.y, 'coffee_bean', 40);
+            window.game.dropMgr.spawnDrop(this.x + 10, this.y, 'coffee_bean', 15);
           }
           break;
       }

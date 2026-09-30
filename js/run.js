@@ -18,7 +18,7 @@ const RUN_ITEMS = {
   vip_badge: { name: 'VIP 사원증', icon: 'lanyard', rarity: 'rare', max: 1, desc: '쓰러져도 1회 부활', bonus: { revive: 1 } },
   overtime_pay: { name: '야근 수당 봉투', icon: 'cash', rarity: 'rare', max: 2, desc: '스테이지 시작 시 레벨업 카드 +1장', bonus: { startLevels: 1 } },
   referral: { name: '인턴 추천서', icon: 'briefcase', rarity: 'rare', max: 2, desc: '즉시 동료 사원 1명 합류', bonus: {}, instant: 'companion' },
-  laptop: { name: '법인 노트북 지급', icon: 'pc_tower', rarity: 'epic', max: 1, desc: '스테이지 시작 시 기본 무기 +2레벨', bonus: { startWeaponLv: 2 } },
+  laptop: { name: '법인 노트북 지급', icon: 'pc_tower', rarity: 'epic', max: 1, desc: '다음 스테이지에서 기본 무기 +2레벨', bonus: { startWeaponLv: 2 } },
   corp_card: { name: '무제한 법인카드', icon: 'receipt', rarity: 'epic', max: 1, desc: '공격력 +20% · 코인 +20%', bonus: { atkMul: 0.2, goldMul: 0.2 } },
   clinic: { name: '사내 의무실 VIP', icon: 'aid_kit', rarity: 'epic', max: 1, desc: '초당 회복 +2 · 받는 피해 -10%', bonus: { hpRegen: 2, dmgReduc: 0.1 } }
 };
@@ -37,6 +37,38 @@ class RunManager {
     this.companions = []; // 합류한 동료 charId 목록
     this.rerolls = 0;
     this.offers = [];
+    this.carry = null;          // 다음 스테이지로 이어지는 빌드 (레벨 / 무기 / 패시브)
+    this.pendingWeaponLv = 0;   // 법인 노트북: 다음 스테이지 시작 시 1회 적용
+  }
+
+  // 스테이지 클리어 시점의 빌드 저장 (쓰러져도 이 시점부터 재도전)
+  saveCarry(player) {
+    this.carry = {
+      level: player.level,
+      exp: player.exp,
+      nextExp: player.nextExp,
+      weapons: { ...player.weapons },
+      passives: { ...player.passives },
+      superWeapons: player.superWeapons.slice(),
+      reviveCount: player.reviveCount,
+      revivesGranted: player.revivesGranted
+    };
+  }
+
+  applyCarry(player) {
+    const c = this.carry;
+    if (!c) return false;
+    player.level = c.level;
+    player.exp = c.exp;
+    player.nextExp = c.nextExp;
+    player.weapons = { ...c.weapons };
+    player.passives = { ...c.passives };
+    player.superWeapons = c.superWeapons.slice();
+    player.reviveCount = c.reviveCount;
+    player.revivesGranted = c.revivesGranted;
+    player.recalcStats();
+    player.hp = player.maxHp;
+    return true;
   }
 
   start() {
@@ -101,6 +133,7 @@ class RunManager {
     this.coins -= o.price;
     o.sold = true;
     this.items[o.id] = this.count(o.id) + 1;
+    if (RUN_ITEMS[o.id].bonus.startWeaponLv) this.pendingWeaponLv += RUN_ITEMS[o.id].bonus.startWeaponLv;
     if (RUN_ITEMS[o.id].instant === 'companion') this.recruitRandom(allCharIds, selectedCharId);
     return true;
   }

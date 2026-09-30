@@ -49,7 +49,7 @@ class DropManager {
         if (d.type === 'coffee_bean') {
           player.addExp(d.value);
         } else if (d.type === 'super_coffee') {
-          player.addExp(d.value * 5);
+          player.addExp(d.value * 2);
         } else if (d.type === 'receipt') {
           const actualGold = Math.floor(d.value * (player.stats.goldMul || 1.0));
           player.gold += actualGold;
