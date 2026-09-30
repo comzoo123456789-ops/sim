@@ -532,7 +532,7 @@ window.GAME_DATA = {
       name: '날아다니는 결재 서류',
       icon: window.assets.spriteHtml('mon_paper_walk0', 30) || window.getGameIcon('paper'),
       color: '#f8f9fa',
-      baseHp: 20,
+      baseHp: 13,
       baseAtk: 8,
       speed: 2.2,
       radius: 14,
@@ -542,7 +542,7 @@ window.GAME_DATA = {
       name: '엑셀 #REF! 오류 슬라임',
       icon: window.assets.spriteHtml('mon_slime_walk0', 30) || window.getGameIcon('slime'),
       color: '#2eb85c',
-      baseHp: 45,
+      baseHp: 30,
       baseAtk: 12,
       speed: 1.8,
       radius: 18,
@@ -553,7 +553,7 @@ window.GAME_DATA = {
       name: '용지 걸린 멈춘 복사기',
       icon: window.getGameIcon('copier'),
       color: '#495057',
-      baseHp: 80,
+      baseHp: 52,
       baseAtk: 16,
       speed: 1.3,
       radius: 22,
@@ -564,7 +564,7 @@ window.GAME_DATA = {
       name: '미확인 슬랙 알림 괴물',
       icon: window.assets.spriteHtml('mon_slack_walk0', 30) || window.getGameIcon('slack'),
       color: '#e01e5a',
-      baseHp: 60,
+      baseHp: 40,
       baseAtk: 18,
       speed: 2.7,
       radius: 16,
@@ -574,7 +574,7 @@ window.GAME_DATA = {
       name: '탕비실 믹스커피 도둑',
       icon: window.assets.spriteHtml('mon_thief_walk0', 30) || window.getGameIcon('thief'),
       color: '#a0522d',
-      baseHp: 120,
+      baseHp: 78,
       baseAtk: 22,
       speed: 2.3,
       radius: 20,
@@ -584,7 +584,7 @@ window.GAME_DATA = {
       name: '야근 좀비 동료',
       sprite: 'zombie',
       color: '#34d399',
-      baseHp: 95,
+      baseHp: 62,
       baseAtk: 16,
       speed: 1.9,
       radius: 18,
@@ -594,7 +594,7 @@ window.GAME_DATA = {
       name: 'AI 자동화 로봇',
       sprite: 'robot',
       color: '#60a5fa',
-      baseHp: 115,
+      baseHp: 75,
       baseAtk: 18,
       speed: 2.0,
       radius: 18,
@@ -1209,7 +1209,7 @@ window.GAME_DATA = {
           reward: Math.round(BASE_REWARD[k] * (1 + 0.35 * (ch - 1)) / 10) * 10,
           goldReward: Math.round(BASE_REWARD[k] * (1 + 0.35 * (ch - 1)) / 10) * 10,
           monsters: [...def.pool, focus, focus],
-          hpMul: +((1 + 0.55 * (ch - 1)) * (1 + 0.16 * (s - 1))).toFixed(2),
+          hpMul: +((1 + 0.5 * (ch - 1)) * (1 + 0.11 * (s - 1))).toFixed(2),
           atkMul: +((1 + 0.18 * (ch - 1)) * (1 + 0.05 * (s - 1))).toFixed(2),
           expMul: +(1 + 0.12 * (ch - 1)).toFixed(2),
           eliteChance: +(0.015 * (ch - 1)).toFixed(3),
@@ -1221,7 +1221,7 @@ window.GAME_DATA = {
 
   // 챕터 1도 스테이지마다 강해짐 (빌드가 다음 스테이지로 이어지므로)
   D.CHAPTERS.ch1.stages.forEach((st, k) => {
-    st.hpMul = +(1 + 0.16 * k).toFixed(2);
+    st.hpMul = +(1 + 0.09 * k).toFixed(2);
     st.atkMul = +(1 + 0.05 * k).toFixed(2);
     st.expMul = 1;
     st.eliteChance = k >= 5 ? 0.01 : 0;
