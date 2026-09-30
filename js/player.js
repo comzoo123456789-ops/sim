@@ -687,7 +687,8 @@ class Player {
 }
 
 // 레벨 L → L+1 필요 경험치: 130에서 시작해 완만하게 증가 (챕터 한 판에 Lv 40~50 도달 목표)
-Player.expForLevel = level => Math.floor(130 + 40 * (level - 1) + Math.pow(level - 1, 2));
+// Lv.30 이후로는 더 가파르게 (챕터 후반에 만렙으로 폭주하지 않도록)
+Player.expForLevel = level => Math.floor(130 + 40 * (level - 1) + Math.pow(level - 1, 2) + 14 * Math.pow(Math.max(0, level - 30), 2));
 
 Player.SPRITE_SCALE = 0.56; // 128px 프레임 → 약 72px
 

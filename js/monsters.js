@@ -95,7 +95,7 @@ class Monster {
         if (Math.random() < 0.85) {
           window.game.dropMgr.spawnDrop(this.x, this.y, 'coffee_bean', this.exp);
         }
-        if (Math.random() < 0.25) {
+        if (Math.random() < 0.11) {
           window.game.dropMgr.spawnDrop(this.x, this.y, 'receipt', 10);
         }
         if (Math.random() < 0.05) {
@@ -1237,13 +1237,17 @@ class MonsterManager {
 
     let pool;
     let spawnCount;
+    let warmup = 1;
 
     if (this.currentStage) {
       // 스테이지 모드: 스테이지 고유 몬스터 구성 + 스테이지 진행률 기반 물량
       const st = this.currentStage;
       const progress = Math.min(1, (st.duration - gameTime) / st.duration);
       pool = st.monsters || ['paper'];
-      spawnCount = Math.min(14, Math.round((2 + progress * 6) * (st.spawnRate || 1.0)));
+      // 챕터 첫 세 스테이지는 Lv.1 빌드로 시작하므로 물량을 줄여 준다
+      const stageNo = parseInt(String(st.id || '').split('-')[1], 10) || 10;
+      warmup = MonsterManager.WARMUP[stageNo - 1] || 1;
+      spawnCount = Math.min(14, Math.max(1, Math.round((2 + progress * 6) * (st.spawnRate || 1.0) * warmup)));
     } else {
       // 10분 서바이벌 모드: 경과 시간에 따라 몬스터 종류 해금
       const elapsed = 600 - gameTime;
@@ -1263,7 +1267,10 @@ class MonsterManager {
       const mx = player.x + Math.cos(ang) * dist;
       const my = player.y + Math.sin(ang) * dist;
 
-      this.monsters.push(this.applyDifficulty(new Monster(typeKey, mx, my), true));
+      const mon = this.applyDifficulty(new Monster(typeKey, mx, my), true);
+      // 물량을 줄인 만큼 한 마리 경험치를 올려 레벨업 속도는 유지
+      if (this.currentStage && warmup < 1) mon.exp = Math.round(mon.exp / warmup);
+      this.monsters.push(mon);
     }
   }
 
@@ -1339,6 +1346,7 @@ class MonsterManager {
   }
 }
 
+MonsterManager.WARMUP = [0.6, 0.75, 0.9]; // 챕터 1~3번째 스테이지 스폰 물량 배율
 MonsterManager.MAX_MONSTERS = 160;
 Monster.SPEED_CAP = 0.82;
 
