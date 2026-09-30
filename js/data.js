@@ -10,7 +10,7 @@ window.GAME_DATA = {
       sprite: 'office_intern',
       avatar: window.assets.spriteHtml('char_office_intern_idle', 34, 'head') || window.getGameIcon('char_intern'),
       desc: '빠른 발과 불타는 열정으로 야근 지옥을 탈출하는 새내기 사원입니다.',
-      baseHp: 100,
+      baseHp: 120,
       speed: 3.8,
       initialWeapon: 'stapler',
       bonusText: '이동 속도 +15% / 경험치 획득 +20%',
@@ -65,8 +65,8 @@ window.GAME_DATA = {
       icon: window.getGameIcon('stapler'),
       desc: '가장 가까운 적에게 날카로운 스테이플러 침을 연사합니다.',
       type: 'projectile',
-      baseDmg: 18,
-      cooldown: 0.85,
+      baseDmg: 20,
+      cooldown: 0.64,
       projectiles: 1,
       speed: 9,
       pierce: 1,
@@ -74,14 +74,14 @@ window.GAME_DATA = {
       evolution: 'super_stapler',
       partnerPassive: 'glasses',
       levels: [
-        { dmg: 18, cooldown: 0.85, projectiles: 1, pierce: 1, desc: '기본 스테이플러 침 발사' },
-        { dmg: 24, cooldown: 0.85, projectiles: 1, pierce: 1, desc: '피해량 증가 (+6)' },
-        { dmg: 24, cooldown: 0.85, projectiles: 2, pierce: 1, desc: '발사 침 개수 +1' },
-        { dmg: 28, cooldown: 0.65, projectiles: 2, pierce: 1, desc: '발사 속도 증가' },
-        { dmg: 28, cooldown: 0.65, projectiles: 3, pierce: 2, desc: '발사 침 +1 & 관통력 +1' },
-        { dmg: 38, cooldown: 0.65, projectiles: 3, pierce: 2, desc: '피해량 대폭 증가 (+10)' },
-        { dmg: 38, cooldown: 0.45, projectiles: 4, pierce: 2, desc: '발사 침 +1 & 쿨타임 대폭 감소' },
-        { dmg: 52, cooldown: 0.45, projectiles: 4, pierce: 3, desc: '최대 레벨! (관통 침 4연사)' }
+        { dmg: 20, cooldown: 0.64, projectiles: 1, pierce: 2, desc: '기본 스테이플러 침 발사 (2명 관통)' },
+        { dmg: 26, cooldown: 0.64, projectiles: 1, pierce: 2, desc: '피해량 증가 (+6)' },
+        { dmg: 26, cooldown: 0.64, projectiles: 2, pierce: 2, desc: '발사 침 개수 +1' },
+        { dmg: 31, cooldown: 0.49, projectiles: 2, pierce: 2, desc: '발사 속도 증가' },
+        { dmg: 31, cooldown: 0.49, projectiles: 3, pierce: 3, desc: '발사 침 +1 & 관통력 +1' },
+        { dmg: 42, cooldown: 0.49, projectiles: 3, pierce: 3, desc: '피해량 대폭 증가 (+10)' },
+        { dmg: 42, cooldown: 0.34, projectiles: 4, pierce: 3, desc: '발사 침 +1 & 쿨타임 대폭 감소' },
+        { dmg: 57, cooldown: 0.34, projectiles: 4, pierce: 4, desc: '최대 레벨! (관통 침 4연사)' }
       ]
     },
     drink: {
@@ -115,7 +115,7 @@ window.GAME_DATA = {
       icon: window.assets.iconHtml('keyboard'),
       desc: '청축 타건음과 함께 전방 부채꼴로 키캡 산탄을 발사합니다.',
       type: 'shotgun',
-      baseDmg: 25,
+      baseDmg: 20,
       cooldown: 1.2,
       projectiles: 4,
       spread: 0.55,
@@ -124,14 +124,14 @@ window.GAME_DATA = {
       evolution: 'super_keyboard',
       partnerPassive: 'desk',
       levels: [
-        { dmg: 25, cooldown: 1.2, projectiles: 4, spread: 0.55, desc: '전방 4방향 키캡 산탄 발사' },
-        { dmg: 32, cooldown: 1.2, projectiles: 4, spread: 0.55, desc: '피해량 증가 (+7)' },
-        { dmg: 32, cooldown: 1.2, projectiles: 6, spread: 0.70, desc: '키캡 개수 +2 (범위 확장)' },
-        { dmg: 36, cooldown: 0.95, projectiles: 6, spread: 0.70, desc: '연타 속도 증가' },
-        { dmg: 44, cooldown: 0.95, projectiles: 8, spread: 0.75, desc: '피해량 증가 & 키캡 개수 +2' },
-        { dmg: 44, cooldown: 0.75, projectiles: 8, spread: 0.75, desc: '쿨타임 감소' },
-        { dmg: 50, cooldown: 0.75, projectiles: 10, spread: 0.85, desc: '키캡 개수 10발로 증가' },
-        { dmg: 65, cooldown: 0.60, projectiles: 12, spread: 0.90, desc: '최대 레벨! (12발 산탄 폭격)' }
+        { dmg: 20, cooldown: 1.2, projectiles: 4, spread: 0.55, desc: '전방 4방향 키캡 산탄 발사' },
+        { dmg: 26, cooldown: 1.2, projectiles: 4, spread: 0.55, desc: '피해량 증가 (+7)' },
+        { dmg: 26, cooldown: 1.2, projectiles: 6, spread: 0.70, desc: '키캡 개수 +2 (범위 확장)' },
+        { dmg: 29, cooldown: 0.95, projectiles: 6, spread: 0.70, desc: '연타 속도 증가' },
+        { dmg: 35, cooldown: 0.95, projectiles: 8, spread: 0.75, desc: '피해량 증가 & 키캡 개수 +2' },
+        { dmg: 35, cooldown: 0.75, projectiles: 8, spread: 0.75, desc: '쿨타임 감소' },
+        { dmg: 40, cooldown: 0.75, projectiles: 10, spread: 0.85, desc: '키캡 개수 10발로 증가' },
+        { dmg: 52, cooldown: 0.60, projectiles: 12, spread: 0.90, desc: '최대 레벨! (12발 산탄 폭격)' }
       ]
     },
     stamp: {
@@ -532,73 +532,73 @@ window.GAME_DATA = {
       name: '날아다니는 결재 서류',
       icon: window.assets.spriteHtml('mon_paper_walk0', 30) || window.getGameIcon('paper'),
       color: '#f8f9fa',
-      baseHp: 16,
+      baseHp: 20,
       baseAtk: 8,
       speed: 2.2,
       radius: 14,
-      exp: 4
+      exp: 16
     },
     slime: {
       name: '엑셀 #REF! 오류 슬라임',
       icon: window.assets.spriteHtml('mon_slime_walk0', 30) || window.getGameIcon('slime'),
       color: '#2eb85c',
-      baseHp: 36,
+      baseHp: 45,
       baseAtk: 12,
       speed: 1.8,
       radius: 18,
-      exp: 8,
+      exp: 16,
       splitsOnDeath: true
     },
     copier: {
       name: '용지 걸린 멈춘 복사기',
       icon: window.getGameIcon('copier'),
       color: '#495057',
-      baseHp: 64,
+      baseHp: 80,
       baseAtk: 16,
       speed: 1.3,
       radius: 22,
-      exp: 14,
+      exp: 28,
       ranged: true
     },
     slack: {
       name: '미확인 슬랙 알림 괴물',
       icon: window.assets.spriteHtml('mon_slack_walk0', 30) || window.getGameIcon('slack'),
       color: '#e01e5a',
-      baseHp: 48,
+      baseHp: 60,
       baseAtk: 18,
       speed: 2.7,
       radius: 16,
-      exp: 16
+      exp: 32
     },
     thief: {
       name: '탕비실 믹스커피 도둑',
       icon: window.assets.spriteHtml('mon_thief_walk0', 30) || window.getGameIcon('thief'),
       color: '#a0522d',
-      baseHp: 96,
+      baseHp: 120,
       baseAtk: 22,
       speed: 2.3,
       radius: 20,
-      exp: 22
+      exp: 44
     },
     zombie: {
       name: '야근 좀비 동료',
       sprite: 'zombie',
       color: '#34d399',
-      baseHp: 76,
+      baseHp: 95,
       baseAtk: 16,
       speed: 1.9,
       radius: 18,
-      exp: 13
+      exp: 26
     },
     robot: {
       name: 'AI 자동화 로봇',
       sprite: 'robot',
       color: '#60a5fa',
-      baseHp: 92,
+      baseHp: 115,
       baseAtk: 18,
       speed: 2.0,
       radius: 18,
-      exp: 18,
+      exp: 36,
       ranged: true
     },
     // 보스 3종
@@ -608,7 +608,7 @@ window.GAME_DATA = {
       title: '라떼는 말이야 음파 폭격',
       icon: window.getGameIcon('boss_manager'),
       color: '#ff9900',
-      baseHp: 1200,
+      baseHp: 800,
       baseAtk: 25,
       speed: 1.6,
       radius: 36,
@@ -620,7 +620,7 @@ window.GAME_DATA = {
       title: '서류가방 투척 & 결재판 내리찍기',
       icon: window.getGameIcon('boss_director'),
       color: '#e63946',
-      baseHp: 3500,
+      baseHp: 1800,
       baseAtk: 35,
       speed: 1.9,
       radius: 44,
@@ -632,7 +632,7 @@ window.GAME_DATA = {
       title: '전사원 긴급 소집 & 심야 결재선 레이저',
       icon: window.getGameIcon('boss_ceo'),
       color: '#9d4edd',
-      baseHp: 9000,
+      baseHp: 3500,
       baseAtk: 45,
       speed: 2.1,
       radius: 52,
@@ -877,7 +877,7 @@ window.GAME_DATA = {
       name: '철야 지시 대표이사 (10:00)',
       type: '최종 보스',
       icon: window.getGameIcon('boss_ceo'),
-      desc: '"전사원 비상 야근 선포!" 16방향 초고속 레이저 탄막을 사방으로 난사합니다.',
+      desc: '"전사원 비상 야근 선포!" 12방향 초고속 레이저 탄막을 사방으로 난사합니다.',
       strategy: '탄막 사이 틈을 정밀하게 파고들며 6종 풀업 무기로 총공격하세요.'
     }
   ],
@@ -1209,9 +1209,9 @@ window.GAME_DATA = {
           reward: Math.round(BASE_REWARD[k] * (1 + 0.35 * (ch - 1)) / 10) * 10,
           goldReward: Math.round(BASE_REWARD[k] * (1 + 0.35 * (ch - 1)) / 10) * 10,
           monsters: [...def.pool, focus, focus],
-          hpMul: +((1 + 0.28 * (ch - 1)) * (1 + 0.2 * (s - 1))).toFixed(2),
-          atkMul: +((1 + 0.15 * (ch - 1)) * (1 + 0.08 * (s - 1))).toFixed(2),
-          expMul: +(1 + 0.06 * (ch - 1)).toFixed(2),
+          hpMul: +((1 + 0.35 * (ch - 1)) * (1 + 0.06 * (s - 1))).toFixed(2),
+          atkMul: +((1 + 0.16 * (ch - 1)) * (1 + 0.04 * (s - 1))).toFixed(2),
+          expMul: +(1 + 0.03 * (ch - 1)).toFixed(2),
           eliteChance: +(0.008 * (ch - 1)).toFixed(3),
           icon: icon(THEME_ICON[k])
         };
@@ -1221,8 +1221,8 @@ window.GAME_DATA = {
 
   // 챕터 1도 스테이지마다 강해짐 (빌드가 다음 스테이지로 이어지므로)
   D.CHAPTERS.ch1.stages.forEach((st, k) => {
-    st.hpMul = +(1 + 0.09 * k).toFixed(2);
-    st.atkMul = +(1 + 0.05 * k).toFixed(2);
+    st.hpMul = +(1 + 0.06 * k).toFixed(2);
+    st.atkMul = +(1 + 0.04 * k).toFixed(2);
     st.expMul = 1;
     st.eliteChance = k >= 5 ? 0.01 : 0;
   });

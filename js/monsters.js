@@ -152,12 +152,13 @@ class Monster {
     if (this.ranged && !this.isBoss) {
       const isRobot = this.typeKey === 'robot';
       this.attackTimer += dt;
-      if (this.attackTimer >= (isRobot ? 2.4 : 2.8)) {
+      // 화면 안(380px)에 들어왔을 때만 발사
+      if (this.attackTimer >= (isRobot ? 2.4 : 2.8) && Math.hypot(player.x - this.x, player.y - this.y) < 380) {
         this.attackTimer = 0;
         const ang = Math.atan2(player.y - this.y, player.x - this.x);
         const spd = isRobot ? 5.5 : 4.5;
         if (window.game) {
-          window.game.monsterMgr.spawnEnemyBullet(this.x, this.y - this.radius, Math.cos(ang) * spd, Math.sin(ang) * spd, this.atk, isRobot ? '#60a5fa' : '#38bdf8');
+          window.game.monsterMgr.spawnEnemyBullet(this.x, this.y - this.radius, Math.cos(ang) * spd, Math.sin(ang) * spd, Math.round(this.atk * 0.7), isRobot ? '#60a5fa' : '#38bdf8');
           if (isRobot && window.game.effectEngine) {
             window.game.effectEngine.spawnFlash(this.x, this.y - this.radius * 1.6, 'fx_spark', '#93c5fd', 26, 0.2);
           }
@@ -182,7 +183,7 @@ class Monster {
         const baseAng = Math.atan2(player.y - this.y, player.x - this.x);
         [-0.3, 0, 0.3].forEach(offset => {
           const a = baseAng + offset;
-          window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(a) * 5, Math.sin(a) * 5, this.atk, '#ff5500', 'item_document');
+          window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(a) * 5, Math.sin(a) * 5, Math.round(this.atk * 0.7), '#ff5500', 'item_document');
         });
       } else if (this.typeKey === 'boss_director' && this.attackTimer >= 4.0) {
         // 결재판 투척 & 주말출근 긴급 소집 폭격 장판 3개 생성
@@ -193,21 +194,21 @@ class Monster {
           window.game.effectEngine.spawnFloatingText(this.x, this.y - 45, '"주말에 다 나와!"', '#e63946');
           window.game.effectEngine.spawnEmote(this.x, this.y, 'anger', this);
         }
-        if (dist <= 180) player.takeDamage(this.atk * 1.8);
+        if (dist <= 180) player.takeDamage(this.atk * 1.3);
 
         // 플레이어 주변에 3개 폭격 장판 생성
         for (let i = 0; i < 3; i++) {
           const ox = (Math.random() - 0.5) * 160;
           const oy = (Math.random() - 0.5) * 160;
-          window.game.monsterMgr.spawnWarningZone(player.x + ox, player.y + oy, 55, 1.2, this.atk * 2.0);
+          window.game.monsterMgr.spawnWarningZone(player.x + ox, player.y + oy, 55, 1.2, this.atk * 1.4);
         }
-      } else if (this.typeKey === 'boss_ceo' && this.attackTimer >= 2.6) {
-        // 대표이사 전방위 16방향 철야 야근 탄막 폭풍
+      } else if (this.typeKey === 'boss_ceo' && this.attackTimer >= 3.4) {
+        // 대표이사 전방위 12방향 철야 야근 탄막 폭풍
         this.attackTimer = 0;
-        for (let b = 0; b < 16; b++) {
-          const ba = (b / 16) * Math.PI * 2;
+        for (let b = 0; b < 12; b++) {
+          const ba = (b / 12) * Math.PI * 2;
           if (window.game) {
-            window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(ba) * 5.5, Math.sin(ba) * 5.5, this.atk, '#a855f7');
+            window.game.monsterMgr.spawnEnemyBullet(this.x, this.y, Math.cos(ba) * 5.5, Math.sin(ba) * 5.5, Math.round(this.atk * 0.6), '#a855f7');
           }
         }
         if (window.game && window.game.effectEngine) {
@@ -1046,8 +1047,10 @@ class MonsterManager {
     let spawnInterval = 1.4;
     if (this.currentStage) {
       const elapsed = this.currentStage.duration - gameTime;
-      const rateMul = this.currentStage.spawnRate || 1.0;
-      spawnInterval = Math.max(0.5, (1.6 / rateMul) - (elapsed / this.currentStage.duration) * 0.6);
+      // 스테이지 물량 배율은 진행될수록 서서히 적용 (모든 스테이지가 비슷한 밀도로 시작)
+      const prog = Math.min(1, elapsed / this.currentStage.duration);
+      const rateMul = 1 + ((this.currentStage.spawnRate || 1.0) - 1) * prog;
+      spawnInterval = Math.max(0.6, (1.6 / rateMul) - prog * 0.6);
     } else {
       spawnInterval = Math.max(0.4, 1.8 - ((600 - gameTime) / 600) * 1.3);
     }
@@ -1238,16 +1241,23 @@ class MonsterManager {
     let pool;
     let spawnCount;
     let warmup = 1;
+    let progress = 1;
 
     if (this.currentStage) {
       // 스테이지 모드: 스테이지 고유 몬스터 구성 + 스테이지 진행률 기반 물량
       const st = this.currentStage;
-      const progress = Math.min(1, (st.duration - gameTime) / st.duration);
+      progress = Math.min(1, (st.duration - gameTime) / st.duration);
       pool = st.monsters || ['paper'];
+      // 스테이지 초반(25%)엔 약한 몬스터만: 매 스테이지 Lv.1로 시작하므로
+      if (progress < MonsterManager.EARLY_PHASE) {
+        const weak = pool.filter(k => (window.GAME_DATA.MONSTERS[k] || {}).baseHp <= 50);
+        if (weak.length) pool = weak;
+      }
       // 챕터 첫 세 스테이지는 Lv.1 빌드로 시작하므로 물량을 줄여 준다
       const stageNo = parseInt(String(st.id || '').split('-')[1], 10) || 10;
       warmup = MonsterManager.WARMUP[stageNo - 1] || 1;
-      spawnCount = Math.min(14, Math.max(1, Math.round((2 + progress * 6) * (st.spawnRate || 1.0) * warmup)));
+      const rate = 1 + ((st.spawnRate || 1.0) - 1) * progress;
+      spawnCount = Math.min(10, Math.max(1, Math.round((1 + progress * 7) * rate * warmup)));
     } else {
       // 10분 서바이벌 모드: 경과 시간에 따라 몬스터 종류 해금
       const elapsed = 600 - gameTime;
@@ -1268,8 +1278,14 @@ class MonsterManager {
       const my = player.y + Math.sin(ang) * dist;
 
       const mon = this.applyDifficulty(new Monster(typeKey, mx, my), true);
-      // 물량을 줄인 만큼 한 마리 경험치를 올려 레벨업 속도는 유지
-      if (this.currentStage && warmup < 1) mon.exp = Math.round(mon.exp / warmup);
+      if (this.currentStage) {
+        // 물량을 줄인 만큼 한 마리 경험치를 올려 레벨업 속도는 유지
+        if (warmup < 1) mon.exp = Math.round(mon.exp / warmup);
+        // 스테이지 전반부에 나온 몬스터는 체력이 낮다 (60% → 절반 지점에서 100%)
+        const ramp = MonsterManager.HP_RAMP_START + (1 - MonsterManager.HP_RAMP_START) * Math.min(1, progress / 0.5);
+        mon.maxHp = Math.max(1, Math.round(mon.maxHp * ramp));
+        mon.hp = mon.maxHp;
+      }
       this.monsters.push(mon);
     }
   }
@@ -1346,7 +1362,9 @@ class MonsterManager {
   }
 }
 
-MonsterManager.WARMUP = [0.6, 0.75, 0.9]; // 챕터 1~3번째 스테이지 스폰 물량 배율
+MonsterManager.WARMUP = []; // 스테이지 물량 배율 (스테이지마다 Lv.1 시작이라 현재는 사용 안 함)
+MonsterManager.EARLY_PHASE = 0.25;   // 이 진행률 전까지는 약한 몬스터만
+MonsterManager.HP_RAMP_START = 0.6;  // 스테이지 시작 시 몬스터 체력 배율
 MonsterManager.MAX_MONSTERS = 160;
 Monster.SPEED_CAP = 0.82;
 

@@ -687,8 +687,8 @@ class Player {
 }
 
 // 레벨 L → L+1 필요 경험치: 130에서 시작해 완만하게 증가 (챕터 한 판에 Lv 40~50 도달 목표)
-// Lv.30 이후로는 더 가파르게 (챕터 후반에 만렙으로 폭주하지 않도록)
-Player.expForLevel = level => Math.floor(130 + 40 * (level - 1) + Math.pow(level - 1, 2) + 30 * Math.pow(Math.max(0, level - 30), 2));
+// 스테이지마다 Lv.1부터: 짧은 스테이지 Lv 10 안팎, 긴 스테이지 Lv 20~25 목표
+Player.expForLevel = level => Math.floor(50 + 22 * (level - 1) + 1.3 * Math.pow(level - 1, 2));
 
 Player.SPRITE_SCALE = 0.56; // 128px 프레임 → 약 72px
 
