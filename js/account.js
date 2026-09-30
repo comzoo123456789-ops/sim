@@ -141,10 +141,22 @@ class AccountManager {
     else await this.upload();
   }
 
+  // 로그아웃: 계정 진행을 서버에 올린 뒤 이 기기는 새 손님 상태로 초기화
+  // (서버 저장에 실패하면 진행을 잃지 않도록 로그아웃하지 않는다)
   async logout() {
-    await this.flush();
+    if (this.pendingChoice) this.pendingChoice = null;
+    else await this.upload();
     try { await this.api('POST', 'logout'); } catch (e) { /* 이미 만료돼도 로컬은 정리 */ }
     this.dropSession();
+    this.resetLocal();
+  }
+
+  resetLocal() {
+    this.saveMgr.applyData(JSON.parse(JSON.stringify(this.saveMgr.defaults)));
+    this.saveMgr.applyTestUnlock();
+    this.saveMgr.save(false);
+    this.setOwner(null);
+    if (window.game && typeof window.game.refreshLobby === 'function') window.game.refreshLobby();
   }
 
   dropSession() {
@@ -325,7 +337,19 @@ class AccountManager {
     on('btnAccountSyncNow', async () => {
       try { await this.upload(); this.toast('저장했어요.'); } catch (e) { this.toast(e.message); }
     });
-    on('btnAccountLogout', async () => { await this.logout(); this.renderPanel(); this.toast('로그아웃했어요. 이 기기 진행은 그대로 남아요.'); });
+    on('btnAccountLogout', async () => {
+      const btn = this.el('btnAccountLogout');
+      btn.disabled = true;
+      try {
+        await this.logout();
+        this.toast('로그아웃했어요. 진행은 계정에 저장돼 있어요.');
+      } catch (e) {
+        this.toast('저장하지 못해 로그아웃을 멈췄어요. 연결을 확인해 주세요.');
+      } finally {
+        btn.disabled = false;
+        this.renderPanel();
+      }
+    });
     on('btnAccountUseCloud', async () => { await this.resolveChoice(true); this.renderPanel(); this.toast('계정 저장을 불러왔어요.'); });
     on('btnAccountUseLocal', async () => {
       try { await this.resolveChoice(false); this.toast('이 기기 진행을 계정에 저장했어요.'); } catch (e) { this.toast(e.message); }
