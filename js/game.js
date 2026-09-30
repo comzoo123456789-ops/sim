@@ -1012,7 +1012,7 @@ class GameEngine {
       const card = document.createElement('div');
       card.className = 'char-card' + (c.id === this.selectedCharId ? ' selected' : '');
       card.innerHTML = `
-        <div class="char-portrait">${(c.sprite && window.assets.spriteHtml(`char_${c.sprite}_idle`, 60, 'full')) || c.avatar}</div>
+        <div class="char-portrait">${(c.sprite && window.assets.spriteHtml(`char_${c.sprite}_idle`, 80, 'full')) || c.avatar}</div>
         <div class="char-info">
           <div class="char-name-row">
             <span class="char-name">${c.name}</span>

@@ -6,6 +6,8 @@ class AssetManager {
     this.base = 'assets/kenney/';
     this.images = {};
     this.tintCache = {};
+    this.canvasSprites = {};
+    this.htmlCache = {};
 
     const frames = (dir, n) => Array.from({ length: n }, (_, i) => [`${dir}${i}`, `${dir}/${i}.png`]);
     const named = (dir, names) => names.map(n => [`${dir}_${n}`, `${dir}/${n}.png`]);
@@ -31,11 +33,32 @@ class AssetManager {
   }
 
   hasSprite(key) {
-    return !!this.atlasMeta.frames[key];
+    return !!(this.atlasMeta.frames[key] || this.canvasSprites[key]);
+  }
+
+  // 코드로 그린 캔버스 스프라이트 등록 (플레이어 캐릭터). frame: { w, h, ax, ay, res }
+  registerCanvasSprites(map, frame) {
+    Object.entries(map).forEach(([key, canvas]) => { this.canvasSprites[key] = { canvas, ...frame }; });
   }
 
   // 아틀라스 스프라이트를 앵커(발/바닥 접점) 기준으로 그림. 성공 시 true
   drawSprite(ctx, key, x, y, scale = 1, opts = {}) {
+    const cs = this.canvasSprites[key];
+    if (cs) {
+      ctx.save();
+      if (opts.alpha !== undefined) ctx.globalAlpha *= opts.alpha;
+      ctx.translate(x, y);
+      if (opts.rot) ctx.rotate(opts.rot);
+      ctx.scale(opts.flip ? -scale : scale, scale * (opts.squash || 1));
+      ctx.drawImage(cs.canvas, -cs.ax, -cs.ay, cs.w, cs.h);
+      if (opts.flash) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha *= opts.flash;
+        ctx.drawImage(cs.canvas, -cs.ax, -cs.ay, cs.w, cs.h);
+      }
+      ctx.restore();
+      return true;
+    }
     const f = this.atlasMeta.frames[key];
     if (!f || !this.atlasReady()) return false;
     ctx.save();
@@ -56,6 +79,21 @@ class AssetManager {
 
   // UI(HTML)용 스프라이트: CSS 배경으로 아틀라스 일부를 표시. crop: 'head'(상단) | 'full'
   spriteHtml(key, box = 64, crop = 'full', extraClass = '') {
+    const cs = this.canvasSprites[key];
+    if (cs) {
+      const ck = key + '|' + crop;
+      if (!this.htmlCache[ck]) {
+        const cropH = crop === 'head' ? cs.h * 0.6 : cs.h;
+        const c = document.createElement('canvas');
+        c.width = cs.w * cs.res;
+        c.height = Math.round(cropH * cs.res);
+        c.getContext('2d').drawImage(cs.canvas, 0, 0);
+        this.htmlCache[ck] = { url: c.toDataURL('image/png'), w: cs.w, h: cropH };
+      }
+      const h = this.htmlCache[ck];
+      const s = box / Math.max(h.w, h.h);
+      return `<img class="sprite-ui ${extraClass}" src="${h.url}" width="${(h.w * s).toFixed(0)}" height="${(h.h * s).toFixed(0)}" alt="" draggable="false">`;
+    }
     const f = this.atlasMeta.frames[key];
     if (!f) return '';
     const cropH = crop === 'head' ? f.h * 0.62 : f.h;

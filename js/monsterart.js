@@ -665,6 +665,261 @@
     ellipse(ctx, -34, -118, 7, 7); ink(ctx, '#fbbf24', 3);
   };
 
+  // ---------- 플레이어 캐릭터 4종 (한국 직장인, 2.3등신) ----------
+  // 원점 = 발, 설계 키 약 230. 포즈: idle · walk0~7 · hurt
+  function workerFace(ctx, hy, o, pose, f) {
+    const hurt = pose === 'hurt';
+    // 볼터치
+    ctx.fillStyle = 'rgba(251, 113, 133, 0.35)';
+    ellipse(ctx, -30, hy + 16, 9, 5.5); ctx.fill();
+    ellipse(ctx, 30, hy + 16, 9, 5.5); ctx.fill();
+    if (hurt) {
+      // >< 눈 + 벌린 입
+      [-1, 1].forEach(s => {
+        ctx.beginPath();
+        ctx.moveTo(s * 18 - 8, hy - 6); ctx.lineTo(s * 18 + 6 * s, hy); ctx.lineTo(s * 18 - 8, hy + 6);
+        ctx.strokeStyle = OL; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+      });
+      ellipse(ctx, 0, hy + 26, 9, 8); ink(ctx, '#7f1d1d', 4);
+      sweat(ctx, 42, hy - 18, 1.3);
+      return;
+    }
+    const blink = pose === 'idle' && f === 3;
+    [-1, 1].forEach(s => {
+      const ex = s * 18, ey = hy + 2;
+      if (blink) { line(ctx, ex - 7, ey, ex + 7, ey, OL, 4.5); return; }
+      ellipse(ctx, ex, ey, o.eyeW || 7, o.eyeH || 9.5); ctx.fillStyle = '#1c1433'; ctx.fill();
+      ellipse(ctx, ex - 2.5, ey - 3.5, 2.6, 2.6); ctx.fillStyle = '#fff'; ctx.fill();
+      if (o.tired) { ctx.beginPath(); ctx.arc(ex, ey + 9, 8, 0.2, Math.PI - 0.2); ctx.strokeStyle = 'rgba(88, 60, 120, 0.55)'; ctx.lineWidth = 3; ctx.stroke(); }
+      // 눈썹
+      ctx.beginPath();
+      const tilt = o.tired ? -3 : o.confident ? 3 : 0;
+      ctx.moveTo(ex - 9, ey - 16 - tilt * s * -1); ctx.lineTo(ex + 9, ey - 16 + tilt * s * -1);
+      ctx.strokeStyle = o.browColor || '#1f1b2e'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
+    });
+    if (o.glasses) {
+      [-1, 1].forEach(s => { ellipse(ctx, s * 18, hy + 2, 14, 12.5); ctx.lineWidth = 3.5; ctx.strokeStyle = '#334155'; ctx.stroke(); });
+      line(ctx, -4, hy, 4, hy, '#334155', 3);
+    }
+    // 입
+    ctx.beginPath();
+    if (o.tired) { ctx.moveTo(-8, hy + 26); ctx.quadraticCurveTo(0, hy + 23, 9, hy + 27); }
+    else if (o.confident) { ctx.moveTo(-10, hy + 23); ctx.quadraticCurveTo(2, hy + 31, 12, hy + 21); }
+    else { ctx.moveTo(-10, hy + 22); ctx.quadraticCurveTo(0, hy + 32, 10, hy + 22); }
+    ctx.strokeStyle = OL; ctx.lineWidth = 4.5; ctx.lineCap = 'round'; ctx.stroke();
+    if (o.stubble) {
+      ctx.fillStyle = 'rgba(71, 85, 105, 0.5)';
+      [[-12, 34], [-5, 37], [3, 37], [10, 34], [-8, 31], [7, 31]].forEach(([x, y]) => { ellipse(ctx, x, hy + y, 1.6, 1.6); ctx.fill(); });
+    }
+  }
+
+  function worker(ctx, pose, f, o) {
+    const walk = pose.startsWith('walk');
+    const hurt = pose === 'hurt';
+    const t = walk ? f / 8 * Math.PI * 2 : 0;
+    const swing = walk ? Math.sin(t) : 0;
+    const bob = walk ? -Math.abs(Math.sin(t)) * 5 : (pose === 'idle' ? Math.sin(f / 4 * Math.PI * 2) * 1.2 : 0);
+    const w = o.w || 40;
+
+    // 다리 + 신발
+    [[-1, swing], [1, -swing]].forEach(([side, sw]) => {
+      const lx = side * 15 + sw * 7;
+      rr(ctx, lx - 9, -50, 18, 46, 8);
+      ink(ctx, o.skirt ? o.skin : o.pants, 4.5);
+      if (o.skirt) { rr(ctx, lx - 9, -12, 18, 8, 3); ctx.fillStyle = o.tights || '#1f2937'; ctx.fill(); }
+      ellipse(ctx, lx + side * 3 + sw * 3, -3, 13, 7);
+      ink(ctx, o.shoes || '#1f1b2e', 4);
+    });
+    ctx.save();
+    ctx.translate(0, bob);
+    if (hurt) { ctx.translate(0, -2); ctx.rotate(-0.12); }
+
+    // 뒤 팔
+    const armSw = walk ? -swing * 16 : 0;
+    if (!o.holdBoth) arm(ctx, w - 4, -118, w + 8 - armSw * 0.3, hurt ? -150 : -76 - armSw, o.sleeve || o.jacket || o.shirt, 13, o.skin);
+
+    // 몸통 (셔츠 / 재킷)
+    const torso = () => {
+      ctx.beginPath();
+      ctx.moveTo(-w, -46);
+      ctx.bezierCurveTo(-w - 2, -90, -w * 0.9, -122, -w * 0.62, -128);
+      ctx.lineTo(w * 0.62, -128);
+      ctx.bezierCurveTo(w * 0.9, -122, w + 2, -90, w, -46);
+      ctx.closePath();
+    };
+    torso(); ink(ctx, o.jacket || o.shirt, 5.5);
+    inside(ctx, torso, () => {
+      ctx.fillStyle = 'rgba(0,0,0,0.13)'; ctx.fillRect(w * 0.35, -132, w, 90);
+      if (o.jacket) {
+        ctx.beginPath(); ctx.moveTo(-w * 0.34, -130); ctx.lineTo(0, -80); ctx.lineTo(w * 0.34, -130); ctx.closePath();
+        ctx.fillStyle = o.shirt; ctx.fill();
+      }
+      if (o.skirt || o.belt) { ctx.fillStyle = o.skirt || o.belt; ctx.fillRect(-w - 4, -58, w * 2 + 8, 14); }
+    });
+    if (o.jacket) {
+      ctx.beginPath(); ctx.moveTo(-w * 0.36, -128); ctx.lineTo(-3, -82); ctx.lineTo(-w * 0.52, -100); ctx.closePath(); ink(ctx, o.jacket, 4);
+      ctx.beginPath(); ctx.moveTo(w * 0.36, -128); ctx.lineTo(3, -82); ctx.lineTo(w * 0.52, -100); ctx.closePath(); ink(ctx, o.jacket, 4);
+    } else {
+      // 셔츠 칼라 + 단추선
+      ctx.beginPath(); ctx.moveTo(-13, -128); ctx.lineTo(0, -116); ctx.lineTo(-5, -110); ctx.lineTo(-17, -122); ctx.closePath(); ink(ctx, '#ffffff', 3.5);
+      ctx.beginPath(); ctx.moveTo(13, -128); ctx.lineTo(0, -116); ctx.lineTo(5, -110); ctx.lineTo(17, -122); ctx.closePath(); ink(ctx, '#ffffff', 3.5);
+      [-100, -84, -68].forEach(y => { ellipse(ctx, 0, y, 2.4, 2.4); ctx.fillStyle = '#94a3b8'; ctx.fill(); });
+    }
+    if (o.tie) {
+      const loose = o.looseTie ? 6 : 0;
+      ctx.beginPath(); ctx.moveTo(-5 + loose, -120 + loose); ctx.lineTo(5 + loose, -120 + loose); ctx.lineTo(8 + loose, -88); ctx.lineTo(0 + loose, -78); ctx.lineTo(-8 + loose, -88); ctx.closePath();
+      ink(ctx, o.tie, 3.5);
+    }
+    if (o.lanyard) {
+      ctx.beginPath(); ctx.moveTo(-14, -126); ctx.lineTo(-6, -92); ctx.lineTo(6, -92); ctx.lineTo(14, -126);
+      ctx.strokeStyle = o.lanyard; ctx.lineWidth = 3; ctx.stroke();
+      rr(ctx, -11, -94, 22, 27, 3); ink(ctx, '#ffffff', 3);
+      ctx.fillStyle = o.lanyard; ctx.fillRect(-8, -91, 16, 6);
+      ellipse(ctx, 0, -77, 4, 4); ctx.fillStyle = '#cbd5e1'; ctx.fill();
+    }
+    if (o.brooch) { ellipse(ctx, -w * 0.55, -104, 4.5, 4.5); ink(ctx, o.brooch, 2.5); }
+
+    // 앞 팔 + 들고 있는 물건
+    if (o.item) o.item(ctx, pose, swing, w);
+    else arm(ctx, -w + 4, -118, -w - 8 + armSw * 0.3, hurt ? -150 : -76 + armSw, o.sleeve || o.jacket || o.shirt, 13, o.skin);
+
+    // 머리 (뒷머리 → 얼굴 → 앞머리)
+    const hy = -172;
+    if (o.hairBack) o.hairBack(ctx, hy);
+    const head = () => ellipse(ctx, 0, hy, 46, 44);
+    head(); ink(ctx, o.skin, 5.5);
+    inside(ctx, head, () => { ctx.fillStyle = 'rgba(0,0,0,0.07)'; ellipse(ctx, 30, hy + 10, 24, 44); ctx.fill(); });
+    [-1, 1].forEach(s => { ellipse(ctx, s * 45, hy + 6, 7, 10); ink(ctx, o.skin, 4); });
+    if (o.earring) [-1, 1].forEach(s => { ellipse(ctx, s * 46, hy + 19, 3.5, 3.5); ink(ctx, o.earring, 2); });
+    workerFace(ctx, hy, o, pose, f);
+    o.hair(ctx, hy);
+    ctx.restore();
+  }
+
+  const CHAR_ART = {
+    // 신입사원 이민우: 단정한 가르마 머리, 흰 셔츠, 파란 사원증, 남색 슬랙스
+    intern: {
+      skin: '#fcd9b6', shirt: '#f8fafc', pants: '#1e3a8a', shoes: '#111827', lanyard: '#2563eb', belt: '#1e3a8a',
+      hair: (ctx, hy) => {
+        ctx.beginPath();
+        ctx.moveTo(-47, hy - 2);
+        ctx.bezierCurveTo(-54, hy - 58, 48, hy - 66, 48, hy - 6);
+        ctx.quadraticCurveTo(40, hy - 28, 14, hy - 30);
+        ctx.quadraticCurveTo(-10, hy - 22, -26, hy - 34);
+        ctx.quadraticCurveTo(-34, hy - 18, -47, hy - 2);
+        ink(ctx, '#1f1b2e', 5);
+        ctx.beginPath(); ctx.moveTo(-8, hy - 48); ctx.quadraticCurveTo(10, hy - 40, 30, hy - 42); ctx.strokeStyle = '#4b4563'; ctx.lineWidth = 3; ctx.stroke();
+      }
+    },
+    // 기획팀 대리 한소희: 긴 생머리 + 앞머리, 동그란 안경, 베이지 재킷, 태블릿
+    planner: {
+      skin: '#fde2c8', shirt: '#ffffff', jacket: '#d6b98c', pants: '#334155', shoes: '#3f2a1d', glasses: true, eyeH: 9, earring: '#e2e8f0',
+      hairBack: (ctx, hy) => {
+        ctx.beginPath();
+        ctx.moveTo(-50, hy - 10);
+        ctx.quadraticCurveTo(-58, hy + 50, -40, hy + 76);
+        ctx.lineTo(40, hy + 76);
+        ctx.quadraticCurveTo(58, hy + 50, 50, hy - 10);
+        ctx.closePath();
+        ink(ctx, '#2b2138', 5);
+      },
+      hair: (ctx, hy) => {
+        ctx.beginPath();
+        ctx.moveTo(-49, hy + 8);
+        ctx.bezierCurveTo(-56, hy - 62, 56, hy - 62, 49, hy + 8);
+        ctx.quadraticCurveTo(44, hy - 18, 30, hy - 22);
+        ctx.lineTo(24, hy - 12); ctx.lineTo(16, hy - 24); ctx.lineTo(6, hy - 14); ctx.lineTo(-4, hy - 25); ctx.lineTo(-14, hy - 14); ctx.lineTo(-22, hy - 24);
+        ctx.quadraticCurveTo(-42, hy - 20, -49, hy + 8);
+        ink(ctx, '#2b2138', 5);
+        ctx.beginPath(); ctx.moveTo(-26, hy - 44); ctx.quadraticCurveTo(-6, hy - 52, 16, hy - 46); ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 4; ctx.stroke();
+      },
+      item: (ctx, pose, swing, w) => {
+        const up = pose === 'hurt' ? -30 : swing * 4;
+        arm(ctx, -w + 4, -118, -w + 2, -84 + up, '#d6b98c', 13, '#fde2c8');
+        ctx.save(); ctx.translate(-w - 2, -92 + up); ctx.rotate(-0.25);
+        rr(ctx, -18, -24, 34, 46, 5); ink(ctx, '#334155', 4);
+        rr(ctx, -13, -19, 24, 36, 2); ctx.fillStyle = '#7dd3fc'; ctx.fill();
+        [-12, -5, 2].forEach((y, i) => { ctx.fillStyle = ['#f472b6', '#fbbf24', '#34d399'][i]; ctx.fillRect(-9, y, 6 + i * 4, 4); });
+        ctx.restore();
+      }
+    },
+    // 만년 대리 김철수: 부스스한 머리, 다크서클 · 수염, 걷은 소매 하늘색 셔츠, 풀린 넥타이, 아이스 아메리카노
+    deputy: {
+      skin: '#f5c9a0', shirt: '#bfdbfe', sleeve: '#bfdbfe', pants: '#374151', shoes: '#1c1917', tie: '#1e3a8a', looseTie: true, tired: true, stubble: true, belt: '#1f2937', w: 43,
+      hair: (ctx, hy) => {
+        ctx.beginPath();
+        ctx.moveTo(-47, hy);
+        ctx.lineTo(-52, hy - 30); ctx.lineTo(-40, hy - 36); ctx.lineTo(-42, hy - 54); ctx.lineTo(-24, hy - 52); ctx.lineTo(-18, hy - 68);
+        ctx.lineTo(-2, hy - 56); ctx.lineTo(10, hy - 72); ctx.lineTo(18, hy - 56); ctx.lineTo(36, hy - 62); ctx.lineTo(36, hy - 44); ctx.lineTo(52, hy - 36); ctx.lineTo(47, hy);
+        ctx.quadraticCurveTo(34, hy - 26, 10, hy - 26);
+        ctx.quadraticCurveTo(-24, hy - 30, -47, hy);
+        ink(ctx, '#221c2e', 5);
+      },
+      item: (ctx, pose, swing, w) => {
+        const up = pose === 'hurt' ? -34 : swing * 5;
+        arm(ctx, -w + 4, -118, -w - 4, -86 + up, '#bfdbfe', 13, '#f5c9a0');
+        ctx.save(); ctx.translate(-w - 6, -100 + up);
+        ctx.beginPath(); ctx.moveTo(-12, -16); ctx.lineTo(12, -16); ctx.lineTo(9, 18); ctx.lineTo(-9, 18); ctx.closePath(); ink(ctx, 'rgba(255,255,255,0.75)', 3.5);
+        inside(ctx, () => { ctx.beginPath(); ctx.moveTo(-12, -16); ctx.lineTo(12, -16); ctx.lineTo(9, 18); ctx.lineTo(-9, 18); ctx.closePath(); }, () => {
+          ctx.fillStyle = '#5b3a1e'; ctx.fillRect(-14, -6, 28, 26);
+          ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(-7, -4, 6, 5); ctx.fillRect(2, 2, 5, 5);
+        });
+        rr(ctx, -13, -20, 26, 6, 3); ink(ctx, '#e2e8f0', 3);
+        line(ctx, 4, -20, 9, -34, '#16a34a', 3.5);
+        ctx.restore();
+      }
+    },
+    // 마케팅 팀장 박영희: 단발, 와인색 재킷 · 검정 치마, 진주 귀걸이, 결재판
+    manager: {
+      skin: '#fcdcc0', shirt: '#fff7ed', jacket: '#9f1239', skirt: '#111827', tights: '#111827', shoes: '#111827', confident: true, earring: '#f8fafc', brooch: '#fbbf24', w: 42,
+      hairBack: (ctx, hy) => { rr(ctx, -54, hy - 26, 108, 64, 26); ink(ctx, '#3b2330', 5); },
+      hair: (ctx, hy) => {
+        ctx.beginPath();
+        ctx.moveTo(-52, hy + 30);
+        ctx.bezierCurveTo(-60, hy - 64, 60, hy - 64, 52, hy + 30);
+        ctx.quadraticCurveTo(44, hy + 34, 40, hy + 26);
+        ctx.quadraticCurveTo(44, hy - 14, 18, hy - 26);
+        ctx.quadraticCurveTo(-6, hy - 10, -34, hy - 22);
+        ctx.quadraticCurveTo(-46, hy - 4, -40, hy + 26);
+        ctx.quadraticCurveTo(-44, hy + 34, -52, hy + 30);
+        ink(ctx, '#3b2330', 5);
+        ctx.beginPath(); ctx.moveTo(-20, hy - 44); ctx.quadraticCurveTo(4, hy - 52, 26, hy - 40); ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 4; ctx.stroke();
+      },
+      item: (ctx, pose, swing, w) => {
+        const up = pose === 'hurt' ? -30 : swing * 3;
+        arm(ctx, -w + 4, -118, -w + 4, -80 + up, '#9f1239', 13, '#fcdcc0');
+        ctx.save(); ctx.translate(-w - 4, -88 + up); ctx.rotate(0.12);
+        rr(ctx, -17, -26, 32, 44, 4); ink(ctx, '#78350f', 4);
+        rr(ctx, -12, -18, 22, 32, 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+        rr(ctx, -6, -30, 12, 8, 2); ink(ctx, '#cbd5e1', 2.5);
+        [-10, -3, 4].forEach(y => { ctx.fillStyle = '#94a3b8'; ctx.fillRect(-8, y, 14, 2.5); });
+        ctx.restore();
+      }
+    }
+  };
+
+  const CHAR_POSES = ['idle', 'walk0', 'walk1', 'walk2', 'walk3', 'walk4', 'walk5', 'walk6', 'walk7', 'hurt'];
+  // 표시 크기: 기존 캐릭터 프레임(96x128, 발 y=120)과 같은 논리 크기, 2배 해상도로 굽는다
+  const CHAR_FRAME = { w: 96, h: 128, ax: 48, ay: 120, body: 110, res: 2 };
+  function bakeCharacters() {
+    const out = {};
+    Object.entries(CHAR_ART).forEach(([id, o]) => {
+      CHAR_POSES.forEach(pose => {
+        const c = document.createElement('canvas');
+        c.width = CHAR_FRAME.w * CHAR_FRAME.res;
+        c.height = CHAR_FRAME.h * CHAR_FRAME.res;
+        const g = c.getContext('2d');
+        const k = CHAR_FRAME.res * CHAR_FRAME.body / 230;
+        g.translate(CHAR_FRAME.ax * CHAR_FRAME.res, CHAR_FRAME.ay * CHAR_FRAME.res);
+        g.scale(k, k);
+        const f = pose.startsWith('walk') ? +pose.slice(4) : pose === 'idle' ? 0 : 0;
+        worker(g, pose, f, o);
+        out[`char_office_${id}_${pose}`] = c;
+      });
+    });
+    return out;
+  }
+
   // ---------- 굽기 ----------
   const cache = {};
   function bake(key) {
@@ -750,5 +1005,12 @@
     }
   };
 
+  MonsterArt.bakeCharacters = bakeCharacters;
+  MonsterArt.CHAR_FRAME = CHAR_FRAME;
   window.MonsterArt = MonsterArt;
+
+  // 플레이어 캐릭터를 스프라이트로 등록 (char_office_<id>_<pose>)
+  if (window.assets && window.assets.registerCanvasSprites) {
+    try { window.assets.registerCanvasSprites(bakeCharacters(), CHAR_FRAME); } catch (e) { console.warn('character art failed', e); }
+  }
 })();
