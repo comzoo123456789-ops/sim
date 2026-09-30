@@ -1297,6 +1297,19 @@ class GameEngine {
     }
     this.carriedBuild = !!carried;
 
+    // 새 판 시작 빌드: 챕터가 오를수록 승진한 만큼(경력), 챕터 중간 스테이지로 바로 가면 그만큼 키운 빌드로 출근
+    this.startBoostLevel = 0;
+    if (!carried && this.selectedMode === 'stage') {
+      const [chNo, stNo] = this.currentStageId.split('-').map(n => parseInt(n, 10));
+      const lv = GameEngine.startLevelFor(chNo, stNo);
+      if (lv > 1) {
+        this.autoBuild(lv);
+        this.startBoostLevel = lv;
+        const why = stNo > 1 ? `${this.currentStageId} 중간 합류` : `${chNo}챕터 승진 보너스`;
+        this.effectEngine.spawnEventBanner(`경력직 출근 · Lv.${lv}`, `${why}: 그동안 쌓은 업무 역량으로 시작합니다`, '#38bdf8');
+      }
+    }
+
     // 스테이지 BGM: 챕터마다 두 곡을 번갈아, 서바이벌은 전용 곡
     this.stageBgm = this.selectedMode === 'stage'
       ? (parseInt(this.currentStageId.split('-')[0], 10) % 2 === 1 ? 'stage' : 'stage2')
@@ -1309,6 +1322,33 @@ class GameEngine {
 
     if (window.soundEngine) window.soundEngine.playLevelUp();
     this.updateHUD();
+  }
+
+  // 레벨업 카드를 자동으로 골라 목표 레벨까지 빌드 구성 (기본 무기 우선 → 새 무기 → 복지 → 초월)
+  autoBuild(targetLv) {
+    const p = this.player;
+    const main = p.charData.initialWeapon;
+    const score = c => {
+      if (c.category === 'super_weapon') return 100;
+      if (c.category === 'weapon') return c.id === main ? 60 : (p.weapons[c.id] ? 50 : 40);
+      if (c.category === 'passive') return 30;
+      return -1;
+    };
+    let guard = 0;
+    while (p.level < targetLv && guard++ < 200) {
+      p.level++;
+      const choices = this.generateUpgradeChoices().filter(c => score(c) >= 0);
+      if (!choices.length) continue;
+      choices.sort((a, b) => score(b) - score(a) + (Math.random() - 0.5) * 12);
+      const c = choices[0];
+      if (c.category === 'super_weapon') { if (!p.superWeapons.includes(c.id)) p.superWeapons.push(c.id); }
+      else if (c.category === 'weapon') p.weapons[c.id] = (p.weapons[c.id] || 0) + 1;
+      else if (c.category === 'passive') { p.passives[c.id] = (p.passives[c.id] || 0) + 1; p.recalcStats(); }
+    }
+    p.exp = 0;
+    p.nextExp = Player.expForLevel(p.level);
+    p.recalcStats();
+    p.hp = p.maxHp;
   }
 
   queueLevelUp() {
@@ -1637,7 +1677,7 @@ class GameEngine {
     const subEl = document.getElementById('stageClearSubtitle');
     const chapterEnd = this.currentStageId.endsWith('-10');
     if (subEl) subEl.innerText = `[${this.currentStageId}] ${stageTitle} 결재 승인 완료! (${stars}성)\n` +
-      (chapterEnd ? '챕터 정복! 다음 챕터는 Lv.1부터 새로 시작합니다.' : `Lv.${this.player.level} · 무기와 복지가 다음 스테이지로 이어집니다.`);
+      (chapterEnd ? `챕터 정복! 승진해서 다음 챕터는 Lv.${GameEngine.startLevelFor(parseInt(this.currentStageId, 10) + 1, 1)}부터 새로 시작합니다.` : `Lv.${this.player.level} · 무기와 복지가 다음 스테이지로 이어집니다.`);
 
     const totalDur = this.currentStage ? this.currentStage.duration : 60;
     const durM = Math.floor(totalDur / 60).toString().padStart(2, '0');
@@ -1935,6 +1975,11 @@ class GameEngine {
     requestAnimationFrame(t => this.gameLoop(t));
   }
 }
+
+// 새 판 시작 레벨: 챕터 승진 보너스 + 챕터 중간 합류 보정 (시뮬레이션 평균 진행 기준)
+GameEngine.CHAPTER_START_STEP = 2;
+GameEngine.MIDSTAGE_LEVEL = [0, 6, 13, 20, 25, 29, 33, 36, 39, 42];
+GameEngine.startLevelFor = (ch, st) => 1 + GameEngine.CHAPTER_START_STEP * (Math.max(1, ch) - 1) + (GameEngine.MIDSTAGE_LEVEL[(st || 1) - 1] || 0);
 
 window.GameEngine = GameEngine;
 
